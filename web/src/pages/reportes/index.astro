@@ -1,0 +1,135 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ReportesList from '../../components/ReportesList';
+---
+
+<MainLayout title="Reportes">
+  <ReportesList client:load />
+</MainLayout>
+
+<style is:global>
+  .reportes-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .reportes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 1rem;
+  }
+
+  .reportes-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary-900);
+    margin-bottom: 0.5rem;
+  }
+
+  .reportes-subtitle {
+    font-size: 1rem;
+    color: var(--color-primary-700);
+  }
+
+  .reportes-filters {
+    margin-bottom: 1.5rem;
+  }
+
+  .reportes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .reporte-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(31, 49, 76, 0.1);
+    border: 1px solid var(--color-border);
+    transition: box-shadow 0.2s;
+  }
+
+  .reporte-card:hover {
+    box-shadow: 0 4px 6px rgba(31, 49, 76, 0.15);
+  }
+
+  .reporte-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .reporte-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-primary-900);
+    line-height: 1.4;
+  }
+
+  .reporte-card-description {
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .reporte-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: var(--color-primary-50);
+    border-radius: 6px;
+  }
+
+  .reporte-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-primary-800);
+  }
+
+  .reporte-card-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .pagination-info {
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+  }
+
+  @media (max-width: 768px) {
+    .reportes-header {
+      flex-direction: column;
+    }
+
+    .reportes-title {
+      font-size: 1.5rem;
+    }
+
+    .reportes-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .reporte-card-actions {
+      flex-direction: column;
+    }
+  }
+</style>

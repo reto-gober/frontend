@@ -1,0 +1,120 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ReporteForm from '../../components/ReporteForm';
+import EvidenciasList from '../../components/EvidenciasList';
+
+export async function getStaticPaths() {
+  return [];
+}
+
+const { id } = Astro.params;
+const reporteId = parseInt(id || '0');
+---
+
+<MainLayout title="Editar Reporte">
+  <div class="reporte-detail-container">
+    <ReporteForm reporteId={reporteId} client:load />
+    
+    <div class="mt-4">
+      <EvidenciasList reporteId={reporteId} client:load />
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+  .reporte-detail-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .mt-4 {
+    margin-top: 2rem;
+  }
+</style>
+
+<style is:global>
+  .evidencias-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(31, 49, 76, 0.1);
+    border: 1px solid var(--color-border);
+  }
+
+  .evidencias-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .evidencias-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-primary-900);
+  }
+
+  .upload-btn {
+    cursor: pointer;
+  }
+
+  .evidencias-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .evidencia-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--color-primary-50);
+    border-radius: 6px;
+    transition: background-color 0.2s;
+  }
+
+  .evidencia-item:hover {
+    background-color: var(--color-primary-100);
+  }
+
+  .evidencia-icon {
+    color: var(--color-primary-600);
+    flex-shrink: 0;
+  }
+
+  .evidencia-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .evidencia-name {
+    font-weight: 500;
+    color: var(--color-primary-900);
+    font-size: 0.9375rem;
+    word-break: break-word;
+  }
+
+  .evidencia-meta {
+    font-size: 0.8125rem;
+    color: var(--color-primary-700);
+    margin-top: 0.25rem;
+  }
+
+  .evidencia-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .evidencia-item {
+      flex-wrap: wrap;
+    }
+
+    .evidencia-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+</style>

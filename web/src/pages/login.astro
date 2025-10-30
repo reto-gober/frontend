@@ -1,0 +1,149 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Iniciar Sesión">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 class="auth-title">Tracely</h1>
+        <p class="auth-subtitle">Sistema de Gestión de Reportes Regulatorios</p>
+      </div>
+
+      <div id="error-message"></div>
+
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="email" class="form-label">Correo electrónico</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Contraseña</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" id="submit-btn">
+          Iniciar sesión
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>¿No tienes una cuenta? <a href="/registro">Regístrate aquí</a></p>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { authService } from '../lib/auth';
+
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const errorDiv = document.getElementById('error-message');
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+
+  // Check if already authenticated
+  if (authService.isAuthenticated()) {
+    window.location.href = '/dashboard';
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (errorDiv) errorDiv.innerHTML = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Iniciando sesión...';
+
+    const formData = new FormData(form);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const response = await authService.login({ email, password });
+      authService.saveToken(response);
+      window.location.href = '/dashboard';
+    } catch (error: any) {
+      const message = error.response?.data?.mensaje || 'Error al iniciar sesión. Verifica tus credenciales.';
+      if (errorDiv) {
+        errorDiv.innerHTML = `<div class="alert alert-error">${message}</div>`;
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Iniciar sesión';
+    }
+  });
+</script>
+
+<style>
+  .auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-primary-300) 100%);
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 25px rgba(31, 49, 76, 0.15);
+  }
+
+  .auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .auth-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary-900);
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-primary-700);
+  }
+
+  .auth-form {
+    margin-bottom: 1.5rem;
+  }
+
+  .auth-footer {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+  }
+
+  .w-full {
+    width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    .auth-card {
+      padding: 1.5rem;
+    }
+
+    .auth-title {
+      font-size: 1.75rem;
+    }
+  }
+</style>
