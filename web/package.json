@@ -1,0 +1,31 @@
+{
+  "name": "tracely-web",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Tracely - Regulatory Reports Management System",
+  "dependencies": {
+    "@astrojs/react": "^4.4.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "astro": "^5.15.3",
+    "axios": "^1.13.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.548.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.3.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.5",
+    "typescript": "^5.9.3"
+  }
+}
