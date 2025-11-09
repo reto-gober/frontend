@@ -6,8 +6,27 @@ import DashboardStats from '../components/DashboardStats';
 <MainLayout title="Dashboard">
   <div class="dashboard-container">
     <div class="page-header">
-      <h1 class="page-title">Dashboard</h1>
       <p class="page-subtitle">Resumen de reportes regulatorios</p>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <div class="segment">
+          <button class="seg is-active">30D</button>
+          <button class="seg">3M</button>
+          <button class="seg">6M</button>
+          <button class="seg">12M</button>
+        </div>
+        <div class="filters">
+          <button class="chip">Riesgos</button>
+          <button class="chip">Planes de Acción</button>
+          <button class="chip">Sugerencias</button>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm">Exportar</button>
+          <a href="/reportes/nuevo" class="btn btn-primary btn-sm">Nuevo reporte</a>
+        </div>
+      </div>
     </div>
 
     <DashboardStats client:load />
@@ -68,6 +87,17 @@ import DashboardStats from '../components/DashboardStats';
     color: var(--color-primary-700);
   }
 
+  .toolbar { position: sticky; top: 64px; z-index: 10; background: rgba(255,255,255,.75); backdrop-filter: blur(8px); border: 1px solid var(--color-primary-200); padding: .5rem; border-radius: 10px; margin-bottom: 1rem; }
+  .toolbar-row { display: grid; grid-template-columns: 1fr auto auto; gap: .75rem; align-items: center; }
+  .segment { display: inline-flex; background: var(--color-primary-50); padding: .25rem; border-radius: 999px; border: 1px solid var(--color-border); }
+  .seg { border: 0; background: transparent; padding: .4rem .75rem; border-radius: 999px; font-weight: 600; color: var(--color-primary-800); }
+  .seg:hover { background: #fff; }
+  .seg.is-active { background: #fff; color: var(--color-primary-900); box-shadow: 0 1px 6px rgba(31,49,76,.12); }
+  .filters { display: inline-flex; gap: .5rem; }
+  .chip { border: 1px dashed var(--color-border); background: #fff; padding: .35rem .6rem; border-radius: 999px; color: var(--color-primary-800); }
+  .chip:hover { border-style: solid; }
+  .actions { display: inline-flex; gap: .5rem; }
+
   .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -115,6 +145,8 @@ import DashboardStats from '../components/DashboardStats';
     .dashboard-grid {
       grid-template-columns: 1fr;
     }
+
+    .toolbar-row { grid-template-columns: 1fr; }
   }
 </style>
 

@@ -6,43 +6,91 @@ export interface Props {
 }
 
 const { title } = Astro.props;
+const path = Astro.url.pathname || '/';
 ---
 
 <BaseLayout title={title}>
-  <div class="min-h-screen flex flex-col">
-    <nav class="bg-white border-b border-primary-200 shadow-sm">
-      <div class="container">
-        <div class="flex items-center justify-between h-16">
-          <div class="flex items-center gap-8">
-            <a href="/dashboard" class="text-2xl font-bold text-primary-900">
-              Tracely
-            </a>
-            <div class="hidden md:flex gap-4">
-              <a href="/dashboard" class="nav-link">Dashboard</a>
-              <a href="/reportes" class="nav-link">Reportes</a>
-              <a href="/calendario" class="nav-link">Calendario</a>
-              <a href="/entidades" class="nav-link">Entidades</a>
-            </div>
-          </div>
-          <div id="user-menu"></div>
+  <div class="app-shell" data-route={path}>
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="sidebar__header">
+        <button id="sidebar-toggle" class="icon-btn icon-btn--bubble" aria-label="Contraer/expandir menú" aria-expanded="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a href="/dashboard" class={`nav-item ${path.startsWith('/dashboard') ? 'is-active' : ''}`} title="Dashboard" data-tip="Dashboard">
+          <span class="nav-item__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </span>
+          <span class="nav-item__label">Dashboard</span>
+        </a>
+        <a href="/reportes" class={`nav-item ${path.startsWith('/reportes') ? 'is-active' : ''}`} title="Reportes" data-tip="Reportes">
+          <span class="nav-item__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h13l5 5v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M17 4v5h5"/></svg>
+          </span>
+          <span class="nav-item__label">Reportes</span>
+        </a>
+        <a href="/calendario" class={`nav-item ${path.startsWith('/calendario') ? 'is-active' : ''}`} title="Calendario" data-tip="Calendario">
+          <span class="nav-item__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <span class="nav-item__label">Calendario</span>
+        </a>
+        <a href="/entidades" class={`nav-item ${path.startsWith('/entidades') ? 'is-active' : ''}`} title="Entidades" data-tip="Entidades">
+          <span class="nav-item__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V8l9-5 9 5v14"/><path d="M9 22V12h6v10"/></svg>
+          </span>
+          <span class="nav-item__label">Entidades</span>
+        </a>
+      </nav>
+
+      <div id="sidebar-user" class="sidebar__user"></div>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <div class="topbar__left">
+          <button id="sidebar-toggle-sm" class="icon-btn show-on-mobile" aria-label="Abrir menú">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <h1 class="page-title">{title}</h1>
         </div>
-      </div>
-    </nav>
-    <main class="flex-1 py-6">
-      <div class="container">
+        <div class="topbar__right">
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="q" placeholder="Buscar..." aria-label="Buscar" />
+          </div>
+          <div id="user-inline"></div>
+        </div>
+      </header>
+
+      <main class="page">
         <slot />
-      </div>
-    </main>
-    <footer class="bg-white border-t border-primary-200 py-4">
-      <div class="container text-center text-sm text-primary-700">
-        © 2025 Tracely. Sistema de Gestión de Reportes Regulatorios
-      </div>
-    </footer>
+      </main>
+
+      <footer class="footer">
+        <div>© 2025 Tracely • Sistema de Gestión de Reportes Regulatorios</div>
+      </footer>
+    </div>
   </div>
 </BaseLayout>
 
 <script>
   import { authService } from '../lib/auth';
+
+  // Persistir estado de colapso
+  const STORAGE_KEY = 'tracely.sidebar.collapsed';
+
+  function setCollapsed(collapsed: boolean) {
+    const shell = document.querySelector('.app-shell');
+    if (!shell) return;
+    shell.classList.toggle('is-collapsed', !!collapsed);
+    try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch {}
+    const toggle = document.getElementById('sidebar-toggle');
+    if (toggle) toggle.setAttribute('aria-expanded', (!collapsed).toString());
+    
+  }
 
   if (typeof window !== 'undefined') {
     const isAuth = authService.isAuthenticated();
@@ -50,140 +98,147 @@ const { title } = Astro.props;
       window.location.href = '/login';
     } else {
       const user = authService.getUser();
-      const userMenu = document.getElementById('user-menu');
-      if (userMenu && user) {
-        userMenu.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <span style="font-size: 0.875rem; color: var(--color-primary-900);">
-              ${user.nombre} ${user.apellido}
-            </span>
-            <button id="logout-btn" class="btn btn-sm btn-secondary">
-              Cerrar sesión
-            </button>
+      const userSlot = document.getElementById('sidebar-user');
+      const userInline = document.getElementById('user-inline');
+      const name = user ? `${user.nombre} ${user.apellido}` : '';
+
+      const userMarkupSidebar = `
+        <div class="userbox" id="userbox">
+          <button class="userbox__avatar-btn" id="user-avatar-btn" aria-label="Abrir menú de usuario">
+            <span class="userbox__avatar" aria-hidden="true">${name ? name.charAt(0).toUpperCase() : 'U'}</span>
+          </button>
+          <div class="userbox__menu" id="user-menu-pop" role="menu">
+            <div class="userbox__name">${name}</div>
+            <button class="btn btn-sm btn-secondary" data-logout="1" role="menuitem">Cerrar sesión</button>
           </div>
-        `;
-        
-        document.getElementById('logout-btn')?.addEventListener('click', () => {
-          authService.logout();
-        });
-      }
+        </div>
+      `;
+      const userMarkupInline = `
+        <div style="display:flex; align-items:center; gap:.5rem;">
+          <span style="font-size:.9rem; color:var(--color-primary-900);">${name}</span>
+          <button class="btn btn-sm btn-secondary" data-logout="1">Cerrar sesión</button>
+        </div>
+      `;
+      if (userSlot) userSlot.innerHTML = userMarkupSidebar;
+      if (userInline) userInline.innerHTML = userMarkupInline;
+
+      document.querySelectorAll('[data-logout]')?.forEach((el) => {
+        el.addEventListener('click', () => authService.logout());
+      });
+
+      // Restaurar estado de sidebar
+      try { setCollapsed(localStorage.getItem(STORAGE_KEY) === '1'); } catch {}
+
+      // Toggle handlers
+      const toggleSidebar = () => {
+        const collapsed = document.querySelector('.app-shell')?.classList.contains('is-collapsed');
+        setCollapsed(!collapsed);
+      };
+      document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
+      // Toggle menú de usuario
+      document.getElementById('user-avatar-btn')?.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const box = document.getElementById('userbox');
+        box?.classList.toggle('is-open');
+      });
+      document.getElementById('sidebar-toggle-sm')?.addEventListener('click', () => {
+        document.querySelector('.app-shell')?.classList.toggle('is-open-mobile');
+      });
+      // Cerrar al hacer clic fuera en mobile
+      document.addEventListener('click', (e: MouseEvent) => {
+        const shell = document.querySelector('.app-shell');
+        if (!shell?.classList.contains('is-open-mobile')) return;
+        const sidebar = document.querySelector('.sidebar');
+        const target = e.target as HTMLElement | null;
+        if (sidebar && target && !sidebar.contains(target) && !(target.closest && target.closest('#sidebar-toggle-sm'))) {
+          shell.classList.remove('is-open-mobile');
+        }
+      });
+
+      // Cerrar menú de usuario al hacer clic fuera
+      document.addEventListener('click', (e: MouseEvent) => {
+        const target = e.target as HTMLElement | null;
+        const box = document.getElementById('userbox');
+        if (box && !box.contains(target as Node)) {
+          box.classList.remove('is-open');
+        }
+      });
     }
   }
 </script>
 
-<style>
-  .min-h-screen {
-    min-height: 100vh;
-  }
+<style is:global>
+  .app-shell { display: grid; grid-template-columns: auto 1fr; min-height: 100vh; }
+  .app-shell .page { padding: 1.25rem 1.25rem 2rem; }
 
-  .flex {
-    display: flex;
+  /* Sidebar */
+  .sidebar { position: sticky; top: 0; height: 100vh; width: 260px; display: flex; flex-direction: column; background: linear-gradient(180deg, var(--color-primary-900), var(--color-primary-800)); color: #fff; border-right: 1px solid rgba(255,255,255,.08); box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 30; transition: width .34s cubic-bezier(.22,.61,.36,1); }
+  .app-shell.is-collapsed .sidebar { width: 84px; }
+  .sidebar__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .9rem .9rem; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; font-weight: 700; color: #fff; letter-spacing: .3px; }
+  .brand__logo { width: 28px; height: 28px; border-radius: 8px; background: radial-gradient(circle at 30% 30%, #6ea8ff, transparent 60%); display: grid; place-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 6px 18px rgba(0,0,0,.25); }
+  .brand__text { font-size: 1.05rem; }
+  .icon-btn { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.22); border-radius: 10px; padding: .45rem; display: grid; place-items: center; transition: background .2s ease, transform .2s ease, box-shadow .2s ease; }
+  .icon-btn:hover { background: rgba(255,255,255,.16); transform: translateY(-1px); }
+  .icon-btn--bubble { position: relative; width: 36px; height: 36px; border-radius: 12px; background:
+      radial-gradient(140% 120% at 28% 18%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%),
+      linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+    border: 1px solid rgba(255,255,255,.38);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 10px 26px rgba(0,0,0,.28);
+    backdrop-filter: blur(6px);
   }
+  .icon-btn--bubble::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), inset 0 -10px 24px rgba(0,0,0,.16); pointer-events: none; }
+  .icon-btn--bubble:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 12px 30px rgba(0,0,0,.32); }
+  .icon-btn--bubble:active { transform: translateY(0) scale(.98); }
+  .icon-btn--bubble:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.25), 0 12px 30px rgba(0,0,0,.32); }
+  #sidebar-toggle svg { transition: transform .34s cubic-bezier(.22,.61,.36,1); }
+  .app-shell.is-collapsed #sidebar-toggle svg { transform: rotate(180deg); }
+  .app-shell.is-collapsed .brand__text { display: none; }
 
-  .flex-col {
-    flex-direction: column;
-  }
+  .sidebar__nav { display: grid; padding: .75rem .5rem; gap: .6rem; }
+  .nav-item { position: relative; display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: .75rem; color: rgba(255,255,255,.95); height: 44px; padding: 0 .75rem; border-radius: 14px; text-decoration: none; transition: background .25s ease, color .2s ease, transform .2s ease, box-shadow .25s ease; }
+  .nav-item:hover { background: rgba(255,255,255,.12); transform: translateX(2px); box-shadow: 0 6px 18px rgba(0,0,0,.18) inset; }
+  .nav-item.is-active { background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10)); box-shadow: inset 0 1px 0 rgba(255,255,255,.42); color: #fff; }
+  .nav-item.is-active::before { content: ""; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.25); }
+  .nav-item__icon { width: 24px; height: 24px; display: grid; place-items: center; opacity: .95; }
+  .nav-item__label { white-space: nowrap; opacity: 1; transform: translateX(0); transition: opacity .2s ease, transform .2s ease; font-weight: 600; letter-spacing: .2px; }
+  .app-shell.is-collapsed .nav-item { grid-template-columns: 24px; justify-items: center; }
+  .app-shell.is-collapsed .nav-item__label { opacity: 0; transform: translateX(-6px); pointer-events: none; }
 
-  .flex-1 {
-    flex: 1;
-  }
+  /* Tooltip cuando está colapsado */
+  .app-shell.is-collapsed .nav-item[data-tip]::after { content: attr(data-tip); position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); background: #fff; color: var(--color-primary-900); border: 1px solid var(--color-border); border-radius: 10px; padding: .35rem .6rem; font-size: .8125rem; box-shadow: 0 10px 30px rgba(0,0,0,.2); opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .18s ease, transform .18s ease; }
+  .app-shell.is-collapsed .nav-item[data-tip]:hover::after { opacity: 1; transform: translateY(-50%) translateX(2px); }
 
-  .items-center {
-    align-items: center;
-  }
+  /* Quita el handle flotante en esta versión (usamos el botón superior) */
 
-  .justify-between {
-    justify-content: space-between;
-  }
+  .sidebar__user { margin-top: auto; padding: .9rem; border-top: 1px solid rgba(255,255,255,.08); }
+  .userbox { position: relative; display: grid; grid-template-columns: 36px 1fr; gap: .6rem; align-items: center; }
+  .userbox__avatar-btn { all: unset; cursor: pointer; }
+  .userbox__avatar { width: 36px; height: 36px; border-radius: 10px; background: #fff; color: var(--color-primary-900); display: grid; place-items: center; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,.18); }
+  .userbox__menu { position: absolute; bottom: 52px; left: 10px; display: grid; gap: .5rem; background: #eaf3fb; color: var(--color-primary-900); border: 1px solid var(--color-border); border-radius: 12px; padding: .6rem .7rem; box-shadow: 0 10px 30px rgba(0,0,0,.25); opacity: 0; transform: translateY(6px) scale(.98); pointer-events: none; transition: opacity .18s ease, transform .18s ease; min-width: 160px; }
+  .userbox.is-open .userbox__menu { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .userbox__name { font-size: .9rem; font-weight: 600; }
 
-  .gap-4 {
-    gap: 1rem;
-  }
+  /* Content */
+  .content { display: grid; grid-template-rows: auto 1fr auto; background: var(--color-primary-50); }
+  .topbar { position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 1rem; background: rgba(255,255,255,.75); backdrop-filter: blur(8px); border-bottom: 1px solid var(--color-primary-200); }
+  .topbar .page-title { font-size: 1.15rem; color: var(--color-primary-900); }
+  .topbar__left { display: flex; align-items: center; gap: .5rem; }
+  .topbar__right { display: flex; align-items: center; gap: .75rem; }
+  .search { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .6rem; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; }
+  .search input { border: 0; outline: none; font-size: .9rem; min-width: 160px; }
 
-  .gap-8 {
-    gap: 2rem;
-  }
+  .page { padding: 1rem 1.25rem 2rem; }
+  .footer { padding: .9rem 1rem; color: var(--color-primary-700); background: #fff; border-top: 1px solid var(--color-primary-200); }
 
-  .h-16 {
-    height: 4rem;
-  }
-
-  .py-4 {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-  }
-
-  .py-6 {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-
-  .bg-white {
-    background-color: white;
-  }
-
-  .border-b {
-    border-bottom-width: 1px;
-  }
-
-  .border-t {
-    border-top-width: 1px;
-  }
-
-  .border-primary-200 {
-    border-color: var(--color-primary-200);
-  }
-
-  .shadow-sm {
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-
-  .text-2xl {
-    font-size: 1.5rem;
-  }
-
-  .text-sm {
-    font-size: 0.875rem;
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .font-bold {
-    font-weight: 700;
-  }
-
-  .text-primary-900 {
-    color: var(--color-primary-900);
-  }
-
-  .text-primary-700 {
-    color: var(--color-primary-700);
-  }
-
-  .nav-link {
-    color: var(--color-primary-800);
-    font-weight: 500;
-    font-size: 0.9375rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    transition: all 0.2s;
-  }
-
-  .nav-link:hover {
-    background-color: var(--color-primary-100);
-    color: var(--color-primary-900);
-    text-decoration: none;
-  }
-
-  .hidden {
-    display: none;
-  }
-
-  @media (min-width: 768px) {
-    .md\:flex {
-      display: flex;
-    }
+  /* Mobile */
+  .show-on-mobile { display: none; }
+  @media (max-width: 980px) {
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar { position: fixed; left: -280px; width: 260px; height: 100dvh; border-right: none; }
+    .app-shell.is-open-mobile .sidebar { left: 0; transition: left .28s ease; }
+    .content { position: relative; }
+    .show-on-mobile { display: inline-grid; }
+    .edge-toggle { display: none; }
   }
 </style>
