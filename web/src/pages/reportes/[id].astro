@@ -1,11 +1,9 @@
 ---
+export const prerender = false;
+
 import MainLayout from '../../layouts/MainLayout.astro';
 import ReporteForm from '../../components/ReporteForm';
 import EvidenciasList from '../../components/EvidenciasList';
-
-export async function getStaticPaths() {
-  return [];
-}
 
 const { id } = Astro.params;
 const reporteId = parseInt(id || '0');

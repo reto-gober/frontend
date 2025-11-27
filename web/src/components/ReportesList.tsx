@@ -3,6 +3,7 @@ import { reportesService, type ReporteResponse, type Page } from '../lib/service
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FileText, Calendar, Building2, User, Trash2, Edit } from 'lucide-react';
+import { useToast, ToastContainer } from './Toast';
 
 export default function ReportesList() {
   const [reportes, setReportes] = useState<ReporteResponse[]>([]);
@@ -10,6 +11,7 @@ export default function ReportesList() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [filtroEstado, setFiltroEstado] = useState('');
+  const { toasts, removeToast, success, error } = useToast();
 
   useEffect(() => {
     loadReportes();
@@ -38,9 +40,10 @@ export default function ReportesList() {
     
     try {
       await reportesService.eliminar(id);
+      success('Reporte eliminado exitosamente');
       loadReportes();
-    } catch (error: any) {
-      alert(error.response?.data?.mensaje || 'Error al eliminar el reporte');
+    } catch (err: any) {
+      error(err.response?.data?.mensaje || 'Error al eliminar el reporte');
     }
   };
 
@@ -59,6 +62,7 @@ export default function ReportesList() {
 
   return (
     <div className="reportes-container">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="reportes-header">
         <div>
           <h2 className="reportes-title">Reportes Regulatorios</h2>

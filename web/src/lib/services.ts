@@ -13,9 +13,9 @@ export interface Page<T> {
 
 export interface EntidadRequest {
   nombre: string;
-  codigo: string;
+  codigo?: string;
   descripcion?: string;
-  activo: boolean;
+  activa: boolean;
 }
 
 export interface EntidadResponse {
@@ -23,7 +23,7 @@ export interface EntidadResponse {
   nombre: string;
   codigo: string;
   descripcion?: string;
-  activo: boolean;
+  activa: boolean;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -49,7 +49,7 @@ export interface ReporteResponse {
   frecuencia: string;
   formato: string;
   resolucion?: string;
-  responsableId: number;
+  responsableId: string;
   responsableNombre: string;
   fechaVencimiento: string;
   estado: string;
@@ -79,14 +79,30 @@ export interface DashboardResponse {
 }
 
 export interface UsuarioResponse {
-  id: number;
+  documentNumber: string;
+  documentType: string;
   email: string;
-  nombre: string;
-  apellido: string;
-  activo: boolean;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  birthDate: string;
   roles: string[];
-  creadoEn: string;
-  actualizadoEn: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UsuarioRequest {
+  documentNumber: string;
+  documentType: string;
+  email: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  password?: string;
+  birthDate: string;
+  roles: string[];
 }
 
 export const reportesService = {
@@ -216,12 +232,27 @@ export const dashboardService = {
 
 export const usuariosService = {
   async listar(page = 0, size = 100): Promise<Page<UsuarioResponse>> {
-    const response = await api.get('/api/usuarios', { params: { page, size } });
+    const response = await api.get('/api/usuarios', { params: { page, size, sort: 'firstName,asc' } });
     return response.data;
   },
 
-  async obtener(id: number): Promise<UsuarioResponse> {
-    const response = await api.get(`/api/usuarios/${id}`);
+  async obtener(documentNumber: string): Promise<UsuarioResponse> {
+    const response = await api.get(`/api/usuarios/${documentNumber}`);
+    return response.data;
+  },
+
+  async crear(data: UsuarioRequest): Promise<UsuarioResponse> {
+    const response = await api.post('/api/auth/registro', data);
+    return response.data;
+  },
+
+  async actualizar(documentNumber: string, data: UsuarioRequest): Promise<UsuarioResponse> {
+    const response = await api.put(`/api/usuarios/${documentNumber}`, data);
+    return response.data;
+  },
+
+  async eliminar(documentNumber: string): Promise<void> {
+    const response = await api.delete(`/api/usuarios/${documentNumber}`);
     return response.data;
   },
 };

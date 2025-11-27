@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { entidadesService, type EntidadResponse, type EntidadRequest, type Page } from '../lib/services';
 import { Building2, Edit, Trash2, Plus } from 'lucide-react';
+import { useToast, ToastContainer } from './Toast';
 
 export default function EntidadesList() {
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const { toasts, removeToast, success, error } = useToast();
   const [formData, setFormData] = useState<EntidadRequest>({
     nombre: '',
-    codigo: '',
     descripcion: '',
-    activo: true,
+    activa: true,
   });
 
   useEffect(() => {
@@ -35,24 +36,25 @@ export default function EntidadesList() {
     try {
       if (editingId) {
         await entidadesService.actualizar(editingId, formData);
+        success('Entidad actualizada exitosamente');
       } else {
         await entidadesService.crear(formData);
+        success('Entidad creada exitosamente');
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ nombre: '', codigo: '', descripcion: '', activo: true });
+      setFormData({ nombre: '', descripcion: '', activa: true });
       loadEntidades();
-    } catch (error: any) {
-      alert(error.response?.data?.mensaje || 'Error al guardar la entidad');
+    } catch (err: any) {
+      error(err.response?.data?.mensaje || 'Error al guardar la entidad');
     }
   };
 
   const handleEdit = (entidad: EntidadResponse) => {
     setFormData({
       nombre: entidad.nombre,
-      codigo: entidad.codigo,
       descripcion: entidad.descripcion || '',
-      activo: entidad.activo,
+      activa: entidad.activa,
     });
     setEditingId(entidad.id);
     setShowForm(true);
@@ -63,16 +65,17 @@ export default function EntidadesList() {
     
     try {
       await entidadesService.eliminar(id);
+      success('Entidad eliminada exitosamente');
       loadEntidades();
-    } catch (error: any) {
-      alert(error.response?.data?.mensaje || 'Error al eliminar la entidad');
+    } catch (err: any) {
+      error(err.response?.data?.mensaje || 'Error al eliminar la entidad');
     }
   };
 
   const handleCancel = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({ nombre: '', codigo: '', descripcion: '', activo: true });
+    setFormData({ nombre: '', descripcion: '', activa: true });
   };
 
   if (loading) {
@@ -81,6 +84,7 @@ export default function EntidadesList() {
 
   return (
     <div className="entidades-container">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="entidades-header">
         <div>
           <h2 className="entidades-title">Entidades de Control</h2>
@@ -100,28 +104,15 @@ export default function EntidadesList() {
         <div className="card mb-2">
           <h3 className="form-subtitle">{editingId ? 'Editar Entidad' : 'Nueva Entidad'}</h3>
           <form onSubmit={handleSubmit}>
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label">Nombre *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Código *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.codigo}
-                  onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Nombre *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.nombre}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                required
+              />
             </div>
 
             <div className="form-group">
@@ -138,10 +129,10 @@ export default function EntidadesList() {
               <label className="form-checkbox">
                 <input
                   type="checkbox"
-                  checked={formData.activo}
-                  onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
+                  checked={formData.activa}
+                  onChange={(e) => setFormData({ ...formData, activa: e.target.checked })}
                 />
-                <span>Activo</span>
+                <span>Activa</span>
               </label>
             </div>
 
@@ -173,13 +164,12 @@ export default function EntidadesList() {
                 </div>
                 <div className="entidad-info">
                   <h3 className="entidad-name">{entidad.nombre}</h3>
-                  <p className="entidad-code">{entidad.codigo}</p>
                 </div>
                 <div>
-                  {entidad.activo ? (
-                    <span className="badge badge-enviado">Activo</span>
+                  {entidad.activa ? (
+                    <span className="badge badge-enviado">Activa</span>
                   ) : (
-                    <span className="badge badge-pendiente">Inactivo</span>
+                    <span className="badge badge-pendiente">Inactiva</span>
                   )}
                 </div>
               </div>

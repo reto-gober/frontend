@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { reportesService, entidadesService, usuariosService, type ReporteRequest, type EntidadResponse, type UsuarioResponse } from '../lib/services';
+import { useToast, ToastContainer } from './Toast';
 
 interface Props {
   reporteId?: number;
@@ -9,7 +10,7 @@ export default function ReporteForm({ reporteId }: Props) {
   const [loading, setLoading] = useState(false);
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioResponse[]>([]);
-  const [error, setError] = useState('');
+  const { toasts, removeToast, success, error } = useToast();
   const [formData, setFormData] = useState<ReporteRequest>({
     titulo: '',
     descripcion: '',
@@ -64,18 +65,21 @@ export default function ReporteForm({ reporteId }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
       if (reporteId) {
         await reportesService.actualizar(reporteId, formData);
+        success('Reporte actualizado exitosamente');
       } else {
         await reportesService.crear(formData);
+        success('Reporte creado exitosamente');
       }
-      window.location.href = '/reportes';
-    } catch (error: any) {
-      setError(error.response?.data?.mensaje || 'Error al guardar el reporte');
+      setTimeout(() => {
+        window.location.href = '/reportes';
+      }, 1000);
+    } catch (err: any) {
+      error(err.response?.data?.mensaje || 'Error al guardar el reporte');
       setLoading(false);
     }
   };
@@ -90,16 +94,13 @@ export default function ReporteForm({ reporteId }: Props) {
 
   return (
     <div className="reporte-form-container">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="form-header">
         <h2 className="form-title">{reporteId ? 'Editar Reporte' : 'Nuevo Reporte'}</h2>
         <a href="/reportes" className="btn btn-secondary">
           Volver
         </a>
       </div>
-
-      {error && (
-        <div className="alert alert-error">{error}</div>
-      )}
 
       <form onSubmit={handleSubmit} className="card">
         <div className="form-grid">

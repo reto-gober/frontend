@@ -43,6 +43,12 @@ const path = Astro.url.pathname || '/';
           </span>
           <span class="nav-item__label">Entidades</span>
         </a>
+        <a href="/usuarios" class={`nav-item ${path.startsWith('/usuarios') ? 'is-active' : ''}`} title="Usuarios" data-tip="Usuarios" id="nav-usuarios" style="display: none;">
+          <span class="nav-item__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="nav-item__label">Usuarios</span>
+        </a>
       </nav>
 
       <div id="sidebar-user" class="sidebar__user"></div>
@@ -93,77 +99,86 @@ const path = Astro.url.pathname || '/';
   }
 
   if (typeof window !== 'undefined') {
+    // Verificar autenticación
     const isAuth = authService.isAuthenticated();
     if (!isAuth) {
       window.location.href = '/login';
-    } else {
-      const user = authService.getUser();
-      const userSlot = document.getElementById('sidebar-user');
-      const userInline = document.getElementById('user-inline');
-      const name = user ? `${user.nombre} ${user.apellido}` : '';
-
-      const userMarkupSidebar = `
-        <div class="userbox" id="userbox">
-          <button class="userbox__avatar-btn" id="user-avatar-btn" aria-label="Abrir menú de usuario">
-            <span class="userbox__avatar" aria-hidden="true">${name ? name.charAt(0).toUpperCase() : 'U'}</span>
-          </button>
-          <div class="userbox__menu" id="user-menu-pop" role="menu">
-            <div class="userbox__name">${name}</div>
-            <button class="btn btn-sm btn-secondary" data-logout="1" role="menuitem">Cerrar sesión</button>
-          </div>
-        </div>
-      `;
-      const userMarkupInline = `
-        <div style="display:flex; align-items:center; gap:.5rem;">
-          <span style="font-size:.9rem; color:var(--color-primary-900);">${name}</span>
-          <button class="btn btn-sm btn-secondary" data-logout="1">Cerrar sesión</button>
-        </div>
-      `;
-      if (userSlot) userSlot.innerHTML = userMarkupSidebar;
-      if (userInline) userInline.innerHTML = userMarkupInline;
-
-      document.querySelectorAll('[data-logout]')?.forEach((el) => {
-        el.addEventListener('click', () => authService.logout());
-      });
-
-      // Restaurar estado de sidebar
-      try { setCollapsed(localStorage.getItem(STORAGE_KEY) === '1'); } catch {}
-
-      // Toggle handlers
-      const toggleSidebar = () => {
-        const collapsed = document.querySelector('.app-shell')?.classList.contains('is-collapsed');
-        setCollapsed(!collapsed);
-      };
-      document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
-      // Toggle menú de usuario
-      document.getElementById('user-avatar-btn')?.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const box = document.getElementById('userbox');
-        box?.classList.toggle('is-open');
-      });
-      document.getElementById('sidebar-toggle-sm')?.addEventListener('click', () => {
-        document.querySelector('.app-shell')?.classList.toggle('is-open-mobile');
-      });
-      // Cerrar al hacer clic fuera en mobile
-      document.addEventListener('click', (e: MouseEvent) => {
-        const shell = document.querySelector('.app-shell');
-        if (!shell?.classList.contains('is-open-mobile')) return;
-        const sidebar = document.querySelector('.sidebar');
-        const target = e.target as HTMLElement | null;
-        if (sidebar && target && !sidebar.contains(target) && !(target.closest && target.closest('#sidebar-toggle-sm'))) {
-          shell.classList.remove('is-open-mobile');
-        }
-      });
-
-      // Cerrar menú de usuario al hacer clic fuera
-      document.addEventListener('click', (e: MouseEvent) => {
-        const target = e.target as HTMLElement | null;
-        const box = document.getElementById('userbox');
-        if (box && !box.contains(target as Node)) {
-          box.classList.remove('is-open');
-        }
-      });
+      throw new Error('Not authenticated'); // Detener ejecución
     }
+
+    const user = authService.getUser();
+    
+    // Mostrar enlace de usuarios solo a administradores
+    if (user && user.roles && (user.roles.includes('ROLE_ADMIN') || user.roles.includes('ROLE_ADMINISTRADOR'))) {
+      const navUsuarios = document.getElementById('nav-usuarios');
+      if (navUsuarios) navUsuarios.style.display = 'flex';
+    }
+    
+    const userSlot = document.getElementById('sidebar-user');
+    const userInline = document.getElementById('user-inline');
+    const name = user ? `${user.nombre} ${user.apellido}` : '';
+
+    const userMarkupSidebar = `
+      <div class="userbox" id="userbox">
+        <button class="userbox__avatar-btn" id="user-avatar-btn" aria-label="Abrir menú de usuario">
+          <span class="userbox__avatar" aria-hidden="true">${name ? name.charAt(0).toUpperCase() : 'U'}</span>
+        </button>
+        <div class="userbox__menu" id="user-menu-pop" role="menu">
+          <div class="userbox__name">${name}</div>
+          <button class="btn btn-sm btn-secondary" data-logout="1" role="menuitem">Cerrar sesión</button>
+        </div>
+      </div>
+    `;
+    const userMarkupInline = `
+      <div style="display:flex; align-items:center; gap:.5rem;">
+        <span style="font-size:.9rem; color:var(--color-primary-900);">${name}</span>
+        <button class="btn btn-sm btn-secondary" data-logout="1">Cerrar sesión</button>
+      </div>
+    `;
+    if (userSlot) userSlot.innerHTML = userMarkupSidebar;
+    if (userInline) userInline.innerHTML = userMarkupInline;
+
+    document.querySelectorAll('[data-logout]')?.forEach((el) => {
+      el.addEventListener('click', () => authService.logout());
+    });
+
+    // Restaurar estado de sidebar
+    try { setCollapsed(localStorage.getItem(STORAGE_KEY) === '1'); } catch {}
+
+    // Toggle handlers
+    const toggleSidebar = () => {
+      const collapsed = document.querySelector('.app-shell')?.classList.contains('is-collapsed');
+      setCollapsed(!collapsed);
+    };
+    document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
+    // Toggle menú de usuario
+    document.getElementById('user-avatar-btn')?.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const box = document.getElementById('userbox');
+      box?.classList.toggle('is-open');
+    });
+    document.getElementById('sidebar-toggle-sm')?.addEventListener('click', () => {
+      document.querySelector('.app-shell')?.classList.toggle('is-open-mobile');
+    });
+    // Cerrar al hacer clic fuera en mobile
+    document.addEventListener('click', (e: MouseEvent) => {
+      const shell = document.querySelector('.app-shell');
+      if (!shell?.classList.contains('is-open-mobile')) return;
+      const sidebar = document.querySelector('.sidebar');
+      const target = e.target as HTMLElement | null;
+      if (sidebar && target && !sidebar.contains(target) && !(target.closest && target.closest('#sidebar-toggle-sm'))) {
+        shell.classList.remove('is-open-mobile');
+      }
+    });
+
+    // Cerrar menú de usuario al hacer clic fuera
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const box = document.getElementById('userbox');
+      if (box && !box.contains(target as Node)) {
+        box.classList.remove('is-open');
+      }
+    });
   }
 </script>
 

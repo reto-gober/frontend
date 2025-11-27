@@ -8,19 +8,24 @@ export interface LoginRequest {
 export interface JwtResponse {
   token: string;
   tipo: string;
-  id: number;
+  documentNumber: string;
   email: string;
-  nombre: string;
-  apellido: string;
+  firstName: string;
+  lastName: string;
   roles: string[];
 }
 
 export interface RegistroRequest {
+  documentNumber: string;
+  documentType: string;
   email: string;
-  nombre: string;
-  apellido: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
   password: string;
-  roles?: string[];
+  birthDate: string;
+  roles: string[];
 }
 
 export interface MessageResponse {
@@ -42,12 +47,14 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify({
-        id: data.id,
+        documentNumber: data.documentNumber,
         email: data.email,
-        nombre: data.nombre,
-        apellido: data.apellido,
+        nombre: data.firstName,
+        apellido: data.lastName,
         roles: data.roles,
       }));
+      // Guardar token en cookie para validación del lado del servidor
+      document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
     }
   },
 
@@ -55,6 +62,8 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
+      // Eliminar cookie
+      document.cookie = 'token=; path=/; max-age=0';
       window.location.href = '/login';
     }
   },
