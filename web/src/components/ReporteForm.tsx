@@ -18,7 +18,7 @@ export default function ReporteForm({ reporteId }: Props) {
     frecuencia: 'MENSUAL',
     formato: 'PDF',
     resolucion: '',
-    responsableId: 0,
+    responsableId: '',
     fechaVencimiento: '',
     estado: 'PENDIENTE',
   });
@@ -88,7 +88,7 @@ export default function ReporteForm({ reporteId }: Props) {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'entidadId' || name === 'responsableId' ? parseInt(value) : value,
+      [name]: name === 'entidadId' ? parseInt(value) : value,
     }));
   };
 
@@ -148,8 +148,8 @@ export default function ReporteForm({ reporteId }: Props) {
             >
               <option value="">Seleccionar responsable...</option>
               {usuarios.map(usuario => (
-                <option key={usuario.id} value={usuario.id}>
-                  {usuario.nombre} {usuario.apellido}
+                <option key={usuario.documentNumber} value={usuario.documentNumber}>
+                  {usuario.firstName} {usuario.lastName}
                 </option>
               ))}
             </select>

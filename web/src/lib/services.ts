@@ -35,7 +35,7 @@ export interface ReporteRequest {
   frecuencia: 'MENSUAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   formato: 'PDF' | 'EXCEL' | 'WORD' | 'OTRO';
   resolucion?: string;
-  responsableId: number;
+  responsableId: string | number;
   fechaVencimiento: string;
   estado?: 'PENDIENTE' | 'EN_PROGRESO' | 'ENVIADO';
 }
@@ -219,8 +219,9 @@ export const evidenciasService = {
 };
 
 export const dashboardService = {
-  async estadisticas(): Promise<DashboardResponse> {
-    const response = await api.get('/api/dashboard/estadisticas');
+  async estadisticas(rango?: string): Promise<DashboardResponse> {
+    const params = rango ? { rango } : undefined;
+    const response = await api.get('/api/dashboard/estadisticas', params ? { params } : undefined);
     return response.data;
   },
 
