@@ -12,10 +12,72 @@
   --color-primary-900: #2c4f7c;
   --color-primary-950: #1f314c;
 
-  --color-bg: #ffffff;
+  /* Colores Neutrales */
+  --neutral-50: #f8fafc;
+  --neutral-100: #f1f5f9;
+  --neutral-200: #e2e8f0;
+  --neutral-300: #cbd5e1;
+  --neutral-400: #94a3b8;
+  --neutral-500: #64748b;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1e293b;
+  --neutral-900: #0f172a;
+
+  /* Colores de Estado - Warning Yellow */
+  --warning-yellow-50: #fefce8;
+  --warning-yellow-100: #fef3c7;
+  --warning-yellow-200: #fde68a;
+  --warning-yellow-300: #fcd34d;
+  --warning-yellow-500: #f59e0b;
+  --warning-yellow-700: #b45309;
+  --warning-yellow-800: #92400e;
+
+  /* Colores de Estado - Success Green */
+  --success-green-50: #ecfdf5;
+  --success-green-100: #d1fae5;
+  --success-green-200: #a7f3d0;
+  --success-green-300: #6ee7b7;
+  --success-green-500: #10b981;
+  --success-green-600: #059669;
+  --success-green-700: #047857;
+  --success-green-800: #065f46;
+
+  /* Colores de Estado - Error Red */
+  --error-red-50: #fff1f2;
+  --error-red-100: #fee2e2;
+  --error-red-200: #fecaca;
+  --error-red-300: #fca5a5;
+  --error-red-500: #ef4444;
+  --error-red-700: #b91c1c;
+
+  /* Colores de Estado - Accent Orange */
+  --accent-orange-50: #fff7ed;
+  --accent-orange-100: #ffedd5;
+  --accent-orange-200: #fed7aa;
+  --accent-orange-300: #fdba74;
+  --accent-orange-500: #f97316;
+  --accent-orange-600: #ea580c;
+  --accent-orange-700: #c2410c;
+
+  /* Colores Secundarios - Purple */
+  --secondary-purple-50: #eef2ff;
+  --secondary-purple-100: #e0e7ff;
+  --secondary-purple-200: #c7d2fe;
+  --secondary-purple-300: #a5b4fc;
+  --secondary-purple-500: #8b5cf6;
+  --secondary-purple-600: #7c3aed;
+  --secondary-purple-700: #6d28d9;
+
+  /* Sombra estándar */
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-hover: 0 8px 24px rgba(0,0,0,0.08);
+
+  --color-bg: #f8fafc;
   --color-text: #1f314c;
-  --color-text-light: #2c4f7c;
-  --color-border: #c7e4f6;
+  --color-text-light: #475569;
+  --color-border: #e2e8f0;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
@@ -29,10 +91,13 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--color-text);
-  background-color: var(--color-primary-50);
+  background-color: var(--neutral-50);
   line-height: 1.6;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -62,10 +127,15 @@ input, select, textarea {
 
 .card {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(31, 49, 76, 0.1);
-  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--neutral-200);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-hover);
 }
 
 .btn {
@@ -73,38 +143,87 @@ input, select, textarea {
   border: none;
   border-radius: 6px;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  letter-spacing: 0.2px;
 }
 
 .btn-primary {
-  background-color: var(--color-primary-600);
+  background-color: #2563eb;
   color: white;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-700);
+  background-color: #1d4ed8;
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+/* Botón Morado - Módulo Reportes */
+.btn-purple {
+  background-color: var(--secondary-purple-500);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-purple:hover {
+  background-color: var(--secondary-purple-600);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+/* Botón Verde - Módulo Calendario */
+.btn-green {
+  background-color: var(--success-green-600);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-green:hover {
+  background-color: var(--success-green-700);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+/* Botón Naranja - Módulo Entidades */
+.btn-orange {
+  background-color: var(--accent-orange-500);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-orange:hover {
+  background-color: var(--accent-orange-600);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background-color: var(--color-primary-100);
-  color: var(--color-primary-900);
+  background-color: var(--neutral-100);
+  color: var(--neutral-700);
+  border: 1px solid var(--neutral-300);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-primary-200);
+  background-color: var(--neutral-200);
+  color: var(--neutral-800);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
-  background-color: var(--color-error);
-  color: white;
+  background-color: var(--error-red-100);
+  color: var(--error-red-700);
+  border: 1px solid var(--error-red-200);
 }
 
 .btn-danger:hover {
-  background-color: #dc2626;
+  background-color: var(--error-red-500);
+  color: white;
+  border-color: var(--error-red-500);
 }
 
 .btn-sm {
@@ -126,17 +245,19 @@ input, select, textarea {
 
 .form-input, .form-select, .form-textarea {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
+  padding: 0.75rem;
+  border: 1px solid var(--neutral-300);
+  border-radius: 8px;
   font-size: 0.875rem;
   transition: border-color 0.2s;
+  background: var(--neutral-50);
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
-  border-color: var(--color-primary-600);
-  box-shadow: 0 0 0 3px rgba(61, 133, 209, 0.1);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  background: white;
 }
 
 .form-textarea {
@@ -149,22 +270,38 @@ input, select, textarea {
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 .badge-pendiente {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: #fef7c3;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .badge-en-progreso {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .badge-enviado {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-vencido {
+  background-color: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fda4af;
+}
+
+.badge-cumplimiento {
+  background-color: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
 }
 
 .alert {
@@ -359,4 +496,691 @@ input, select, textarea {
     right: 1rem;
     max-width: none;
   }
+}
+
+/* Dashboard Components */
+.dashboard-header {
+  margin-bottom: 1.25rem;
+}
+
+.dashboard-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary-700);
+  text-align: center;
+  letter-spacing: 0.015em;
+}
+
+/* Filter Chips estilo Material Design */
+.filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--neutral-200);
+  background: var(--neutral-100);
+  color: var(--neutral-600);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.2px;
+}
+
+.chip:hover {
+  background: var(--neutral-200);
+  border-color: var(--neutral-300);
+}
+
+.chip-active {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+  color: white;
+}
+
+.chip-active:hover {
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Stat Cards - Diseño compacto 150px alto */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.stat-card-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 0.75rem;
+}
+
+.stat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-card-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.85;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+}
+
+.stat-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .stat-card {
+    min-height: 120px;
+    padding: 0.875rem;
+  }
+
+  .stat-card-value {
+    font-size: 1.5rem;
+  }
+
+  .filter-chips {
+    gap: 0.5rem;
+  }
+
+  .chip {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ==========================================
+   REPORTES - Acento Púrpura
+   ========================================== */
+.reportes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reportes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.reportes-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--neutral-800);
+  letter-spacing: 0.2px;
+  margin-bottom: 0.25rem;
+}
+
+.reportes-subtitle {
+  font-size: 0.875rem;
+  color: var(--neutral-500);
+  font-weight: 400;
+}
+
+.reportes-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.reportes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* Reporte Card con acento púrpura */
+.reporte-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--neutral-200);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.reporte-card:hover {
+  border-color: var(--secondary-purple-300);
+  box-shadow: var(--shadow-hover);
+}
+
+.reporte-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.reporte-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+}
+
+.reporte-card-description {
+  font-size: 0.8125rem;
+  color: var(--neutral-500);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reporte-card-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.reporte-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--neutral-600);
+}
+
+.reporte-detail svg {
+  color: var(--secondary-purple-500);
+  flex-shrink: 0;
+}
+
+.reporte-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--neutral-100);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+}
+
+/* ==========================================
+   FORMULARIO SECCIONES COLOREADAS
+   ========================================== */
+.reporte-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.form-header-icon {
+  color: var(--secondary-purple-600);
+}
+
+.form-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--neutral-800);
+  letter-spacing: 0.2px;
+}
+
+/* Secciones con fondos de color */
+.form-section {
+  padding: 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.form-section-datos {
+  background: #EEF2FF; /* Púrpura suave */
+  border: 1px solid var(--secondary-purple-200);
+}
+
+.form-section-fechas {
+  background: #ECFDF5; /* Verde suave */
+  border: 1px solid var(--success-green-200);
+}
+
+.form-section-detalles {
+  background: #FFF7ED; /* Naranja suave */
+  border: 1px solid var(--accent-orange-200);
+}
+
+.form-section-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--neutral-700);
+  margin-bottom: 1rem;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.form-grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.form-group-full {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--neutral-200);
+}
+
+.btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.required-asterisk {
+  color: var(--error-red-500);
+}
+
+/* ==========================================
+   CALENDARIO - Acento Verde
+   ========================================== */
+.calendario-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.calendario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.calendario-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--neutral-800);
+  letter-spacing: 0.2px;
+}
+
+.calendario-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.calendario-nav-btn {
+  padding: 0.5rem;
+  border: 1px solid var(--neutral-200);
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--neutral-600);
+}
+
+.calendario-nav-btn:hover {
+  background: var(--success-green-50);
+  border-color: var(--success-green-300);
+  color: var(--success-green-700);
+}
+
+.calendario-month {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  min-width: 180px;
+  text-align: center;
+}
+
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--neutral-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.calendario-day-header {
+  background: var(--success-green-50);
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success-green-700);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendario-day {
+  background: white;
+  padding: 0.5rem;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calendario-day-number {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--neutral-600);
+}
+
+.calendario-day.today .calendario-day-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--success-green-600);
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+}
+
+.calendario-day.other-month {
+  background: var(--neutral-50);
+}
+
+.calendario-day.other-month .calendario-day-number {
+  color: var(--neutral-400);
+}
+
+.calendario-event {
+  font-size: 0.6875rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.calendario-event:hover {
+  filter: brightness(0.95);
+}
+
+.calendario-event-pendiente {
+  background: #FEF7C3;
+  color: #854D0E;
+  border: 1px solid #FDE047;
+}
+
+.calendario-event-progreso {
+  background: #E0F2FE;
+  color: #0369A1;
+  border: 1px solid #7DD3FC;
+}
+
+.calendario-event-enviado {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+}
+
+.calendario-event-vencido {
+  background: #FFE4E6;
+  color: #BE123C;
+  border: 1px solid #FDA4AF;
+}
+
+/* ==========================================
+   ENTIDADES - Acento Naranja
+   ========================================== */
+.entidades-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.entidades-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.entidades-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--neutral-800);
+  letter-spacing: 0.2px;
+  margin-bottom: 0.25rem;
+}
+
+.entidades-subtitle {
+  font-size: 0.875rem;
+  color: var(--neutral-500);
+  font-weight: 400;
+}
+
+.entidades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.entidad-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--neutral-200);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+}
+
+.entidad-card:hover {
+  border-color: var(--accent-orange-300);
+  box-shadow: var(--shadow-hover);
+}
+
+.entidad-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.entidad-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  letter-spacing: 0.2px;
+}
+
+.entidad-card-sigla {
+  background: var(--accent-orange-100);
+  color: var(--accent-orange-700);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.entidad-card-description {
+  font-size: 0.8125rem;
+  color: var(--neutral-500);
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+}
+
+.entidad-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--neutral-600);
+}
+
+.entidad-card-meta svg {
+  color: var(--accent-orange-500);
+}
+
+.entidad-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--neutral-100);
+}
+
+/* ==========================================
+   USUARIOS - Acento Azul (identidad)
+   ========================================== */
+.usuarios-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.usuarios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.usuarios-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--neutral-800);
+  letter-spacing: 0.2px;
+  margin-bottom: 0.25rem;
+}
+
+.usuarios-subtitle {
+  font-size: 0.875rem;
+  color: var(--neutral-500);
+  font-weight: 400;
+}
+
+.usuarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.usuario-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--neutral-200);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.usuario-card:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: var(--shadow-hover);
+}
+
+.usuario-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--color-primary-600);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.usuario-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+}
+
+.usuario-email {
+  font-size: 0.8125rem;
+  color: var(--neutral-500);
+}
+
+.usuario-role {
+  display: inline-flex;
+  padding: 4px 10px;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
