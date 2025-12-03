@@ -1,0 +1,1305 @@
+---
+import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
+---
+
+<ResponsableLayout title="Crear Reporte">
+  <div class="crear-reporte-page">
+    <!-- Header con breadcrumb -->
+    <div class="page-header">
+      <nav class="breadcrumb">
+        <a href="/roles/responsable/mis-reportes">Mis Reportes</a>
+        <span class="separator">/</span>
+        <span class="current">Nuevo Reporte</span>
+      </nav>
+      <h1 class="page-title">Crear Nuevo Reporte</h1>
+    </div>
+
+    <!-- Wizard Steps -->
+    <div class="wizard-steps">
+      <div class="step active">
+        <div class="step-number">1</div>
+        <div class="step-info">
+          <span class="step-title">Información General</span>
+          <span class="step-description">Datos básicos</span>
+        </div>
+      </div>
+      <div class="step-connector active"></div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-info">
+          <span class="step-title">Datos del Reporte</span>
+          <span class="step-description">Completar formulario</span>
+        </div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-info">
+          <span class="step-title">Evidencias</span>
+          <span class="step-description">Adjuntar archivos</span>
+        </div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-info">
+          <span class="step-title">Revisión</span>
+          <span class="step-description">Confirmar y enviar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="form-container">
+      <!-- Step 1: Información General -->
+      <div class="form-step active" data-step="1">
+        <div class="form-card">
+          <div class="card-header">
+            <h2 class="card-title">Información General</h2>
+            <p class="card-description">Seleccione la entidad y tipo de reporte a generar</p>
+          </div>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Entidad Reguladora <span class="required">*</span></label>
+              <select class="form-select" id="entidad">
+                <option value="">Seleccione una entidad</option>
+                <option value="sui">SUI - Sistema Único de Información</option>
+                <option value="creg">CREG - Comisión de Regulación</option>
+                <option value="anh">ANH - Agencia Nacional de Hidrocarburos</option>
+                <option value="sspd">SSPD - Superintendencia de Servicios</option>
+                <option value="mme">MME - Ministerio de Minas y Energía</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tipo de Reporte <span class="required">*</span></label>
+              <select class="form-select" id="tipo-reporte">
+                <option value="">Seleccione un tipo</option>
+                <option value="comercial">Informe Comercial</option>
+                <option value="tecnico">Informe Técnico</option>
+                <option value="calidad">Informe de Calidad</option>
+                <option value="financiero">Informe Financiero</option>
+                <option value="produccion">Informe de Producción</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Nombre del Reporte <span class="required">*</span></label>
+              <input type="text" class="form-input" placeholder="Ej: Informe Comercial de Gas Natural - Febrero 2025" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Período de Reporte <span class="required">*</span></label>
+              <select class="form-select">
+                <option value="">Seleccione el período</option>
+                <option value="enero-2025">Enero 2025</option>
+                <option value="febrero-2025" selected>Febrero 2025</option>
+                <option value="marzo-2025">Marzo 2025</option>
+                <option value="q1-2025">Q1 2025 (Ene-Mar)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input type="date" class="form-input" value="2025-02-15" />
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-textarea" rows="3" placeholder="Agregue una descripción breve del reporte..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plantilla sugerida -->
+        <div class="suggested-template">
+          <div class="template-header">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
+            </svg>
+            <div class="template-info">
+              <h3>Plantilla Sugerida</h3>
+              <p>Basado en sus selecciones, le recomendamos esta plantilla:</p>
+            </div>
+          </div>
+          <div class="template-card">
+            <div class="template-icon">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <div class="template-details">
+              <h4>Informe Comercial SUI</h4>
+              <p>12 campos · Última actualización: Ene 2025</p>
+              <div class="template-tags">
+                <span class="tag">Comercial</span>
+                <span class="tag">SUI</span>
+                <span class="tag">Gas Natural</span>
+              </div>
+            </div>
+            <button class="btn-use-template">Usar Plantilla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Datos del Reporte (Preview) -->
+      <div class="form-step" data-step="2">
+        <div class="form-card">
+          <div class="card-header">
+            <h2 class="card-title">Datos del Reporte</h2>
+            <p class="card-description">Complete los campos requeridos según la plantilla seleccionada</p>
+          </div>
+
+          <div class="data-sections">
+            <!-- Sección 1: Datos de Identificación -->
+            <div class="data-section">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Datos de Identificación
+                </h3>
+                <span class="section-progress">2 de 4 completados</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">NIT de la Empresa</label>
+                  <input type="text" class="form-input filled" value="900.123.456-7" readonly />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Código de Agente</label>
+                  <input type="text" class="form-input filled" value="LLNG001" readonly />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Razón Social</label>
+                  <input type="text" class="form-input" placeholder="Ingrese razón social" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Representante Legal</label>
+                  <input type="text" class="form-input" placeholder="Nombre completo" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Sección 2: Datos Comerciales -->
+            <div class="data-section">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                  Datos Comerciales
+                </h3>
+                <span class="section-progress">0 de 6 completados</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Usuarios Residenciales</label>
+                  <input type="number" class="form-input" placeholder="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Usuarios Comerciales</label>
+                  <input type="number" class="form-input" placeholder="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Usuarios Industriales</label>
+                  <input type="number" class="form-input" placeholder="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Consumo Total (m³)</label>
+                  <input type="number" class="form-input" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Facturación Total ($)</label>
+                  <input type="number" class="form-input" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Índice de Recaudo (%)</label>
+                  <input type="number" class="form-input" placeholder="0.00" step="0.01" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Sección 3: Indicadores -->
+            <div class="data-section">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                  Indicadores de Gestión
+                </h3>
+                <span class="section-progress">0 de 4 completados</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">PQR Recibidas</label>
+                  <input type="number" class="form-input" placeholder="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">PQR Resueltas</label>
+                  <input type="number" class="form-input" placeholder="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tiempo Promedio Resolución (días)</label>
+                  <input type="number" class="form-input" placeholder="0.0" step="0.1" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Índice Satisfacción (%)</label>
+                  <input type="number" class="form-input" placeholder="0.00" step="0.01" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Evidencias -->
+      <div class="form-step" data-step="3">
+        <div class="form-card">
+          <div class="card-header">
+            <h2 class="card-title">Evidencias y Adjuntos</h2>
+            <p class="card-description">Adjunte los documentos de soporte requeridos</p>
+          </div>
+
+          <div class="upload-area">
+            <div class="upload-dropzone">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17,8 12,3 7,8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <h3>Arrastra archivos aquí</h3>
+              <p>o haz clic para seleccionar</p>
+              <button class="btn-browse">Seleccionar Archivos</button>
+              <span class="upload-hint">PDF, Excel, Word, Imágenes (máx. 10MB cada uno)</span>
+            </div>
+          </div>
+
+          <!-- Required documents -->
+          <div class="required-docs">
+            <h3 class="docs-title">Documentos Requeridos</h3>
+            <div class="docs-list">
+              <div class="doc-item pending">
+                <div class="doc-status">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                  </svg>
+                </div>
+                <div class="doc-info">
+                  <span class="doc-name">Certificado de Facturación</span>
+                  <span class="doc-type">PDF o Excel</span>
+                </div>
+                <button class="btn-attach">Adjuntar</button>
+              </div>
+              <div class="doc-item pending">
+                <div class="doc-status">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                  </svg>
+                </div>
+                <div class="doc-info">
+                  <span class="doc-name">Reporte de Consumo</span>
+                  <span class="doc-type">Excel</span>
+                </div>
+                <button class="btn-attach">Adjuntar</button>
+              </div>
+              <div class="doc-item attached">
+                <div class="doc-status">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                </div>
+                <div class="doc-info">
+                  <span class="doc-name">Base de Datos de Usuarios</span>
+                  <span class="doc-type">usuarios_feb2025.xlsx · 2.4 MB</span>
+                </div>
+                <button class="btn-remove">Quitar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Uploaded files preview -->
+          <div class="uploaded-files">
+            <h3 class="files-title">Archivos Cargados (1)</h3>
+            <div class="files-grid">
+              <div class="file-card">
+                <div class="file-icon excel">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div class="file-info">
+                  <span class="file-name">usuarios_feb2025.xlsx</span>
+                  <span class="file-size">2.4 MB</span>
+                </div>
+                <button class="file-remove">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Revisión -->
+      <div class="form-step" data-step="4">
+        <div class="form-card">
+          <div class="card-header">
+            <h2 class="card-title">Revisión Final</h2>
+            <p class="card-description">Verifique la información antes de enviar</p>
+          </div>
+
+          <div class="review-content">
+            <!-- Resumen General -->
+            <div class="review-section">
+              <h3 class="review-title">Información General</h3>
+              <div class="review-grid">
+                <div class="review-item">
+                  <span class="review-label">Entidad</span>
+                  <span class="review-value">SUI - Sistema Único de Información</span>
+                </div>
+                <div class="review-item">
+                  <span class="review-label">Tipo</span>
+                  <span class="review-value">Informe Comercial</span>
+                </div>
+                <div class="review-item">
+                  <span class="review-label">Período</span>
+                  <span class="review-value">Febrero 2025</span>
+                </div>
+                <div class="review-item">
+                  <span class="review-label">Vencimiento</span>
+                  <span class="review-value">15 Feb 2025</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progreso de datos -->
+            <div class="review-section">
+              <h3 class="review-title">Progreso de Datos</h3>
+              <div class="progress-summary">
+                <div class="progress-item complete">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  <span>Datos de Identificación</span>
+                  <span class="count">4/4</span>
+                </div>
+                <div class="progress-item incomplete">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span>Datos Comerciales</span>
+                  <span class="count">4/6</span>
+                </div>
+                <div class="progress-item complete">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  <span>Indicadores de Gestión</span>
+                  <span class="count">4/4</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Evidencias -->
+            <div class="review-section">
+              <h3 class="review-title">Evidencias Adjuntas</h3>
+              <div class="evidence-summary">
+                <div class="evidence-item">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span>usuarios_feb2025.xlsx</span>
+                </div>
+                <div class="evidence-warning">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span>2 documentos requeridos pendientes</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Opciones de envío -->
+            <div class="review-section">
+              <h3 class="review-title">Opciones de Envío</h3>
+              <div class="send-options">
+                <label class="option-card">
+                  <input type="radio" name="send-option" value="draft" />
+                  <div class="option-content">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17 21 17 13 7 13 7 21"/>
+                      <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <h4>Guardar Borrador</h4>
+                    <p>Guardar para continuar después</p>
+                  </div>
+                </label>
+                <label class="option-card">
+                  <input type="radio" name="send-option" value="review" checked />
+                  <div class="option-content">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <h4>Enviar a Revisión</h4>
+                    <p>El supervisor revisará el reporte</p>
+                  </div>
+                </label>
+                <label class="option-card disabled">
+                  <input type="radio" name="send-option" value="direct" disabled />
+                  <div class="option-content">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="22" y1="2" x2="11" y2="13"/>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                    <h4>Enviar Directo</h4>
+                    <p>No disponible (datos incompletos)</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div class="form-navigation">
+        <button class="btn-secondary" id="btn-prev" disabled>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Anterior
+        </button>
+        <div class="step-indicator">Paso 1 de 4</div>
+        <button class="btn-primary" id="btn-next">
+          Siguiente
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</ResponsableLayout>
+
+<style>
+  .crear-reporte-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .breadcrumb a {
+    color: var(--neutral-500);
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--role-accent-dark);
+  }
+
+  .breadcrumb .separator {
+    color: var(--neutral-300);
+  }
+
+  .breadcrumb .current {
+    color: var(--neutral-700);
+    font-weight: 500;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0;
+  }
+
+  /* Wizard Steps */
+  .wizard-steps {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--neutral-200);
+    color: var(--neutral-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .step.active .step-number {
+    background: var(--role-accent);
+    color: var(--neutral-900);
+  }
+
+  .step.completed .step-number {
+    background: var(--success-green-500);
+    color: white;
+  }
+
+  .step-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .step-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+  }
+
+  .step-description {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--neutral-200);
+    max-width: 80px;
+    margin: 0 0.5rem;
+  }
+
+  .step-connector.active {
+    background: var(--role-accent);
+  }
+
+  /* Form Container */
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-step {
+    display: none;
+  }
+
+  .form-step.active {
+    display: block;
+  }
+
+  .form-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    padding: 1.5rem;
+  }
+
+  .card-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin: 0 0 0.25rem;
+  }
+
+  .card-description {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    margin: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .form-group.full-width {
+    grid-column: span 2;
+  }
+
+  .form-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .form-label .required {
+    color: var(--error-red-500);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 3px rgba(244, 196, 83, 0.2);
+  }
+
+  .form-input.filled {
+    background: var(--neutral-50);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* Suggested Template */
+  .suggested-template {
+    background: var(--role-accent-light);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .template-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .template-header svg {
+    color: var(--role-accent-dark);
+  }
+
+  .template-header h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 0.125rem;
+  }
+
+  .template-header p {
+    font-size: 0.8125rem;
+    color: var(--neutral-600);
+    margin: 0;
+  }
+
+  .template-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .template-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--role-accent-light);
+    border-radius: 8px;
+  }
+
+  .template-icon svg {
+    color: var(--role-accent-dark);
+  }
+
+  .template-details {
+    flex: 1;
+  }
+
+  .template-details h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 0.125rem;
+  }
+
+  .template-details p {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin: 0 0 0.5rem;
+  }
+
+  .template-tags {
+    display: flex;
+    gap: 0.375rem;
+  }
+
+  .template-tags .tag {
+    padding: 0.125rem 0.5rem;
+    background: var(--neutral-100);
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    color: var(--neutral-600);
+  }
+
+  .btn-use-template {
+    padding: 0.5rem 1rem;
+    background: var(--role-accent);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-use-template:hover {
+    background: var(--role-accent-dark);
+  }
+
+  /* Data Sections */
+  .data-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .data-section {
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .section-progress {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    padding: 0.25rem 0.75rem;
+    background: var(--neutral-100);
+    border-radius: 20px;
+  }
+
+  /* Upload Area */
+  .upload-area {
+    margin-bottom: 1.5rem;
+  }
+
+  .upload-dropzone {
+    border: 2px dashed var(--neutral-300);
+    border-radius: 12px;
+    padding: 2.5rem;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .upload-dropzone:hover {
+    border-color: var(--role-accent);
+    background: var(--role-accent-light);
+  }
+
+  .upload-dropzone svg {
+    color: var(--neutral-400);
+    margin-bottom: 1rem;
+  }
+
+  .upload-dropzone h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    margin: 0 0 0.25rem;
+  }
+
+  .upload-dropzone p {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    margin: 0 0 1rem;
+  }
+
+  .btn-browse {
+    padding: 0.5rem 1.5rem;
+    background: var(--role-accent);
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+  }
+
+  .upload-hint {
+    font-size: 0.75rem;
+    color: var(--neutral-400);
+    display: block;
+  }
+
+  /* Required Docs */
+  .required-docs {
+    margin-bottom: 1.5rem;
+  }
+
+  .docs-title,
+  .files-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 0.75rem;
+  }
+
+  .docs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .doc-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+  }
+
+  .doc-item.attached {
+    border-color: var(--success-green-300);
+    background: var(--success-green-50);
+  }
+
+  .doc-status svg {
+    color: var(--neutral-400);
+  }
+
+  .doc-item.attached .doc-status svg {
+    color: var(--success-green-500);
+  }
+
+  .doc-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .doc-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-800);
+  }
+
+  .doc-type {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .btn-attach,
+  .btn-remove {
+    padding: 0.375rem 0.875rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-attach {
+    background: var(--neutral-100);
+    border: 1px solid var(--neutral-200);
+    color: var(--neutral-700);
+  }
+
+  .btn-remove {
+    background: var(--error-red-100);
+    border: 1px solid var(--error-red-200);
+    color: var(--error-red-700);
+  }
+
+  /* Uploaded Files */
+  .files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .file-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+  }
+
+  .file-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--neutral-100);
+    border-radius: 6px;
+  }
+
+  .file-icon.excel {
+    background: var(--success-green-100);
+    color: var(--success-green-600);
+  }
+
+  .file-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .file-name {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--neutral-800);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-size {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .file-remove {
+    padding: 0.25rem;
+    border: none;
+    background: transparent;
+    color: var(--neutral-400);
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .file-remove:hover {
+    background: var(--error-red-100);
+    color: var(--error-red-600);
+  }
+
+  /* Review Content */
+  .review-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .review-section {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .review-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .review-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 1rem;
+  }
+
+  .review-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .review-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .review-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .review-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-800);
+  }
+
+  /* Progress Summary */
+  .progress-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .progress-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    background: var(--neutral-50);
+    border-radius: 6px;
+  }
+
+  .progress-item.complete svg {
+    color: var(--success-green-500);
+  }
+
+  .progress-item.incomplete svg {
+    color: var(--warning-yellow-500);
+  }
+
+  .progress-item span:first-of-type {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--neutral-700);
+  }
+
+  .progress-item .count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+  }
+
+  /* Evidence Summary */
+  .evidence-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .evidence-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--neutral-700);
+  }
+
+  .evidence-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--warning-yellow-700);
+    padding: 0.5rem 0.75rem;
+    background: var(--warning-yellow-100);
+    border-radius: 6px;
+  }
+
+  /* Send Options */
+  .send-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .option-card {
+    cursor: pointer;
+  }
+
+  .option-card input {
+    display: none;
+  }
+
+  .option-content {
+    padding: 1.25rem;
+    border: 2px solid var(--neutral-200);
+    border-radius: 10px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .option-card input:checked + .option-content {
+    border-color: var(--role-accent);
+    background: var(--role-accent-light);
+  }
+
+  .option-card:hover .option-content {
+    border-color: var(--role-accent);
+  }
+
+  .option-card.disabled .option-content {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .option-card.disabled:hover .option-content {
+    border-color: var(--neutral-200);
+  }
+
+  .option-content svg {
+    color: var(--neutral-400);
+    margin-bottom: 0.75rem;
+  }
+
+  .option-card input:checked + .option-content svg {
+    color: var(--role-accent-dark);
+  }
+
+  .option-content h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: var(--neutral-800);
+  }
+
+  .option-content p {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin: 0;
+  }
+
+  /* Form Navigation */
+  .form-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .btn-secondary,
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary {
+    background: white;
+    border: 1px solid var(--neutral-300);
+    color: var(--neutral-700);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--neutral-100);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--role-accent);
+    border: none;
+    color: var(--neutral-900);
+  }
+
+  .btn-primary:hover {
+    background: var(--role-accent-dark);
+  }
+
+  .step-indicator {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    .wizard-steps {
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .step-connector {
+      display: none;
+    }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .form-group.full-width {
+      grid-column: span 1;
+    }
+    
+    .send-options {
+      grid-template-columns: 1fr;
+    }
+    
+    .review-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,1024 @@
+---
+import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
+---
+
+<AuditorLayout title="Histórico de Cumplimiento">
+  <div class="historico-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-info">
+        <h1 class="page-title">Histórico de Cumplimiento</h1>
+        <p class="page-description">Análisis temporal del desempeño regulatorio de la organización</p>
+      </div>
+      <div class="header-actions">
+        <div class="date-range">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>Sep 2024 - Feb 2025</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <button class="btn-export">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar Histórico
+        </button>
+      </div>
+    </div>
+
+    <!-- Period Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-header">
+          <span class="summary-label">Promedio 6 meses</span>
+          <span class="summary-badge up">+12%</span>
+        </div>
+        <div class="summary-value">87.5%</div>
+        <div class="summary-trend">
+          <span class="trend-text">vs período anterior</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-header">
+          <span class="summary-label">Mejor Mes</span>
+        </div>
+        <div class="summary-value">94%</div>
+        <div class="summary-trend">
+          <span class="trend-text">Enero 2025</span>
+        </div>
+      </div>
+      <div class="summary-card highlight">
+        <div class="summary-header">
+          <span class="summary-label">Mes Actual</span>
+        </div>
+        <div class="summary-value">91%</div>
+        <div class="summary-trend">
+          <span class="trend-text">Febrero 2025</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-header">
+          <span class="summary-label">Reportes Totales</span>
+        </div>
+        <div class="summary-value">892</div>
+        <div class="summary-trend">
+          <span class="trend-text">En los últimos 6 meses</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Chart -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h3 class="chart-title">Evolución del Cumplimiento</h3>
+        <div class="chart-tabs">
+          <button class="chart-tab active">Global</button>
+          <button class="chart-tab">Por Entidad</button>
+          <button class="chart-tab">Por Equipo</button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <!-- SVG Line Chart Mock -->
+        <div class="line-chart">
+          <div class="chart-y-axis">
+            <span>100%</span>
+            <span>80%</span>
+            <span>60%</span>
+            <span>40%</span>
+            <span>20%</span>
+            <span>0%</span>
+          </div>
+          <div class="chart-area">
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="40" x2="600" y2="40" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4,4"/>
+              <line x1="0" y1="80" x2="600" y2="80" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4,4"/>
+              <line x1="0" y1="120" x2="600" y2="120" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4,4"/>
+              <line x1="0" y1="160" x2="600" y2="160" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4,4"/>
+              
+              <!-- Threshold line at 85% -->
+              <line x1="0" y1="30" x2="600" y2="30" stroke="#ef4444" strokeWidth="2" strokeDasharray="8,4"/>
+              
+              <!-- Area fill -->
+              <polygon
+                points="0,200 0,100 100,90 200,70 300,50 400,36 500,24 600,18 600,200"
+                fill="url(#areaGradient)"
+                opacity="0.3"
+              />
+              
+              <!-- Main trend line -->
+              <polyline
+                points="0,100 100,90 200,70 300,50 400,36 500,24 600,18"
+                fill="none"
+                stroke="#A78BFA"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              
+              <!-- Data points -->
+              <circle cx="0" cy="100" r="6" fill="white" stroke="#A78BFA" strokeWidth="2"/>
+              <circle cx="100" cy="90" r="6" fill="white" stroke="#A78BFA" strokeWidth="2"/>
+              <circle cx="200" cy="70" r="6" fill="white" stroke="#A78BFA" strokeWidth="2"/>
+              <circle cx="300" cy="50" r="6" fill="white" stroke="#A78BFA" strokeWidth="2"/>
+              <circle cx="400" cy="36" r="6" fill="white" stroke="#A78BFA" strokeWidth="2"/>
+              <circle cx="500" cy="24" r="6" fill="white" stroke="#A78BFA" strokeWidth="2"/>
+              <circle cx="600" cy="18" r="6" fill="#A78BFA" stroke="#A78BFA" strokeWidth="2"/>
+              
+              <defs>
+                <linearGradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#A78BFA"/>
+                  <stop offset="100%" stopColor="#A78BFA" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            
+            <!-- Data labels -->
+            <div class="data-labels">
+              <div class="data-label" style="left: 0%">
+                <span class="label-value">50%</span>
+              </div>
+              <div class="data-label" style="left: 16.6%">
+                <span class="label-value">55%</span>
+              </div>
+              <div class="data-label" style="left: 33.3%">
+                <span class="label-value">65%</span>
+              </div>
+              <div class="data-label" style="left: 50%">
+                <span class="label-value">75%</span>
+              </div>
+              <div class="data-label" style="left: 66.6%">
+                <span class="label-value">82%</span>
+              </div>
+              <div class="data-label" style="left: 83.3%">
+                <span class="label-value">88%</span>
+              </div>
+              <div class="data-label active" style="left: 100%">
+                <span class="label-value">91%</span>
+              </div>
+            </div>
+          </div>
+          <div class="chart-x-axis">
+            <span>Sep</span>
+            <span>Oct</span>
+            <span>Nov</span>
+            <span>Dic</span>
+            <span>Ene</span>
+            <span>Feb</span>
+          </div>
+        </div>
+        
+        <!-- Chart legend -->
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-line purple"></span>
+            <span class="legend-text">Cumplimiento global</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-line dashed red"></span>
+            <span class="legend-text">Meta mínima (85%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed History Table -->
+    <div class="table-section">
+      <div class="table-header">
+        <h3 class="table-title">Histórico Detallado por Mes</h3>
+        <select class="table-filter">
+          <option value="">Todas las entidades</option>
+          <option>SUI</option>
+          <option>CREG</option>
+          <option>ANH</option>
+          <option>SSPD</option>
+          <option>MinEnergía</option>
+        </select>
+      </div>
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Período</th>
+              <th class="center">Total Reportes</th>
+              <th class="center">A Tiempo</th>
+              <th class="center">Fuera de Tiempo</th>
+              <th>Cumplimiento</th>
+              <th class="center">Variación</th>
+              <th class="center">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="current">
+              <td>
+                <div class="period-info">
+                  <span class="period-name">Febrero 2025</span>
+                  <span class="period-badge">Actual</span>
+                </div>
+              </td>
+              <td class="center">156</td>
+              <td class="center"><span class="count green">142</span></td>
+              <td class="center"><span class="count red">14</span></td>
+              <td>
+                <div class="compliance-cell">
+                  <div class="mini-bar">
+                    <div class="mini-fill" style="width: 91%"></div>
+                  </div>
+                  <span class="compliance-value">91%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="variation up">+3%</span>
+              </td>
+              <td class="center">
+                <span class="status ok">OK</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="period-info">
+                  <span class="period-name">Enero 2025</span>
+                </div>
+              </td>
+              <td class="center">148</td>
+              <td class="center"><span class="count green">130</span></td>
+              <td class="center"><span class="count red">18</span></td>
+              <td>
+                <div class="compliance-cell">
+                  <div class="mini-bar">
+                    <div class="mini-fill" style="width: 88%"></div>
+                  </div>
+                  <span class="compliance-value">88%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="variation up">+6%</span>
+              </td>
+              <td class="center">
+                <span class="status ok">OK</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="period-info">
+                  <span class="period-name">Diciembre 2024</span>
+                </div>
+              </td>
+              <td class="center">152</td>
+              <td class="center"><span class="count green">125</span></td>
+              <td class="center"><span class="count red">27</span></td>
+              <td>
+                <div class="compliance-cell">
+                  <div class="mini-bar">
+                    <div class="mini-fill" style="width: 82%"></div>
+                  </div>
+                  <span class="compliance-value">82%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="variation up">+7%</span>
+              </td>
+              <td class="center">
+                <span class="status warning">Riesgo</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="period-info">
+                  <span class="period-name">Noviembre 2024</span>
+                </div>
+              </td>
+              <td class="center">145</td>
+              <td class="center"><span class="count green">109</span></td>
+              <td class="center"><span class="count red">36</span></td>
+              <td>
+                <div class="compliance-cell">
+                  <div class="mini-bar">
+                    <div class="mini-fill warning" style="width: 75%"></div>
+                  </div>
+                  <span class="compliance-value warning">75%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="variation up">+10%</span>
+              </td>
+              <td class="center">
+                <span class="status critical">Crítico</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="period-info">
+                  <span class="period-name">Octubre 2024</span>
+                </div>
+              </td>
+              <td class="center">138</td>
+              <td class="center"><span class="count green">90</span></td>
+              <td class="center"><span class="count red">48</span></td>
+              <td>
+                <div class="compliance-cell">
+                  <div class="mini-bar">
+                    <div class="mini-fill critical" style="width: 65%"></div>
+                  </div>
+                  <span class="compliance-value critical">65%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="variation up">+10%</span>
+              </td>
+              <td class="center">
+                <span class="status critical">Crítico</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="period-info">
+                  <span class="period-name">Septiembre 2024</span>
+                </div>
+              </td>
+              <td class="center">153</td>
+              <td class="center"><span class="count green">84</span></td>
+              <td class="center"><span class="count red">69</span></td>
+              <td>
+                <div class="compliance-cell">
+                  <div class="mini-bar">
+                    <div class="mini-fill critical" style="width: 55%"></div>
+                  </div>
+                  <span class="compliance-value critical">55%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="variation neutral">—</span>
+              </td>
+              <td class="center">
+                <span class="status critical">Crítico</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Insights Section -->
+    <div class="insights-section">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Insights y Tendencias
+      </h3>
+      <div class="insights-grid">
+        <div class="insight-card positive">
+          <div class="insight-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            </svg>
+          </div>
+          <div class="insight-content">
+            <h4 class="insight-title">Tendencia Positiva</h4>
+            <p class="insight-text">El cumplimiento ha mejorado un <strong>36%</strong> en los últimos 6 meses, pasando de 55% a 91%.</p>
+          </div>
+        </div>
+        <div class="insight-card warning">
+          <div class="insight-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="insight-content">
+            <h4 class="insight-title">Atención en ANH</h4>
+            <p class="insight-text">La entidad ANH mantiene un cumplimiento por debajo del umbral mínimo durante 2 meses consecutivos.</p>
+          </div>
+        </div>
+        <div class="insight-card info">
+          <div class="insight-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+            </svg>
+          </div>
+          <div class="insight-content">
+            <h4 class="insight-title">Mejor Rendimiento</h4>
+            <p class="insight-text">MinEnergía mantiene un <strong>100%</strong> de cumplimiento consistente en los últimos 4 meses.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AuditorLayout>
+
+<style>
+  .historico-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0;
+  }
+
+  .page-description {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    margin: 0.25rem 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+    cursor: pointer;
+  }
+
+  .btn-export {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: var(--role-accent);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-export:hover {
+    background: #9575e0;
+  }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .summary-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    padding: 1.25rem;
+  }
+
+  .summary-card.highlight {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(167, 139, 250, 0.05));
+    border: 2px solid var(--role-accent);
+  }
+
+  .summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .summary-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .summary-badge {
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+
+  .summary-badge.up {
+    background: var(--success-green-100);
+    color: var(--success-green-700);
+  }
+
+  .summary-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .summary-trend {
+    margin-top: 0.5rem;
+  }
+
+  .trend-text {
+    font-size: 0.75rem;
+    color: var(--neutral-400);
+  }
+
+  /* Chart Section */
+  .chart-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .chart-tabs {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .chart-tab {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--neutral-200);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chart-tab:hover {
+    background: var(--neutral-100);
+  }
+
+  .chart-tab.active {
+    background: var(--role-accent);
+    border-color: var(--role-accent);
+    color: white;
+  }
+
+  .chart-container {
+    padding: 1.5rem;
+  }
+
+  .line-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .chart-y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 30px;
+    width: 50px;
+    font-size: 0.625rem;
+    color: var(--neutral-400);
+    text-align: right;
+    padding-right: 0.5rem;
+  }
+
+  .chart-area {
+    height: 200px;
+    margin-left: 50px;
+    margin-right: 20px;
+    position: relative;
+  }
+
+  .chart-area svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .data-labels {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+
+  .data-label {
+    position: absolute;
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+
+  .data-label.active {
+    opacity: 1;
+  }
+
+  .label-value {
+    padding: 0.25rem 0.5rem;
+    background: var(--role-accent);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+
+  .chart-x-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-left: 50px;
+    margin-right: 20px;
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    padding-top: 0.5rem;
+  }
+
+  .chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--neutral-100);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-line {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  .legend-line.purple {
+    background: #A78BFA;
+  }
+
+  .legend-line.dashed {
+    border-top: 2px dashed;
+    background: transparent;
+    height: 0;
+  }
+
+  .legend-line.red {
+    border-color: #ef4444;
+  }
+
+  .legend-text {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  /* Table Section */
+  .table-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .table-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .table-filter {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .history-table th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+    background: var(--neutral-50);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .history-table td {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: var(--neutral-700);
+    border-top: 1px solid var(--neutral-100);
+  }
+
+  .history-table tr.current td {
+    background: rgba(167, 139, 250, 0.08);
+  }
+
+  .center {
+    text-align: center;
+  }
+
+  .period-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .period-name {
+    font-weight: 500;
+  }
+
+  .period-badge {
+    padding: 0.125rem 0.5rem;
+    background: var(--role-accent);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.625rem;
+    font-weight: 600;
+  }
+
+  .count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 24px;
+    padding: 0 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .count.green {
+    background: var(--success-green-100);
+    color: var(--success-green-700);
+  }
+
+  .count.red {
+    background: var(--error-red-100);
+    color: var(--error-red-700);
+  }
+
+  .compliance-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mini-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--neutral-200);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 80px;
+  }
+
+  .mini-fill {
+    height: 100%;
+    background: var(--success-green-500);
+    border-radius: 3px;
+  }
+
+  .mini-fill.warning {
+    background: var(--warning-yellow-500);
+  }
+
+  .mini-fill.critical {
+    background: var(--error-red-500);
+  }
+
+  .compliance-value {
+    font-weight: 600;
+    min-width: 40px;
+  }
+
+  .compliance-value.warning {
+    color: var(--warning-yellow-700);
+  }
+
+  .compliance-value.critical {
+    color: var(--error-red-600);
+  }
+
+  .variation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .variation.up {
+    color: var(--success-green-600);
+  }
+
+  .variation.neutral {
+    color: var(--neutral-400);
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+
+  .status.ok {
+    background: var(--success-green-100);
+    color: var(--success-green-700);
+  }
+
+  .status.warning {
+    background: var(--warning-yellow-100);
+    color: var(--warning-yellow-800);
+  }
+
+  .status.critical {
+    background: var(--error-red-100);
+    color: var(--error-red-700);
+  }
+
+  /* Insights Section */
+  .insights-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    padding: 1.25rem;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 1rem;
+  }
+
+  .section-title svg {
+    color: var(--role-accent);
+  }
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .insight-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+  }
+
+  .insight-card.positive {
+    background: var(--success-green-50);
+    border-color: var(--success-green-500);
+  }
+
+  .insight-card.warning {
+    background: var(--warning-yellow-50);
+    border-color: var(--warning-yellow-500);
+  }
+
+  .insight-card.info {
+    background: var(--role-accent-light);
+    border-color: var(--role-accent);
+  }
+
+  .insight-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .insight-card.positive .insight-icon {
+    background: var(--success-green-100);
+    color: var(--success-green-600);
+  }
+
+  .insight-card.warning .insight-icon {
+    background: var(--warning-yellow-100);
+    color: var(--warning-yellow-700);
+  }
+
+  .insight-card.info .insight-icon {
+    background: rgba(167, 139, 250, 0.2);
+    color: var(--role-accent);
+  }
+
+  .insight-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 0.25rem;
+  }
+
+  .insight-text {
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .insight-text strong {
+    color: var(--neutral-800);
+  }
+
+  @media (max-width: 1200px) {
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .insights-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .header-actions {
+      flex-wrap: wrap;
+    }
+
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+  }
+</style>

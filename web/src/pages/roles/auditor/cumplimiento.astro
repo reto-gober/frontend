@@ -1,0 +1,1064 @@
+---
+import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
+---
+
+<AuditorLayout title="Cumplimiento Regulatorio">
+  <div class="cumplimiento-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-info">
+        <h1 class="page-title">Cumplimiento Regulatorio</h1>
+        <p class="page-description">Análisis detallado del estado de cumplimiento por entidad y período</p>
+      </div>
+      <div class="header-actions">
+        <div class="date-range">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>Febrero 2025</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <button class="btn-export">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar Informe
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <span class="summary-value">91%</span>
+          <span class="summary-label">Cumplimiento Global</span>
+        </div>
+        <div class="summary-trend up">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+          </svg>
+          +4%
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon blue">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <span class="summary-value">156</span>
+          <span class="summary-label">Total Reportes</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <span class="summary-value">142</span>
+          <span class="summary-label">A Tiempo</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon red">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="summary-content">
+          <span class="summary-value">5</span>
+          <span class="summary-label">Fuera de Tiempo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Entity Filter Tabs -->
+    <div class="entity-tabs">
+      <button class="entity-tab active">
+        <span class="tab-dot all"></span>
+        Todas
+      </button>
+      <button class="entity-tab">
+        <span class="tab-dot sui"></span>
+        SUI
+      </button>
+      <button class="entity-tab">
+        <span class="tab-dot creg"></span>
+        CREG
+      </button>
+      <button class="entity-tab warning">
+        <span class="tab-dot anh"></span>
+        ANH
+        <span class="tab-alert">!</span>
+      </button>
+      <button class="entity-tab">
+        <span class="tab-dot sspd"></span>
+        SSPD
+      </button>
+      <button class="entity-tab">
+        <span class="tab-dot minenergia"></span>
+        MinEnergía
+      </button>
+    </div>
+
+    <!-- Compliance Table -->
+    <div class="compliance-table-container">
+      <div class="table-header">
+        <div class="table-title">
+          <h3>Detalle de Cumplimiento por Entidad</h3>
+          <span class="table-subtitle">Vista consolidada de todas las entidades regulatorias</span>
+        </div>
+        <div class="table-search">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" placeholder="Buscar por código o nombre..." />
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="compliance-table">
+          <thead>
+            <tr>
+              <th>Entidad</th>
+              <th>Total Reportes</th>
+              <th>Completados</th>
+              <th>En Proceso</th>
+              <th>Atrasados</th>
+              <th>Cumplimiento</th>
+              <th>Tendencia</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="entity-info">
+                  <span class="entity-badge sui">SUI</span>
+                  <span class="entity-name">Sistema Único de Información</span>
+                </div>
+              </td>
+              <td class="center">45</td>
+              <td class="center">
+                <span class="count-badge green">41</span>
+              </td>
+              <td class="center">
+                <span class="count-badge yellow">3</span>
+              </td>
+              <td class="center">
+                <span class="count-badge red">1</span>
+              </td>
+              <td>
+                <div class="compliance-bar">
+                  <div class="bar-track">
+                    <div class="bar-fill green" style="width: 92%"></div>
+                  </div>
+                  <span class="bar-value">92%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="trend up">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  </svg>
+                  +3%
+                </span>
+              </td>
+              <td class="center">
+                <span class="status-indicator ok">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  OK
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="entity-info">
+                  <span class="entity-badge creg">CREG</span>
+                  <span class="entity-name">Comisión de Regulación de Energía y Gas</span>
+                </div>
+              </td>
+              <td class="center">38</td>
+              <td class="center">
+                <span class="count-badge green">33</span>
+              </td>
+              <td class="center">
+                <span class="count-badge yellow">4</span>
+              </td>
+              <td class="center">
+                <span class="count-badge red">1</span>
+              </td>
+              <td>
+                <div class="compliance-bar">
+                  <div class="bar-track">
+                    <div class="bar-fill green" style="width: 88%"></div>
+                  </div>
+                  <span class="bar-value">88%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="trend up">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  </svg>
+                  +5%
+                </span>
+              </td>
+              <td class="center">
+                <span class="status-indicator ok">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  OK
+                </span>
+              </td>
+            </tr>
+            <tr class="highlight-warning">
+              <td>
+                <div class="entity-info">
+                  <span class="entity-badge anh">ANH</span>
+                  <span class="entity-name">Agencia Nacional de Hidrocarburos</span>
+                </div>
+              </td>
+              <td class="center">28</td>
+              <td class="center">
+                <span class="count-badge green">18</span>
+              </td>
+              <td class="center">
+                <span class="count-badge yellow">7</span>
+              </td>
+              <td class="center">
+                <span class="count-badge red">3</span>
+              </td>
+              <td>
+                <div class="compliance-bar">
+                  <div class="bar-track">
+                    <div class="bar-fill warning" style="width: 65%"></div>
+                  </div>
+                  <span class="bar-value warning">65%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="trend down">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                  </svg>
+                  -8%
+                </span>
+              </td>
+              <td class="center">
+                <span class="status-indicator critical">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Crítico
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="entity-info">
+                  <span class="entity-badge sspd">SSPD</span>
+                  <span class="entity-name">Superintendencia de Servicios Públicos</span>
+                </div>
+              </td>
+              <td class="center">32</td>
+              <td class="center">
+                <span class="count-badge green">30</span>
+              </td>
+              <td class="center">
+                <span class="count-badge yellow">2</span>
+              </td>
+              <td class="center">
+                <span class="count-badge neutral">0</span>
+              </td>
+              <td>
+                <div class="compliance-bar">
+                  <div class="bar-track">
+                    <div class="bar-fill green" style="width: 95%"></div>
+                  </div>
+                  <span class="bar-value">95%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="trend up">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  </svg>
+                  +2%
+                </span>
+              </td>
+              <td class="center">
+                <span class="status-indicator ok">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  OK
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="entity-info">
+                  <span class="entity-badge minenergia">MinEnergía</span>
+                  <span class="entity-name">Ministerio de Minas y Energía</span>
+                </div>
+              </td>
+              <td class="center">13</td>
+              <td class="center">
+                <span class="count-badge green">13</span>
+              </td>
+              <td class="center">
+                <span class="count-badge neutral">0</span>
+              </td>
+              <td class="center">
+                <span class="count-badge neutral">0</span>
+              </td>
+              <td>
+                <div class="compliance-bar">
+                  <div class="bar-track">
+                    <div class="bar-fill green" style="width: 100%"></div>
+                  </div>
+                  <span class="bar-value">100%</span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="trend stable">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  0%
+                </span>
+              </td>
+              <td class="center">
+                <span class="status-indicator excellent">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                  </svg>
+                  Excelente
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td><strong>TOTAL</strong></td>
+              <td class="center"><strong>156</strong></td>
+              <td class="center"><strong>135</strong></td>
+              <td class="center"><strong>16</strong></td>
+              <td class="center"><strong>5</strong></td>
+              <td>
+                <div class="compliance-bar">
+                  <div class="bar-track">
+                    <div class="bar-fill green" style="width: 91%"></div>
+                  </div>
+                  <span class="bar-value"><strong>91%</strong></span>
+                </div>
+              </td>
+              <td class="center">
+                <span class="trend up">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  </svg>
+                  +4%
+                </span>
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <div class="alerts-section">
+      <div class="alerts-header">
+        <h3 class="alerts-title">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Alertas de Cumplimiento
+        </h3>
+      </div>
+      <div class="alerts-grid">
+        <div class="alert-card critical">
+          <div class="alert-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="alert-content">
+            <span class="alert-badge">ANH</span>
+            <h4 class="alert-title">Cumplimiento ANH bajo el umbral</h4>
+            <p class="alert-description">El porcentaje de cumplimiento (65%) está por debajo del mínimo requerido (85%)</p>
+          </div>
+          <div class="alert-action">
+            <a href="/roles/auditor/reportes?entity=anh" class="btn-view">Ver Reportes</a>
+          </div>
+        </div>
+        <div class="alert-card warning">
+          <div class="alert-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+          </div>
+          <div class="alert-content">
+            <span class="alert-badge">SUI</span>
+            <h4 class="alert-title">Reporte SUI-001 vence hoy</h4>
+            <p class="alert-description">El Informe Comercial de Gas Natural vence hoy y aún está pendiente</p>
+          </div>
+          <div class="alert-action">
+            <a href="/roles/auditor/reportes?code=SUI-001" class="btn-view">Ver Detalle</a>
+          </div>
+        </div>
+        <div class="alert-card info">
+          <div class="alert-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <div class="alert-content">
+            <span class="alert-badge">CREG</span>
+            <h4 class="alert-title">2 reportes próximos a vencer</h4>
+            <p class="alert-description">CREG-045 y CREG-102 vencen en los próximos 3 días</p>
+          </div>
+          <div class="alert-action">
+            <a href="/roles/auditor/reportes?entity=creg" class="btn-view">Ver Reportes</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AuditorLayout>
+
+<style>
+  .cumplimiento-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0;
+  }
+
+  .page-description {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    margin: 0.25rem 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+    cursor: pointer;
+  }
+
+  .btn-export {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: var(--role-accent);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-export:hover {
+    background: #9575e0;
+  }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .summary-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--role-accent-light);
+    color: var(--role-accent);
+  }
+
+  .summary-icon.blue {
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+  }
+
+  .summary-icon.green {
+    background: var(--success-green-100);
+    color: var(--success-green-600);
+  }
+
+  .summary-icon.red {
+    background: var(--error-red-100);
+    color: var(--error-red-600);
+  }
+
+  .summary-content {
+    flex: 1;
+  }
+
+  .summary-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .summary-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+  }
+
+  .summary-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .summary-trend.up {
+    background: var(--success-green-100);
+    color: var(--success-green-700);
+  }
+
+  /* Entity Tabs */
+  .entity-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow-x: auto;
+  }
+
+  .entity-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-500);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .entity-tab:hover {
+    background: var(--neutral-100);
+    color: var(--neutral-700);
+  }
+
+  .entity-tab.active {
+    background: var(--role-accent);
+    color: white;
+  }
+
+  .entity-tab.warning {
+    color: var(--warning-yellow-700);
+  }
+
+  .tab-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .tab-dot.all { background: var(--neutral-400); }
+  .tab-dot.sui { background: #3b82f6; }
+  .tab-dot.creg { background: #8b5cf6; }
+  .tab-dot.anh { background: #f59e0b; }
+  .tab-dot.sspd { background: #ef4444; }
+  .tab-dot.minenergia { background: #22c55e; }
+
+  .tab-alert {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--error-red-500);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.625rem;
+    font-weight: 700;
+  }
+
+  /* Compliance Table */
+  .compliance-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .table-title h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .table-subtitle {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+  }
+
+  .table-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--neutral-100);
+    border-radius: 8px;
+  }
+
+  .table-search svg {
+    color: var(--neutral-400);
+  }
+
+  .table-search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.875rem;
+    width: 200px;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .compliance-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .compliance-table th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+    background: var(--neutral-50);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .compliance-table td {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: var(--neutral-700);
+    border-top: 1px solid var(--neutral-100);
+  }
+
+  .compliance-table tr.highlight-warning td {
+    background: var(--warning-yellow-50);
+  }
+
+  .compliance-table tfoot td {
+    background: var(--neutral-50);
+    font-weight: 600;
+  }
+
+  .center {
+    text-align: center;
+  }
+
+  .entity-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .entity-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  .entity-badge.sui { background: #3b82f6; }
+  .entity-badge.creg { background: #8b5cf6; }
+  .entity-badge.anh { background: #f59e0b; }
+  .entity-badge.sspd { background: #ef4444; }
+  .entity-badge.minenergia { background: #22c55e; }
+
+  .entity-name {
+    font-size: 0.8125rem;
+    color: var(--neutral-600);
+  }
+
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .count-badge.green {
+    background: var(--success-green-100);
+    color: var(--success-green-700);
+  }
+
+  .count-badge.yellow {
+    background: var(--warning-yellow-100);
+    color: var(--warning-yellow-800);
+  }
+
+  .count-badge.red {
+    background: var(--error-red-100);
+    color: var(--error-red-700);
+  }
+
+  .count-badge.neutral {
+    background: var(--neutral-200);
+    color: var(--neutral-500);
+  }
+
+  .compliance-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--neutral-200);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  .bar-fill.green {
+    background: var(--success-green-500);
+  }
+
+  .bar-fill.warning {
+    background: var(--warning-yellow-500);
+  }
+
+  .bar-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    min-width: 45px;
+  }
+
+  .bar-value.warning {
+    color: var(--warning-yellow-700);
+  }
+
+  .trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .trend.up {
+    color: var(--success-green-600);
+  }
+
+  .trend.down {
+    color: var(--error-red-600);
+  }
+
+  .trend.stable {
+    color: var(--neutral-500);
+  }
+
+  .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+
+  .status-indicator.ok {
+    background: var(--success-green-100);
+    color: var(--success-green-700);
+  }
+
+  .status-indicator.excellent {
+    background: var(--role-accent-light);
+    color: var(--role-accent);
+  }
+
+  .status-indicator.critical {
+    background: var(--error-red-100);
+    color: var(--error-red-700);
+  }
+
+  /* Alerts Section */
+  .alerts-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .alerts-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .alerts-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .alerts-title svg {
+    color: var(--error-red-500);
+  }
+
+  .alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .alert-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+  }
+
+  .alert-card.critical {
+    background: var(--error-red-50);
+    border-color: var(--error-red-500);
+  }
+
+  .alert-card.warning {
+    background: var(--warning-yellow-50);
+    border-color: var(--warning-yellow-500);
+  }
+
+  .alert-card.info {
+    background: var(--color-primary-50);
+    border-color: var(--color-primary-500);
+  }
+
+  .alert-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+  }
+
+  .alert-card.critical .alert-icon {
+    background: var(--error-red-100);
+    color: var(--error-red-600);
+  }
+
+  .alert-card.warning .alert-icon {
+    background: var(--warning-yellow-100);
+    color: var(--warning-yellow-700);
+  }
+
+  .alert-card.info .alert-icon {
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+  }
+
+  .alert-content {
+    flex: 1;
+  }
+
+  .alert-badge {
+    display: inline-block;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    background: var(--neutral-200);
+    color: var(--neutral-600);
+    margin-bottom: 0.5rem;
+  }
+
+  .alert-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 0.25rem;
+  }
+
+  .alert-description {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .btn-view {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-view:hover {
+    background: var(--neutral-100);
+    border-color: var(--neutral-300);
+  }
+
+  @media (max-width: 1200px) {
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .alerts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .entity-tabs {
+      overflow-x: auto;
+    }
+  }
+</style>
