@@ -116,7 +116,10 @@ const path = Astro.url.pathname || '/';
     
     const userSlot = document.getElementById('sidebar-user');
     const userInline = document.getElementById('user-inline');
-    const name = user ? `${user.nombre} ${user.apellido}` : '';
+    // Construir nombre completo con los nuevos campos
+    const name = user 
+      ? `${user.firstName || ''} ${user.secondName || ''} ${user.firstLastname || ''} ${user.secondLastname || ''}`.trim().replace(/\s+/g, ' ')
+      : '';
 
     const userMarkupSidebar = `
       <div class="userbox" id="userbox">
