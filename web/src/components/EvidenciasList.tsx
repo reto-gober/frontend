@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Props {
-  reporteId: number;
+  reporteId: string;
 }
 
 export default function EvidenciasList({ reporteId }: Props) {
@@ -44,7 +44,7 @@ export default function EvidenciasList({ reporteId }: Props) {
     }
   };
 
-  const handleDownload = async (id: number) => {
+  const handleDownload = async (id: string) => {
     try {
       await evidenciasService.descargar(id);
     } catch (error: any) {
@@ -52,7 +52,7 @@ export default function EvidenciasList({ reporteId }: Props) {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar esta evidencia?')) return;
 
     try {

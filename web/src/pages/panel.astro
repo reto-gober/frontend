@@ -1,0 +1,19 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+---
+
+<MainLayout title="Panel de Control">
+  <div id="dashboard-root"></div>
+</MainLayout>
+
+<script>
+  import { createRoot } from 'react-dom/client';
+  import { createElement } from 'react';
+  import DashboardPage from '../components/pages/DashboardPage';
+
+  const rootElement = document.getElementById('dashboard-root');
+  if (rootElement) {
+    const root = createRoot(rootElement);
+    root.render(createElement(DashboardPage));
+  }
+</script>
