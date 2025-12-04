@@ -1,0 +1,1004 @@
+---
+import AuditorLayout from '../../layouts/roles/AuditorLayout.astro';
+
+// =============================================
+// DATOS DE EJEMPLO (DUMMY DATA)
+// =============================================
+
+const periodos = [
+  { value: 'mensual', label: 'Mensual' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'anual', label: 'Anual' }
+];
+
+const entidades = [
+  { value: 'todas', label: 'Todas las entidades' },
+  { value: 'sui', label: 'SUI' },
+  { value: 'creg', label: 'CREG' },
+  { value: 'anh', label: 'ANH' },
+  { value: 'minminas', label: 'MinMinas' }
+];
+
+// KPIs del auditor
+const kpisData = {
+  mensual: {
+    cumplimientoGlobal: 87,
+    reportesEnviados: 42,
+    reportesTarde: 5,
+    reportesVencidos: 3,
+    periodoTexto: 'en el último mes'
+  },
+  trimestral: {
+    cumplimientoGlobal: 85,
+    reportesEnviados: 128,
+    reportesTarde: 18,
+    reportesVencidos: 8,
+    periodoTexto: 'en el último trimestre'
+  },
+  anual: {
+    cumplimientoGlobal: 89,
+    reportesEnviados: 485,
+    reportesTarde: 52,
+    reportesVencidos: 18,
+    periodoTexto: 'en el último año'
+  }
+};
+
+// Tendencias históricas de cumplimiento
+const tendencias = {
+  mensual: [
+    { periodo: 'Jul', aTiempo: 82, tarde: 12, vencido: 6 },
+    { periodo: 'Ago', aTiempo: 85, tarde: 10, vencido: 5 },
+    { periodo: 'Sep', aTiempo: 88, tarde: 8, vencido: 4 },
+    { periodo: 'Oct', aTiempo: 84, tarde: 11, vencido: 5 },
+    { periodo: 'Nov', aTiempo: 90, tarde: 7, vencido: 3 },
+    { periodo: 'Dic', aTiempo: 87, tarde: 10, vencido: 3 }
+  ],
+  trimestral: [
+    { periodo: 'Q1 2024', aTiempo: 78, tarde: 15, vencido: 7 },
+    { periodo: 'Q2 2024', aTiempo: 82, tarde: 12, vencido: 6 },
+    { periodo: 'Q3 2024', aTiempo: 86, tarde: 10, vencido: 4 },
+    { periodo: 'Q4 2024', aTiempo: 85, tarde: 11, vencido: 4 }
+  ],
+  anual: [
+    { periodo: '2021', aTiempo: 72, tarde: 18, vencido: 10 },
+    { periodo: '2022', aTiempo: 78, tarde: 15, vencido: 7 },
+    { periodo: '2023', aTiempo: 85, tarde: 11, vencido: 4 },
+    { periodo: '2024', aTiempo: 89, tarde: 8, vencido: 3 }
+  ]
+};
+
+// Distribución por estado en periodo actual
+const distribucionEstado = {
+  mensual: { aTiempo: 34, tarde: 5, vencido: 3, total: 42 },
+  trimestral: { aTiempo: 102, tarde: 18, vencido: 8, total: 128 },
+  anual: { aTiempo: 415, tarde: 52, vencido: 18, total: 485 }
+};
+
+// Cumplimiento por entidad
+const cumplimientoEntidades = [
+  { entidad: 'SUI', aTiempo: 88, tarde: 8, vencido: 4, total: 85 },
+  { entidad: 'CREG', aTiempo: 85, tarde: 10, vencido: 5, total: 62 },
+  { entidad: 'ANH', aTiempo: 92, tarde: 6, vencido: 2, total: 48 },
+  { entidad: 'MinMinas', aTiempo: 78, tarde: 15, vencido: 7, total: 35 },
+  { entidad: 'SSPD', aTiempo: 90, tarde: 7, vencido: 3, total: 28 }
+];
+
+// Bitácora de auditoría
+const bitacoraAuditoria = [
+  { 
+    objeto: 'Reporte SUI-045', 
+    tipoObjeto: 'reporte',
+    cambio: 'Estado cambiado', 
+    valorAnterior: 'En revisión', 
+    valorNuevo: 'Enviado', 
+    usuario: 'María Castro', 
+    fecha: 'Hace 30 minutos' 
+  },
+  { 
+    objeto: 'Periodo CREG-Q4', 
+    tipoObjeto: 'periodo',
+    cambio: 'Fecha límite modificada', 
+    valorAnterior: '15/12/2024', 
+    valorNuevo: '20/12/2024', 
+    usuario: 'Admin Sistema', 
+    fecha: 'Hace 2 horas' 
+  },
+  { 
+    objeto: 'Usuario Pedro M.', 
+    tipoObjeto: 'usuario',
+    cambio: 'Rol modificado', 
+    valorAnterior: 'Responsable', 
+    valorNuevo: 'Supervisor', 
+    usuario: 'Admin Sistema', 
+    fecha: 'Ayer, 16:00' 
+  },
+  { 
+    objeto: 'Entidad MinMinas', 
+    tipoObjeto: 'entidad',
+    cambio: 'Estado cambiado', 
+    valorAnterior: 'Activa', 
+    valorNuevo: 'Inactiva', 
+    usuario: 'Admin Sistema', 
+    fecha: 'Ayer, 11:30' 
+  },
+  { 
+    objeto: 'Regla Alerta #12', 
+    tipoObjeto: 'alerta',
+    cambio: 'Días anticipación', 
+    valorAnterior: '7 días', 
+    valorNuevo: '10 días', 
+    usuario: 'Admin Sistema', 
+    fecha: 'Hace 2 días' 
+  },
+  { 
+    objeto: 'Reporte ANH-018', 
+    tipoObjeto: 'reporte',
+    cambio: 'Responsable reasignado', 
+    valorAnterior: 'Juan Rodríguez', 
+    valorNuevo: 'Ana García', 
+    usuario: 'Supervisor López', 
+    fecha: 'Hace 3 días' 
+  }
+];
+---
+
+<AuditorLayout title="Panel de Cumplimiento y Auditoría">
+  <div class="dashboard-auditor">
+    <!-- Barra Superior con Filtros -->
+    <header class="dashboard-header-bar">
+      <div class="header-left">
+        <div class="period-filter">
+          <label for="periodo-select" class="filter-label">Periodo:</label>
+          <select id="periodo-select" class="filter-select">
+            {periodos.map(p => (
+              <option value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+        <div class="entity-filter">
+          <select id="entidad-select" class="filter-select">
+            {entidades.map(e => (
+              <option value={e.value}>{e.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="readonly-indicator">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          Vista de solo lectura
+        </span>
+      </div>
+    </header>
+
+    <!-- Fila de Tarjetas KPI -->
+    <section class="kpis-row">
+      <div class="kpi-card cumplimiento">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-cumplimiento">87<small>%</small></span>
+          <span class="kpi-label">Cumplimiento global</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card enviados">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <polyline points="16 13 12 17 8 13"/>
+            <line x1="12" y1="17" x2="12" y2="11"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-enviados">42</span>
+          <span class="kpi-label">Reportes enviados</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card tarde">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-tarde">5</span>
+          <span class="kpi-label">Enviados tarde</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card vencidos">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-vencidos">3</span>
+          <span class="kpi-label">Vencidos (no enviados)</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bloque Central: Tendencias Históricas -->
+    <section class="tendencias-section">
+      <div class="section-card">
+        <div class="card-header">
+          <h3 class="card-title">Tendencias Históricas de Cumplimiento</h3>
+        </div>
+        <div class="tendencias-content">
+          <div class="tendencias-chart" id="tendencias-chart">
+            {tendencias.mensual.map((item, index) => (
+              <div class="tendencia-bar-group">
+                <div class="tendencia-bars">
+                  <div class="bar-container">
+                    <div class="bar a-tiempo" style={`height: ${item.aTiempo}%`} title={`A tiempo: ${item.aTiempo}%`}>
+                      <span class="bar-value">{item.aTiempo}%</span>
+                    </div>
+                  </div>
+                  <div class="bar-container">
+                    <div class="bar tarde" style={`height: ${item.tarde * 3}%`} title={`Tarde: ${item.tarde}%`}>
+                      <span class="bar-value">{item.tarde}%</span>
+                    </div>
+                  </div>
+                  <div class="bar-container">
+                    <div class="bar vencido" style={`height: ${item.vencido * 5}%`} title={`Vencido: ${item.vencido}%`}>
+                      <span class="bar-value">{item.vencido}%</span>
+                    </div>
+                  </div>
+                </div>
+                <span class="tendencia-label">{item.periodo}</span>
+              </div>
+            ))}
+          </div>
+          <div class="tendencias-legend">
+            <div class="legend-item">
+              <span class="legend-color a-tiempo"></span>
+              <span class="legend-text">Enviados a tiempo</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color tarde"></span>
+              <span class="legend-text">Enviados tarde</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color vencido"></span>
+              <span class="legend-text">Vencidos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fila: Distribución y Cumplimiento por Entidad -->
+    <div class="middle-row">
+      <!-- Distribución por Estado -->
+      <section class="section-card distribucion-card">
+        <div class="card-header">
+          <h3 class="card-title">Distribución por Estado - Periodo Actual</h3>
+        </div>
+        <div class="distribucion-content">
+          <div class="donut-chart-container">
+            <div class="donut-chart">
+              <svg viewBox="0 0 36 36" class="donut-svg">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ADE80" stroke-width="3.5" stroke-dasharray="81 19" stroke-dashoffset="25"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F97316" stroke-width="3.5" stroke-dasharray="12 88" stroke-dashoffset="-56"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#EF4444" stroke-width="3.5" stroke-dasharray="7 93" stroke-dashoffset="-68"></circle>
+              </svg>
+              <div class="donut-center">
+                <span class="donut-total" id="total-reportes">42</span>
+                <span class="donut-label">reportes</span>
+              </div>
+            </div>
+          </div>
+          <div class="distribucion-legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background: #4ADE80"></span>
+              <span class="legend-text">Enviados a tiempo</span>
+              <span class="legend-value" id="legend-atiempo">34 (81%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #F97316"></span>
+              <span class="legend-text">Enviados tarde</span>
+              <span class="legend-value" id="legend-tarde">5 (12%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #EF4444"></span>
+              <span class="legend-text">Vencidos</span>
+              <span class="legend-value" id="legend-vencidos">3 (7%)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cumplimiento por Entidad -->
+      <section class="section-card entidades-card">
+        <div class="card-header">
+          <h3 class="card-title">Cumplimiento por Entidad</h3>
+        </div>
+        <div class="entidades-content">
+          {cumplimientoEntidades.map(item => (
+            <div class="entidad-item">
+              <div class="entidad-header">
+                <span class="entidad-nombre">{item.entidad}</span>
+                <span class="entidad-cumplimiento">{item.aTiempo}%</span>
+              </div>
+              <div class="entidad-bar">
+                <div class="bar-segment a-tiempo" style={`width: ${item.aTiempo}%`}></div>
+                <div class="bar-segment tarde" style={`width: ${item.tarde}%`}></div>
+                <div class="bar-segment vencido" style={`width: ${item.vencido}%`}></div>
+              </div>
+              <div class="entidad-stats">
+                <span class="stat">{item.total} reportes</span>
+                <span class="stat danger">{item.tarde + item.vencido}% tardío/vencido</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+
+    <!-- Bitácora de Auditoría -->
+    <section class="section-card bitacora-card">
+      <div class="card-header">
+        <h3 class="card-title">Bitácora de Auditoría Reciente</h3>
+        <span class="bitacora-badge">Solo lectura</span>
+      </div>
+      <div class="bitacora-table-container">
+        <table class="bitacora-table">
+          <thead>
+            <tr>
+              <th>Objeto Afectado</th>
+              <th>Cambio</th>
+              <th>Valor Anterior</th>
+              <th>Valor Nuevo</th>
+              <th>Usuario</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bitacoraAuditoria.map(item => (
+              <tr>
+                <td>
+                  <div class="objeto-cell">
+                    <span class={`objeto-badge ${item.tipoObjeto}`}>
+                      {item.tipoObjeto === 'reporte' ? 'REP' : 
+                       item.tipoObjeto === 'periodo' ? 'PER' : 
+                       item.tipoObjeto === 'usuario' ? 'USR' : 
+                       item.tipoObjeto === 'entidad' ? 'ENT' : 'ALR'}
+                    </span>
+                    <span class="objeto-nombre">{item.objeto}</span>
+                  </div>
+                </td>
+                <td class="cambio-cell">{item.cambio}</td>
+                <td class="valor-cell anterior">{item.valorAnterior}</td>
+                <td class="valor-cell nuevo">{item.valorNuevo}</td>
+                <td class="usuario-cell">{item.usuario}</td>
+                <td class="fecha-cell">{item.fecha}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</AuditorLayout>
+
+<script>
+  const kpisData = {
+    mensual: {
+      cumplimientoGlobal: 87,
+      reportesEnviados: 42,
+      reportesTarde: 5,
+      reportesVencidos: 3,
+      periodoTexto: 'en el último mes'
+    },
+    trimestral: {
+      cumplimientoGlobal: 85,
+      reportesEnviados: 128,
+      reportesTarde: 18,
+      reportesVencidos: 8,
+      periodoTexto: 'en el último trimestre'
+    },
+    anual: {
+      cumplimientoGlobal: 89,
+      reportesEnviados: 485,
+      reportesTarde: 52,
+      reportesVencidos: 18,
+      periodoTexto: 'en el último año'
+    }
+  };
+
+  const distribucionEstado = {
+    mensual: { aTiempo: 34, tarde: 5, vencido: 3, total: 42 },
+    trimestral: { aTiempo: 102, tarde: 18, vencido: 8, total: 128 },
+    anual: { aTiempo: 415, tarde: 52, vencido: 18, total: 485 }
+  };
+
+  function actualizarDashboard(periodo: string) {
+    const data = kpisData[periodo as keyof typeof kpisData];
+    const dist = distribucionEstado[periodo as keyof typeof distribucionEstado];
+    
+    const kpiCumplimiento = document.getElementById('kpi-cumplimiento');
+    const kpiEnviados = document.getElementById('kpi-enviados');
+    const kpiTarde = document.getElementById('kpi-tarde');
+    const kpiVencidos = document.getElementById('kpi-vencidos');
+    const totalReportes = document.getElementById('total-reportes');
+    
+    if (kpiCumplimiento) kpiCumplimiento.innerHTML = `${data.cumplimientoGlobal}<small>%</small>`;
+    if (kpiEnviados) kpiEnviados.textContent = data.reportesEnviados.toString();
+    if (kpiTarde) kpiTarde.textContent = data.reportesTarde.toString();
+    if (kpiVencidos) kpiVencidos.textContent = data.reportesVencidos.toString();
+    if (totalReportes) totalReportes.textContent = dist.total.toString();
+    
+    // Actualizar periodos
+    const periodosEls = document.querySelectorAll('.kpi-periodo');
+    periodosEls.forEach(el => {
+      el.textContent = data.periodoTexto;
+    });
+    
+    // Actualizar leyenda distribución
+    const pctATiempo = Math.round((dist.aTiempo / dist.total) * 100);
+    const pctTarde = Math.round((dist.tarde / dist.total) * 100);
+    const pctVencido = Math.round((dist.vencido / dist.total) * 100);
+    
+    const legendATiempo = document.getElementById('legend-atiempo');
+    const legendTarde = document.getElementById('legend-tarde');
+    const legendVencidos = document.getElementById('legend-vencidos');
+    
+    if (legendATiempo) legendATiempo.textContent = `${dist.aTiempo} (${pctATiempo}%)`;
+    if (legendTarde) legendTarde.textContent = `${dist.tarde} (${pctTarde}%)`;
+    if (legendVencidos) legendVencidos.textContent = `${dist.vencido} (${pctVencido}%)`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const selectPeriodo = document.getElementById('periodo-select') as HTMLSelectElement;
+    if (selectPeriodo) {
+      selectPeriodo.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        actualizarDashboard(target.value);
+      });
+    }
+  });
+</script>
+
+<style>
+  .dashboard-auditor {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Header Bar */
+  .dashboard-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+  }
+
+  .filter-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: #A78BFA;
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+  }
+
+  .period-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .readonly-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    padding: 0.375rem 0.75rem;
+    background: rgba(167, 139, 250, 0.1);
+    border-radius: 6px;
+  }
+
+  .readonly-indicator svg {
+    color: #A78BFA;
+  }
+
+  /* KPIs Row */
+  .kpis-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .kpis-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .kpis-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+  }
+
+  .kpi-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .kpi-card.cumplimiento { border-left-color: #A78BFA; }
+  .kpi-card.enviados { border-left-color: #4ADE80; }
+  .kpi-card.tarde { border-left-color: #F97316; }
+  .kpi-card.vencidos { border-left-color: #EF4444; }
+
+  .kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .kpi-card.cumplimiento .kpi-icon { background: rgba(167, 139, 250, 0.15); color: #8B5CF6; }
+  .kpi-card.enviados .kpi-icon { background: var(--success-green-100); color: var(--success-green-600); }
+  .kpi-card.tarde .kpi-icon { background: var(--accent-orange-100); color: var(--accent-orange-600); }
+  .kpi-card.vencidos .kpi-icon { background: var(--error-red-100); color: var(--error-red-600); }
+
+  .kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .kpi-value small {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .kpi-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .kpi-periodo {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  /* Section Card */
+  .section-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  /* Tendencias Section */
+  .tendencias-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .tendencias-chart {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    height: 200px;
+    padding: 0.5rem 0;
+  }
+
+  .tendencia-bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .tendencia-bars {
+    display: flex;
+    gap: 4px;
+    height: 170px;
+    align-items: flex-end;
+  }
+
+  .bar-container {
+    width: 24px;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    transition: height 0.3s ease;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 20px;
+  }
+
+  .bar-value {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: white;
+    padding-top: 2px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .bar.a-tiempo { background: #4ADE80; }
+  .bar.tarde { background: #F97316; }
+  .bar.vencido { background: #EF4444; }
+
+  .tendencia-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--neutral-500);
+  }
+
+  .tendencias-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  .legend-color.a-tiempo { background: #4ADE80; }
+  .legend-color.tarde { background: #F97316; }
+  .legend-color.vencido { background: #EF4444; }
+
+  .legend-text {
+    font-size: 0.75rem;
+    color: var(--neutral-600);
+  }
+
+  .legend-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  /* Middle Row */
+  .middle-row {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .middle-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Distribucion Content */
+  .distribucion-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .distribucion-content {
+      flex-direction: column;
+    }
+  }
+
+  .donut-chart-container {
+    flex-shrink: 0;
+  }
+
+  .donut-chart {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+
+  .donut-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .donut-total {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .donut-label {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+  }
+
+  .distribucion-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+  }
+
+  /* Entidades Content */
+  .entidades-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+
+  .entidad-item {
+    padding: 0.75rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+  }
+
+  .entidad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .entidad-nombre {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  .entidad-cumplimiento {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #4ADE80;
+  }
+
+  .entidad-bar {
+    display: flex;
+    height: 8px;
+    background: var(--neutral-200);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.375rem;
+  }
+
+  .bar-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .bar-segment.a-tiempo { background: #4ADE80; }
+  .bar-segment.tarde { background: #F97316; }
+  .bar-segment.vencido { background: #EF4444; }
+
+  .entidad-stats {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .entidad-stats .stat {
+    font-size: 0.6875rem;
+    color: var(--neutral-500);
+  }
+
+  .entidad-stats .stat.danger {
+    color: var(--error-red-600);
+  }
+
+  /* Bitácora Card */
+  .bitacora-badge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    background: rgba(167, 139, 250, 0.15);
+    color: #8B5CF6;
+    border-radius: 4px;
+  }
+
+  .bitacora-table-container {
+    overflow-x: auto;
+  }
+
+  .bitacora-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+
+  .bitacora-table th {
+    text-align: left;
+    padding: 0.75rem;
+    background: var(--neutral-100);
+    font-weight: 600;
+    color: var(--neutral-700);
+    border-bottom: 2px solid var(--neutral-200);
+    white-space: nowrap;
+  }
+
+  .bitacora-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--neutral-200);
+    vertical-align: middle;
+  }
+
+  .bitacora-table tbody tr:hover {
+    background: var(--neutral-50);
+  }
+
+  .objeto-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .objeto-badge {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+
+  .objeto-badge.reporte { background: var(--secondary-purple-100); color: var(--secondary-purple-700); }
+  .objeto-badge.periodo { background: var(--success-green-100); color: var(--success-green-700); }
+  .objeto-badge.usuario { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .objeto-badge.entidad { background: var(--accent-orange-100); color: var(--accent-orange-700); }
+  .objeto-badge.alerta { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
+
+  .objeto-nombre {
+    font-weight: 500;
+    color: var(--neutral-800);
+  }
+
+  .cambio-cell {
+    color: var(--neutral-700);
+  }
+
+  .valor-cell {
+    font-family: monospace;
+    font-size: 0.75rem;
+  }
+
+  .valor-cell.anterior {
+    color: var(--neutral-500);
+    text-decoration: line-through;
+  }
+
+  .valor-cell.nuevo {
+    color: var(--neutral-800);
+    font-weight: 500;
+  }
+
+  .usuario-cell {
+    color: var(--neutral-600);
+  }
+
+  .fecha-cell {
+    color: var(--neutral-500);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    .bitacora-table {
+      font-size: 0.75rem;
+    }
+
+    .bitacora-table th,
+    .bitacora-table td {
+      padding: 0.5rem;
+    }
+  }
+</style>

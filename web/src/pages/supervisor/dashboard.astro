@@ -1,0 +1,980 @@
+---
+import SupervisorLayout from '../../layouts/roles/SupervisorLayout.astro';
+
+// =============================================
+// DATOS DE EJEMPLO (DUMMY DATA)
+// =============================================
+
+const periodos = [
+  { value: 'mensual', label: 'Mensual' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'anual', label: 'Anual' }
+];
+
+const entidades = [
+  { value: 'todas', label: 'Todas las entidades' },
+  { value: 'sui', label: 'SUI' },
+  { value: 'creg', label: 'CREG' },
+  { value: 'anh', label: 'ANH' },
+  { value: 'minminas', label: 'MinMinas' }
+];
+
+const responsables = [
+  { value: 'todos', label: 'Todos los responsables' },
+  { value: 'juan', label: 'Juan Rodríguez' },
+  { value: 'maria', label: 'María Castro' },
+  { value: 'pedro', label: 'Pedro Martínez' },
+  { value: 'ana', label: 'Ana García' }
+];
+
+// KPIs del supervisor
+const kpisData = {
+  mensual: {
+    enRevision: 8,
+    enCorreccion: 3,
+    pendientesRevision: 5,
+    atrasados: 2,
+    periodoTexto: 'en el último mes'
+  },
+  trimestral: {
+    enRevision: 15,
+    enCorreccion: 7,
+    pendientesRevision: 12,
+    atrasados: 5,
+    periodoTexto: 'en el último trimestre'
+  },
+  anual: {
+    enRevision: 45,
+    enCorreccion: 18,
+    pendientesRevision: 28,
+    atrasados: 12,
+    periodoTexto: 'en el último año'
+  }
+};
+
+// Estado general de reportes supervisados
+const estadoReportes = {
+  mensual: { pendiente: 12, enRevision: 8, enCorreccion: 3, aprobado: 25, atrasado: 2, total: 50 },
+  trimestral: { pendiente: 28, enRevision: 15, enCorreccion: 7, aprobado: 85, atrasado: 5, total: 140 },
+  anual: { pendiente: 45, enRevision: 45, enCorreccion: 18, aprobado: 380, atrasado: 12, total: 500 }
+};
+
+// Carga de trabajo por responsable
+const cargaResponsables = [
+  { nombre: 'Juan Rodríguez', total: 15, pendiente: 4, enRevision: 3, atrasado: 1 },
+  { nombre: 'María Castro', total: 12, pendiente: 2, enRevision: 2, atrasado: 0 },
+  { nombre: 'Pedro Martínez', total: 18, pendiente: 6, enRevision: 4, atrasado: 2 },
+  { nombre: 'Ana García', total: 10, pendiente: 3, enRevision: 1, atrasado: 0 },
+  { nombre: 'Carlos López', total: 8, pendiente: 2, enRevision: 2, atrasado: 1 }
+];
+
+// Actividad reciente de supervisión
+const actividadSupervision = [
+  { accion: 'Aprobó', reporte: 'SUI-045', responsable: 'María Castro', tiempo: 'Hace 20 minutos', resultado: 'aprobado' },
+  { accion: 'Solicitó corrección', reporte: 'CREG-102', responsable: 'Juan Rodríguez', tiempo: 'Hace 1 hora', resultado: 'correccion' },
+  { accion: 'Aprobó', reporte: 'ANH-018', responsable: 'Ana García', tiempo: 'Hace 2 horas', resultado: 'aprobado' },
+  { accion: 'Reasignó', reporte: 'SUI-089', responsable: 'Pedro Martínez → Carlos López', tiempo: 'Hace 3 horas', resultado: 'reasignado' },
+  { accion: 'Rechazó', reporte: 'CREG-078', responsable: 'Juan Rodríguez', tiempo: 'Ayer, 16:00', resultado: 'rechazado' },
+  { accion: 'Aprobó', reporte: 'ANH-015', responsable: 'María Castro', tiempo: 'Ayer, 11:30', resultado: 'aprobado' }
+];
+
+// Progreso por entidad
+const progresoEntidades = [
+  { entidad: 'SUI', cumplidos: 85, atrasados: 15 },
+  { entidad: 'CREG', cumplidos: 78, atrasados: 22 },
+  { entidad: 'ANH', cumplidos: 92, atrasados: 8 },
+  { entidad: 'MinMinas', cumplidos: 70, atrasados: 30 },
+  { entidad: 'SSPD', cumplidos: 88, atrasados: 12 }
+];
+---
+
+<SupervisorLayout title="Tablero de Supervisión">
+  <div class="dashboard-supervisor">
+    <!-- Barra Superior con Filtros -->
+    <header class="dashboard-header-bar">
+      <div class="header-left">
+        <div class="period-filter">
+          <label for="periodo-select" class="filter-label">Periodo:</label>
+          <select id="periodo-select" class="filter-select">
+            {periodos.map(p => (
+              <option value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+        <div class="entity-filter">
+          <select id="entidad-select" class="filter-select">
+            {entidades.map(e => (
+              <option value={e.value}>{e.label}</option>
+            ))}
+          </select>
+        </div>
+        <div class="responsable-filter">
+          <select id="responsable-select" class="filter-select">
+            {responsables.map(r => (
+              <option value={r.value}>{r.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="supervision-badge">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          Supervisando 5 responsables
+        </span>
+      </div>
+    </header>
+
+    <!-- Fila de Tarjetas KPI -->
+    <section class="kpis-row">
+      <div class="kpi-card revision">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-revision">8</span>
+          <span class="kpi-label">En revisión</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card correccion">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-correccion">3</span>
+          <span class="kpi-label">En corrección</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card pendientes">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-pendientes">5</span>
+          <span class="kpi-label">Pendientes por revisar</span>
+          <span class="kpi-periodo">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card atrasados">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-atrasados">2</span>
+          <span class="kpi-label">Reportes atrasados</span>
+          <span class="kpi-periodo">requieren atención</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bloque Central: Gráficas -->
+    <div class="charts-row">
+      <!-- Estado General de Reportes -->
+      <section class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Estado General de Reportes Supervisados</h3>
+        </div>
+        <div class="chart-content">
+          <div class="donut-chart-container">
+            <div class="donut-chart">
+              <svg viewBox="0 0 36 36" class="donut-svg">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F4C453" stroke-width="3" stroke-dasharray="24 76" stroke-dashoffset="25"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3d85d1" stroke-width="3" stroke-dasharray="16 84" stroke-dashoffset="1"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F97316" stroke-width="3" stroke-dasharray="6 94" stroke-dashoffset="-15"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ADE80" stroke-width="3" stroke-dasharray="50 50" stroke-dashoffset="-21"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#EF4444" stroke-width="3" stroke-dasharray="4 96" stroke-dashoffset="-71"></circle>
+              </svg>
+              <div class="donut-center">
+                <span class="donut-total" id="total-reportes">50</span>
+                <span class="donut-label">reportes</span>
+              </div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background: #F4C453"></span>
+              <span class="legend-text">Pendiente</span>
+              <span class="legend-value">12 (24%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #3d85d1"></span>
+              <span class="legend-text">En revisión</span>
+              <span class="legend-value">8 (16%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #F97316"></span>
+              <span class="legend-text">En corrección</span>
+              <span class="legend-value">3 (6%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #4ADE80"></span>
+              <span class="legend-text">Aprobado</span>
+              <span class="legend-value">25 (50%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #EF4444"></span>
+              <span class="legend-text">Atrasado</span>
+              <span class="legend-value">2 (4%)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Carga de Trabajo por Responsable -->
+      <section class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Carga de Trabajo por Responsable</h3>
+        </div>
+        <div class="carga-content">
+          {cargaResponsables.map(resp => (
+            <div class="carga-item">
+              <div class="carga-header">
+                <span class="carga-nombre">{resp.nombre}</span>
+                <span class="carga-total">{resp.total} reportes</span>
+              </div>
+              <div class="carga-bar">
+                <div class="carga-segment pendiente" style={`width: ${(resp.pendiente / resp.total) * 100}%`} title={`Pendiente: ${resp.pendiente}`}></div>
+                <div class="carga-segment revision" style={`width: ${(resp.enRevision / resp.total) * 100}%`} title={`En revisión: ${resp.enRevision}`}></div>
+                <div class="carga-segment atrasado" style={`width: ${(resp.atrasado / resp.total) * 100}%`} title={`Atrasado: ${resp.atrasado}`}></div>
+              </div>
+              <div class="carga-stats">
+                <span class="stat pendiente">{resp.pendiente} pend.</span>
+                <span class="stat revision">{resp.enRevision} rev.</span>
+                {resp.atrasado > 0 && <span class="stat atrasado">{resp.atrasado} atras.</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="carga-legend">
+          <span class="legend-item"><span class="dot pendiente"></span> Pendiente</span>
+          <span class="legend-item"><span class="dot revision"></span> En revisión</span>
+          <span class="legend-item"><span class="dot atrasado"></span> Atrasado</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Fila Inferior -->
+    <div class="bottom-row">
+      <!-- Actividad de Supervisión -->
+      <section class="section-card actividad-card">
+        <div class="card-header">
+          <h3 class="card-title">Actividad Reciente de Supervisión</h3>
+          <a href="/supervisor/reportes" class="view-all-link">Ver todos</a>
+        </div>
+        <div class="actividad-list">
+          {actividadSupervision.map(item => (
+            <div class="actividad-item">
+              <div class={`actividad-icon ${item.resultado}`}>
+                {item.resultado === 'aprobado' ? (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                ) : item.resultado === 'correccion' ? (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+                ) : item.resultado === 'rechazado' ? (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                )}
+              </div>
+              <div class="actividad-content">
+                <div class="actividad-descripcion">
+                  <strong>{item.accion}</strong> reporte <span class="codigo">{item.reporte}</span>
+                </div>
+                <div class="actividad-meta">
+                  <span class="responsable">{item.responsable}</span>
+                  <span class="tiempo">{item.tiempo}</span>
+                </div>
+              </div>
+              <span class={`actividad-badge ${item.resultado}`}>
+                {item.resultado === 'aprobado' ? 'Aprobado' : 
+                 item.resultado === 'correccion' ? 'Corrección' : 
+                 item.resultado === 'rechazado' ? 'Rechazado' : 'Reasignado'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- Progreso por Entidad -->
+      <section class="section-card progreso-card">
+        <div class="card-header">
+          <h3 class="card-title">Progreso por Entidad</h3>
+        </div>
+        <div class="progreso-list">
+          {progresoEntidades.map(item => (
+            <div class="progreso-item">
+              <div class="progreso-header">
+                <span class="progreso-entidad">{item.entidad}</span>
+                <span class="progreso-porcentaje">{item.cumplidos}%</span>
+              </div>
+              <div class="progreso-bar">
+                <div class="progreso-fill cumplido" style={`width: ${item.cumplidos}%`}></div>
+                <div class="progreso-fill atrasado" style={`width: ${item.atrasados}%`}></div>
+              </div>
+              <div class="progreso-stats">
+                <span class="stat cumplido">{item.cumplidos}% cumplidos</span>
+                <span class="stat atrasado">{item.atrasados}% atrasados</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="progreso-legend">
+          <span class="legend-item"><span class="dot cumplido"></span> Cumplidos a tiempo</span>
+          <span class="legend-item"><span class="dot atrasado"></span> Atrasados/Tardíos</span>
+        </div>
+      </section>
+    </div>
+  </div>
+</SupervisorLayout>
+
+<script>
+  const kpisData = {
+    mensual: {
+      enRevision: 8,
+      enCorreccion: 3,
+      pendientesRevision: 5,
+      atrasados: 2
+    },
+    trimestral: {
+      enRevision: 15,
+      enCorreccion: 7,
+      pendientesRevision: 12,
+      atrasados: 5
+    },
+    anual: {
+      enRevision: 45,
+      enCorreccion: 18,
+      pendientesRevision: 28,
+      atrasados: 12
+    }
+  };
+
+  const estadoReportes = {
+    mensual: { pendiente: 12, enRevision: 8, enCorreccion: 3, aprobado: 25, atrasado: 2, total: 50 },
+    trimestral: { pendiente: 28, enRevision: 15, enCorreccion: 7, aprobado: 85, atrasado: 5, total: 140 },
+    anual: { pendiente: 45, enRevision: 45, enCorreccion: 18, aprobado: 380, atrasado: 12, total: 500 }
+  };
+
+  function actualizarDashboard(periodo: string) {
+    const data = kpisData[periodo as keyof typeof kpisData];
+    const estado = estadoReportes[periodo as keyof typeof estadoReportes];
+    
+    const kpiRevision = document.getElementById('kpi-revision');
+    const kpiCorreccion = document.getElementById('kpi-correccion');
+    const kpiPendientes = document.getElementById('kpi-pendientes');
+    const kpiAtrasados = document.getElementById('kpi-atrasados');
+    const totalReportes = document.getElementById('total-reportes');
+    
+    if (kpiRevision) kpiRevision.textContent = data.enRevision.toString();
+    if (kpiCorreccion) kpiCorreccion.textContent = data.enCorreccion.toString();
+    if (kpiPendientes) kpiPendientes.textContent = data.pendientesRevision.toString();
+    if (kpiAtrasados) kpiAtrasados.textContent = data.atrasados.toString();
+    if (totalReportes) totalReportes.textContent = estado.total.toString();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const selectPeriodo = document.getElementById('periodo-select') as HTMLSelectElement;
+    if (selectPeriodo) {
+      selectPeriodo.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        actualizarDashboard(target.value);
+      });
+    }
+  });
+</script>
+
+<style>
+  .dashboard-supervisor {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Header Bar */
+  .dashboard-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+  }
+
+  .filter-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: #4ADE80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+  }
+
+  .period-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .supervision-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--neutral-600);
+    padding: 0.375rem 0.75rem;
+    background: rgba(74, 222, 128, 0.1);
+    border-radius: 6px;
+  }
+
+  .supervision-badge svg {
+    color: #4ADE80;
+  }
+
+  /* KPIs Row */
+  .kpis-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .kpis-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .kpis-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+  }
+
+  .kpi-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .kpi-card.revision { border-left-color: #3d85d1; }
+  .kpi-card.correccion { border-left-color: #F97316; }
+  .kpi-card.pendientes { border-left-color: #F4C453; }
+  .kpi-card.atrasados { border-left-color: #EF4444; }
+
+  .kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .kpi-card.revision .kpi-icon { background: var(--color-primary-100); color: var(--color-primary-600); }
+  .kpi-card.correccion .kpi-icon { background: var(--accent-orange-100); color: var(--accent-orange-600); }
+  .kpi-card.pendientes .kpi-icon { background: rgba(244, 196, 83, 0.15); color: #B45309; }
+  .kpi-card.atrasados .kpi-icon { background: var(--error-red-100); color: var(--error-red-600); }
+
+  .kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .kpi-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .kpi-periodo {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  /* Charts Row */
+  .charts-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .charts-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .chart-card,
+  .section-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .chart-header,
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .chart-title,
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .view-all-link {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-primary-600);
+    text-decoration: none;
+  }
+
+  .view-all-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Donut Chart */
+  .chart-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .chart-content {
+      flex-direction: column;
+    }
+  }
+
+  .donut-chart-container {
+    flex-shrink: 0;
+  }
+
+  .donut-chart {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+
+  .donut-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .donut-total {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .donut-label {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .legend-text {
+    font-size: 0.8125rem;
+    color: var(--neutral-700);
+    flex: 1;
+  }
+
+  .legend-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  /* Carga Content */
+  .carga-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .carga-item {
+    padding: 0.75rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+  }
+
+  .carga-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .carga-nombre {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  .carga-total {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .carga-bar {
+    display: flex;
+    height: 8px;
+    background: var(--neutral-200);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.375rem;
+  }
+
+  .carga-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .carga-segment.pendiente { background: #F4C453; }
+  .carga-segment.revision { background: #3d85d1; }
+  .carga-segment.atrasado { background: #EF4444; }
+
+  .carga-stats {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .carga-stats .stat {
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  .carga-stats .stat.pendiente { color: #B45309; }
+  .carga-stats .stat.revision { color: var(--color-primary-600); }
+  .carga-stats .stat.atrasado { color: var(--error-red-600); }
+
+  .carga-legend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  .carga-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.6875rem;
+    color: var(--neutral-600);
+  }
+
+  .carga-legend .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .carga-legend .dot.pendiente { background: #F4C453; }
+  .carga-legend .dot.revision { background: #3d85d1; }
+  .carga-legend .dot.atrasado { background: #EF4444; }
+
+  /* Bottom Row */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .bottom-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Actividad List */
+  .actividad-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  .actividad-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+
+  .actividad-item:hover {
+    background: var(--neutral-100);
+  }
+
+  .actividad-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .actividad-icon.aprobado { background: var(--success-green-100); color: var(--success-green-600); }
+  .actividad-icon.correccion { background: var(--accent-orange-100); color: var(--accent-orange-600); }
+  .actividad-icon.rechazado { background: var(--error-red-100); color: var(--error-red-600); }
+  .actividad-icon.reasignado { background: var(--color-primary-100); color: var(--color-primary-600); }
+
+  .actividad-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .actividad-descripcion {
+    font-size: 0.8125rem;
+    color: var(--neutral-700);
+    line-height: 1.4;
+  }
+
+  .actividad-descripcion .codigo {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  .actividad-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .actividad-meta .responsable {
+    font-size: 0.6875rem;
+    color: var(--neutral-600);
+  }
+
+  .actividad-meta .tiempo {
+    font-size: 0.6875rem;
+    color: var(--neutral-500);
+  }
+
+  .actividad-badge {
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .actividad-badge.aprobado { background: var(--success-green-100); color: var(--success-green-700); }
+  .actividad-badge.correccion { background: var(--accent-orange-100); color: var(--accent-orange-700); }
+  .actividad-badge.rechazado { background: var(--error-red-100); color: var(--error-red-700); }
+  .actividad-badge.reasignado { background: var(--color-primary-100); color: var(--color-primary-700); }
+
+  /* Progreso List */
+  .progreso-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .progreso-item {
+    padding: 0.75rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+  }
+
+  .progreso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .progreso-entidad {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  .progreso-porcentaje {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--success-green-600);
+  }
+
+  .progreso-bar {
+    display: flex;
+    height: 10px;
+    background: var(--neutral-200);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 0.375rem;
+  }
+
+  .progreso-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .progreso-fill.cumplido { background: #4ADE80; }
+  .progreso-fill.atrasado { background: #F97316; }
+
+  .progreso-stats {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progreso-stats .stat {
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  .progreso-stats .stat.cumplido { color: var(--success-green-600); }
+  .progreso-stats .stat.atrasado { color: var(--accent-orange-600); }
+
+  .progreso-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  .progreso-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.6875rem;
+    color: var(--neutral-600);
+  }
+
+  .progreso-legend .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .progreso-legend .dot.cumplido { background: #4ADE80; }
+  .progreso-legend .dot.atrasado { background: #F97316; }
+</style>
