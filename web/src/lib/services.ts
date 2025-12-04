@@ -28,13 +28,15 @@ export interface EntidadRequest {
 }
 
 export interface EntidadResponse {
-  id: number;
+  entidadId: string;
+  nit: string;
   nombre: string;
-  codigo: string;
-  descripcion?: string;
-  activa: boolean;
-  creadoEn: string;
-  actualizadoEn: string;
+  paginaWeb: string;
+  baseLegal: string;
+  observaciones: string;
+  estado: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ReporteRequest {
@@ -49,8 +51,8 @@ export interface ReporteRequest {
   fechaVencimiento: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
-  responsableElaboracionId: string;
-  responsableSupervisionId?: string;
+  responsableElaboracionId: string[];
+  responsableSupervisionId?: string[];
   correosNotificacion?: string[];
   telefonoResponsable?: string;
   estado?: "PENDIENTE" | "EN_PROGRESO" | "ENVIADO";
@@ -70,9 +72,9 @@ export interface ReporteResponse {
   fechaVencimiento: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
-  responsableElaboracionId: string;
+  responsableElaboracionId: string[];
   responsableElaboracionNombre: string;
-  responsableSupervisionId?: string;
+  responsableSupervisionId?: string[];
   responsableSupervisionNombre?: string;
   correosNotificacion?: string[];
   telefonoResponsable?: string;
@@ -82,12 +84,12 @@ export interface ReporteResponse {
 }
 
 export interface EvidenciaResponse {
-  id: number;
+  id: string;
   nombreArchivo: string;
   tipoArchivo: string;
   tamano: number;
-  reporteId: number;
-  subidoPorId: number;
+  reporteId: string;
+  subidoPorId: string;
   subidoPorNombre: string;
   creadoEn: string;
 }
@@ -104,13 +106,17 @@ export interface DashboardResponse {
 export interface UsuarioResponse {
   usuarioId: string;
   documentNumber: string;
-  documentType: string;
+  documentType: string | null;
   email: string;
   firstName: string;
-  secondName?: string;
+  secondName?: string | null;
   firstLastname: string;
-  secondLastname?: string;
-  birthDate: string;
+  secondLastname?: string | null;
+  telefono?: string;
+  proceso?: string;
+  cargo?: string;
+  estado?: string;
+  ultimoAcceso?: string;
   roles: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -125,7 +131,6 @@ export interface UsuarioRequest {
   firstLastname: string;
   secondLastname?: string;
   password?: string;
-  birthDate: string;
   roles: string[];
 }
 
@@ -280,7 +285,7 @@ export const entidadesService = {
     return response.data;
   },
 
-  async obtener(id: number): Promise<EntidadResponse> {
+  async obtener(id: string): Promise<EntidadResponse> {
     const response = await api.get(`/api/entidades/${id}`);
     return response.data;
   },
@@ -290,19 +295,19 @@ export const entidadesService = {
     return response.data;
   },
 
-  async actualizar(id: number, data: EntidadRequest): Promise<EntidadResponse> {
+  async actualizar(id: string, data: EntidadRequest): Promise<EntidadResponse> {
     const response = await api.put(`/api/entidades/${id}`, data);
     return response.data;
   },
 
-  async eliminar(id: number): Promise<{ mensaje: string }> {
+  async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/entidades/${id}`);
     return response.data;
   },
 };
 
 export const evidenciasService = {
-  async subir(reporteId: number, file: File): Promise<EvidenciaResponse> {
+  async subir(reporteId: string, file: File): Promise<EvidenciaResponse> {
     const formData = new FormData();
     formData.append('file', file);
     const response = await api.post(`/api/evidencias/reporte/${reporteId}`, formData, {
@@ -311,14 +316,18 @@ export const evidenciasService = {
     return response.data;
   },
 
-  async listarPorReporte(reporteId: number): Promise<EvidenciaResponse[]> {
+  async listarPorReporte(reporteId: string): Promise<EvidenciaResponse[]> {
     const response = await api.get(`/api/evidencias/reporte/${reporteId}`);
     return response.data;
   },
 
-  async descargar(id: number) {
-    const response = await api.get(`/api/evidencias/${id}/descargar`, { responseType: 'blob' });
-    const blob = new Blob([response.data], { type: response.headers['content-type'] });
+  async descargar(id: string) {
+    const response = await api.get(`/api/evidencias/${id}/descargar`, {
+      responseType: "blob",
+    });
+    const blob = new Blob([response.data], {
+      type: response.headers["content-type"],
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     const disposition = response.headers['content-disposition'];
@@ -329,7 +338,7 @@ export const evidenciasService = {
     window.URL.revokeObjectURL(url);
   },
 
-  async eliminar(id: number): Promise<{ mensaje: string }> {
+  async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/evidencias/${id}`);
     return response.data;
   },
@@ -414,5 +423,163 @@ export const usuariosService = {
       return response.data.data;
     }
     return response.data;
+  },
+};
+
+// ==================== FLUJO DE REPORTES ====================
+
+export interface ReportePeriodo {
+  periodoId: string;
+  reporteId: string;
+  reporteNombre: string;
+  entidadNombre: string;
+  periodoTipo: string;
+  periodoInicio: string;
+  periodoFin: string;
+  fechaVencimientoCalculada: string;
+  estado: string;
+  estadoDescripcion: string;
+  fechaEnvioReal: string | null;
+  diasDesviacion: number | null;
+  responsableElaboracion: {
+    usuarioId: string;
+    nombreCompleto: string;
+    email: string;
+    cargo: string;
+  };
+  responsableSupervision: {
+    usuarioId: string;
+    nombreCompleto: string;
+    email: string;
+    cargo: string;
+  };
+  comentarios: string | null;
+  cantidadArchivos: number;
+  puedeEnviar: boolean;
+  puedeAprobar: boolean;
+  puedeRechazar: boolean;
+  puedeCorregir: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnviarReporteRequest {
+  periodoId: string;
+  comentarios?: string;
+  evidenciasIds?: string[];
+}
+
+export interface ValidarReporteRequest {
+  periodoId: string;
+  accion: 'aprobar' | 'rechazar';
+  comentarios?: string;
+  motivoRechazo?: string;
+}
+
+export interface SolicitarCorreccionRequest {
+  periodoId: string;
+  motivoCorreccion: string;
+  detallesCorreccion?: string;
+  fechaLimiteCorreccion?: string;
+}
+
+export interface HistorialEstado {
+  estadoAnterior: string;
+  estadoNuevo: string;
+  fecha: string;
+  usuarioNombre: string;
+  comentario: string | null;
+}
+
+export const flujoReportesService = {
+  // Obtener mis periodos (RESPONSABLE)
+  async misPeriodos(page = 0, size = 10, sort?: string): Promise<Page<ReportePeriodo>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (sort) params.append('sort', sort);
+    
+    const response = await api.get(`/api/flujo-reportes/mis-periodos?${params}`);
+    return response.data.data;
+  },
+
+  // Obtener periodos pendientes
+  async misPeriodosPendientes(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(`/api/flujo-reportes/mis-periodos/pendientes?page=${page}&size=${size}`);
+    return response.data.data;
+  },
+
+  // Obtener periodos que requieren corrección
+  async misPeríodosCorrecciones(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(`/api/flujo-reportes/mis-periodos/requieren-correccion?page=${page}&size=${size}`);
+    return response.data.data;
+  },
+
+  // Enviar reporte
+  async enviar(request: EnviarReporteRequest): Promise<ReportePeriodo> {
+    const response = await api.post('/api/flujo-reportes/enviar', request);
+    return response.data.data;
+  },
+
+  // Corregir y reenviar
+  async corregirReenviar(request: EnviarReporteRequest): Promise<ReportePeriodo> {
+    const response = await api.post('/api/flujo-reportes/corregir-reenviar', request);
+    return response.data.data;
+  },
+
+  // Obtener periodos pendientes de validación (SUPERVISOR)
+  async pendientesValidacion(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(`/api/flujo-reportes/pendientes-validacion?page=${page}&size=${size}`);
+    return response.data.data;
+  },
+
+  // Obtener periodos bajo mi supervisión
+  async supervision(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(`/api/flujo-reportes/supervision?page=${page}&size=${size}`);
+    return response.data.data;
+  },
+
+  // Validar reporte (aprobar/rechazar)
+  async validar(request: ValidarReporteRequest): Promise<ReportePeriodo> {
+    const response = await api.post('/api/flujo-reportes/validar', request);
+    return response.data.data;
+  },
+
+  // Aprobar directamente
+  async aprobar(periodoId: string, comentarios?: string): Promise<ReportePeriodo> {
+    const params = comentarios ? `?comentarios=${encodeURIComponent(comentarios)}` : '';
+    const response = await api.post(`/api/flujo-reportes/${periodoId}/aprobar${params}`);
+    return response.data.data;
+  },
+
+  // Rechazar directamente
+  async rechazar(periodoId: string, motivoRechazo: string): Promise<ReportePeriodo> {
+    const response = await api.post(`/api/flujo-reportes/${periodoId}/rechazar?motivoRechazo=${encodeURIComponent(motivoRechazo)}`);
+    return response.data.data;
+  },
+
+  // Solicitar corrección con detalles
+  async solicitarCorreccion(request: SolicitarCorreccionRequest): Promise<ReportePeriodo> {
+    const response = await api.post('/api/flujo-reportes/solicitar-correccion', request);
+    return response.data.data;
+  },
+
+  // Obtener detalle de un periodo
+  async obtenerPeriodo(periodoId: string): Promise<ReportePeriodo> {
+    const response = await api.get(`/api/flujo-reportes/periodos/${periodoId}`);
+    return response.data.data;
+  },
+
+  // Obtener historial de estados
+  async obtenerHistorial(periodoId: string): Promise<HistorialEstado[]> {
+    const response = await api.get(`/api/flujo-reportes/periodos/${periodoId}/historial`);
+    return response.data.data;
+  },
+
+  // Filtrar por estado
+  async porEstado(estado: string, page = 0, size = 10): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(`/api/flujo-reportes/periodos/estado/${estado}?page=${page}&size=${size}`);
+    return response.data.data;
   },
 };

@@ -1,0 +1,19 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+---
+
+<MainLayout title="Pendientes de Validación">
+  <div id="pendientes-validacion-root"></div>
+</MainLayout>
+
+<script>
+  import { createRoot } from 'react-dom/client';
+  import { createElement } from 'react';
+  import PendientesValidacionPage from '../../components/pages/PendientesValidacionPage';
+
+  const rootElement = document.getElementById('pendientes-validacion-root');
+  if (rootElement) {
+    const root = createRoot(rootElement);
+    root.render(createElement(PendientesValidacionPage));
+  }
+</script>
