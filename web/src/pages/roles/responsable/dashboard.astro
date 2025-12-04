@@ -1,294 +1,411 @@
----
+﻿---
 import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
+
+// =============================================
+// DATOS DE EJEMPLO (DUMMY DATA)
+// =============================================
+
+const periodos = [
+  { value: 'mensual', label: 'Mensual' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'anual', label: 'Anual' }
+];
+
+// KPIs del responsable
+const kpisData = {
+  mensual: {
+    pendientes: 4,
+    enviados: 8,
+    vencidos: 1,
+    porVencer: 3,
+    periodoTexto: 'en el último mes'
+  },
+  trimestral: {
+    pendientes: 6,
+    enviados: 22,
+    vencidos: 2,
+    porVencer: 5,
+    periodoTexto: 'en el último trimestre'
+  },
+  anual: {
+    pendientes: 8,
+    enviados: 85,
+    vencidos: 4,
+    porVencer: 8,
+    periodoTexto: 'en el último año'
+  }
+};
+
+// Estado de reportes para gráfica donut
+const estadoReportes = {
+  mensual: { pendientes: 4, enProceso: 3, enviados: 8, total: 15 },
+  trimestral: { pendientes: 6, enProceso: 5, enviados: 22, total: 33 },
+  anual: { pendientes: 8, enProceso: 7, enviados: 85, total: 100 }
+};
+
+// Próximos vencimientos
+const proximosVencimientos = [
+  { codigo: 'SUI-001', nombre: 'Informe Comercial de Gas Natural', entidad: 'SUI', fechaVencimiento: '2025-12-10', diasRestantes: 7, progreso: 65 },
+  { codigo: 'CREG-045', nombre: 'Reporte de Tarifas Reguladas', entidad: 'CREG', fechaVencimiento: '2025-12-15', diasRestantes: 12, progreso: 40 },
+  { codigo: 'ANH-012', nombre: 'Informe de Producción Mensual', entidad: 'ANH', fechaVencimiento: '2025-12-18', diasRestantes: 15, progreso: 25 },
+  { codigo: 'SUI-008', nombre: 'Reporte de Calidad del Servicio', entidad: 'SUI', fechaVencimiento: '2025-12-22', diasRestantes: 19, progreso: 10 }
+];
+
+// Actividad personal reciente
+const actividadPersonal = [
+  { tipo: 'evidencia', reporte: 'SUI-001', descripcion: 'Subió evidencia: Facturación_Nov.xlsx', tiempo: 'Hace 30 minutos', estado: 'En revisión' },
+  { tipo: 'confirmacion', reporte: 'CREG-102', descripcion: 'Confirmó envío del reporte', tiempo: 'Hace 2 horas', estado: 'Enviado' },
+  { tipo: 'correccion', reporte: 'ANH-008', descripcion: 'Recibió solicitud de corrección', tiempo: 'Ayer, 16:45', estado: 'En corrección' },
+  { tipo: 'evidencia', reporte: 'SUI-005', descripcion: 'Actualizó archivo adjunto', tiempo: 'Ayer, 10:30', estado: 'En proceso' },
+  { tipo: 'confirmacion', reporte: 'CREG-098', descripcion: 'Reporte aprobado por supervisor', tiempo: 'Hace 2 días', estado: 'Enviado' }
+];
+
+// Historial de cumplimiento
+const historialCumplimiento = {
+  mensual: [
+    { mes: 'Jul', aTiempo: 85, tarde: 15 },
+    { mes: 'Ago', aTiempo: 90, tarde: 10 },
+    { mes: 'Sep', aTiempo: 88, tarde: 12 },
+    { mes: 'Oct', aTiempo: 92, tarde: 8 },
+    { mes: 'Nov', aTiempo: 95, tarde: 5 },
+    { mes: 'Dic', aTiempo: 87, tarde: 13 }
+  ],
+  trimestral: [
+    { mes: 'Q1', aTiempo: 82, tarde: 18 },
+    { mes: 'Q2', aTiempo: 88, tarde: 12 },
+    { mes: 'Q3', aTiempo: 91, tarde: 9 },
+    { mes: 'Q4', aTiempo: 89, tarde: 11 }
+  ],
+  anual: [
+    { mes: '2022', aTiempo: 78, tarde: 22 },
+    { mes: '2023', aTiempo: 85, tarde: 15 },
+    { mes: '2024', aTiempo: 91, tarde: 9 },
+    { mes: '2025', aTiempo: 88, tarde: 12 }
+  ]
+};
 ---
 
-<ResponsableLayout title="Dashboard Personal">
+<ResponsableLayout title="Mi Panel de Reportes">
   <div class="dashboard-responsable">
-    <!-- Bienvenida -->
-    <section class="welcome-section">
-      <div class="welcome-content">
-        <h1 class="welcome-title">¡Buenos días, Juan!</h1>
-        <p class="welcome-subtitle">Aquí está el resumen de tus actividades</p>
+    <!-- Barra Superior con Filtros -->
+    <header class="dashboard-header-bar">
+      <div class="header-left">
+        <div class="period-filter">
+          <label for="periodo-select" class="filter-label">Periodo:</label>
+          <select id="periodo-select" class="filter-select">
+            {periodos.map(p => (
+              <option value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
-      <div class="welcome-date">
-        <span class="date-day">10</span>
-        <span class="date-month">Febrero 2025</span>
+      <div class="header-right">
+        <span class="periodo-info">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Mostrando datos de mis reportes
+        </span>
+      </div>
+    </header>
+
+    <!-- Fila de Tarjetas KPI -->
+    <section class="kpis-row">
+      <div class="kpi-card pendiente">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-pendientes">4</span>
+          <span class="kpi-label">Reportes pendientes</span>
+          <span class="kpi-periodo" id="kpi-periodo-1">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card enviado">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-enviados">8</span>
+          <span class="kpi-label">Reportes enviados</span>
+          <span class="kpi-periodo" id="kpi-periodo-2">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card vencido">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-vencidos">1</span>
+          <span class="kpi-label">Reportes vencidos</span>
+          <span class="kpi-periodo" id="kpi-periodo-3">en el último mes</span>
+        </div>
+      </div>
+
+      <div class="kpi-card por-vencer">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" id="kpi-por-vencer">3</span>
+          <span class="kpi-label">Vencen pronto</span>
+          <span class="kpi-periodo">próximos 7 días</span>
+        </div>
       </div>
     </section>
 
-    <!-- KPIs Personales -->
-    <section class="kpis-section">
-      <div class="kpis-grid">
-        <div class="kpi-card primary">
-          <div class="kpi-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <path d="M14 2v6h6"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">12</span>
-            <span class="kpi-label">Mis Reportes</span>
-          </div>
+    <!-- Bloque Central: Estado de Reportes -->
+    <section class="estado-reportes-section">
+      <div class="section-card">
+        <div class="card-header">
+          <h3 class="card-title">Estado de Mis Reportes</h3>
         </div>
-
-        <div class="kpi-card warning">
-          <div class="kpi-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
-            </svg>
+        <div class="estado-content">
+          <div class="donut-chart-container">
+            <div class="donut-chart">
+              <svg viewBox="0 0 36 36" class="donut-svg">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F4C453" stroke-width="3" stroke-dasharray="27 73" stroke-dashoffset="25"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3d85d1" stroke-width="3" stroke-dasharray="20 80" stroke-dashoffset="-2"></circle>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ADE80" stroke-width="3" stroke-dasharray="53 47" stroke-dashoffset="-22"></circle>
+              </svg>
+              <div class="donut-center">
+                <span class="donut-total" id="total-reportes">15</span>
+                <span class="donut-label">reportes</span>
+              </div>
+            </div>
           </div>
-          <div class="kpi-content">
-            <span class="kpi-value">4</span>
-            <span class="kpi-label">Pendientes</span>
-          </div>
-        </div>
-
-        <div class="kpi-card danger">
-          <div class="kpi-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">2</span>
-            <span class="kpi-label">Próximos a Vencer</span>
-          </div>
-        </div>
-
-        <div class="kpi-card success">
-          <div class="kpi-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">91%</span>
-            <span class="kpi-label">Cumplimiento</span>
+          <div class="estado-legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background: #F4C453"></span>
+              <span class="legend-text">Pendientes</span>
+              <span class="legend-value" id="legend-pendientes">4 (27%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #3d85d1"></span>
+              <span class="legend-text">En proceso</span>
+              <span class="legend-value" id="legend-proceso">3 (20%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #4ADE80"></span>
+              <span class="legend-text">Enviados</span>
+              <span class="legend-value" id="legend-enviados">8 (53%)</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <div class="dashboard-grid">
-      <!-- Reportes Próximos a Vencer -->
-      <section class="section-card">
-        <div class="section-header">
-          <h2 class="section-title">Próximos a Vencer</h2>
-          <a href="/roles/responsable/mis-reportes" class="view-all">Ver todos</a>
+    <!-- Fila de Contenido: Vencimientos y Actividad -->
+    <div class="content-row">
+      <!-- Próximos Vencimientos -->
+      <section class="section-card vencimientos-card">
+        <div class="card-header">
+          <h3 class="card-title">Próximos Vencimientos</h3>
+          <a href="/responsable/mis-reportes" class="view-all-link">Ver todos</a>
         </div>
-        <div class="reportes-list">
-          <div class="reporte-item urgent">
-            <div class="reporte-info">
-              <span class="reporte-code">SUI-001</span>
-              <span class="reporte-name">Informe Comercial de Gas Natural</span>
+        <div class="vencimientos-list">
+          {proximosVencimientos.map(item => (
+            <div class={`vencimiento-item ${item.diasRestantes <= 7 ? 'urgent' : item.diasRestantes <= 14 ? 'warning' : 'normal'}`}>
+              <div class="vencimiento-header">
+                <div class="vencimiento-info">
+                  <span class="vencimiento-codigo">{item.codigo}</span>
+                  <span class="vencimiento-nombre">{item.nombre}</span>
+                </div>
+                <span class={`vencimiento-dias ${item.diasRestantes <= 7 ? 'urgent' : item.diasRestantes <= 14 ? 'warning' : ''}`}>
+                  {item.diasRestantes} días
+                </span>
+              </div>
+              <div class="vencimiento-meta">
+                <span class="vencimiento-entidad">{item.entidad}</span>
+                <span class="vencimiento-fecha">Vence: {new Date(item.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</span>
+              </div>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-fill" style={`width: ${item.progreso}%`}></div>
+                </div>
+                <span class="progress-text">{item.progreso}%</span>
+              </div>
             </div>
-            <div class="reporte-meta">
-              <span class="reporte-entidad">SUI</span>
-              <span class="reporte-deadline urgent">En 5 días</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 65%"></div>
-            </div>
-            <span class="progress-text">65% completado</span>
-          </div>
-
-          <div class="reporte-item warning">
-            <div class="reporte-info">
-              <span class="reporte-code">SUI-008</span>
-              <span class="reporte-name">Informe de Calidad del Servicio</span>
-            </div>
-            <div class="reporte-meta">
-              <span class="reporte-entidad">SUI</span>
-              <span class="reporte-deadline warning">En 10 días</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 30%"></div>
-            </div>
-            <span class="progress-text">30% completado</span>
-          </div>
+          ))}
         </div>
       </section>
 
-      <!-- Tareas Pendientes -->
-      <section class="section-card">
-        <div class="section-header">
-          <h2 class="section-title">Tareas Pendientes</h2>
-          <a href="/roles/responsable/mis-tareas" class="view-all">Ver todas</a>
+      <!-- Actividad Personal Reciente -->
+      <section class="section-card actividad-card">
+        <div class="card-header">
+          <h3 class="card-title">Mi Actividad Reciente</h3>
         </div>
-        <div class="tareas-list">
-          <div class="tarea-item">
-            <label class="tarea-checkbox">
-              <input type="checkbox" />
-              <span class="checkmark"></span>
-            </label>
-            <div class="tarea-content">
-              <span class="tarea-titulo">Completar sección 3 del SUI-001</span>
-              <span class="tarea-meta">Vence hoy</span>
+        <div class="actividad-list">
+          {actividadPersonal.map(item => (
+            <div class="actividad-item">
+              <div class={`actividad-icon ${item.tipo}`}>
+                {item.tipo === 'evidencia' ? (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                ) : item.tipo === 'confirmacion' ? (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+                )}
+              </div>
+              <div class="actividad-content">
+                <div class="actividad-descripcion">
+                  <strong>{item.reporte}</strong> - {item.descripcion}
+                </div>
+                <div class="actividad-footer">
+                  <span class="actividad-tiempo">{item.tiempo}</span>
+                  <span class={`actividad-estado ${item.estado.toLowerCase().replace(' ', '-')}`}>{item.estado}</span>
+                </div>
+              </div>
             </div>
-            <span class="tarea-priority high">Alta</span>
-          </div>
-          <div class="tarea-item">
-            <label class="tarea-checkbox">
-              <input type="checkbox" />
-              <span class="checkmark"></span>
-            </label>
-            <div class="tarea-content">
-              <span class="tarea-titulo">Subir evidencias ANH-012</span>
-              <span class="tarea-meta">Vence mañana</span>
-            </div>
-            <span class="tarea-priority medium">Media</span>
-          </div>
-          <div class="tarea-item">
-            <label class="tarea-checkbox">
-              <input type="checkbox" />
-              <span class="checkmark"></span>
-            </label>
-            <div class="tarea-content">
-              <span class="tarea-titulo">Revisar comentarios supervisor</span>
-              <span class="tarea-meta">Vence en 3 días</span>
-            </div>
-            <span class="tarea-priority low">Baja</span>
-          </div>
-          <div class="tarea-item completed">
-            <label class="tarea-checkbox">
-              <input type="checkbox" checked />
-              <span class="checkmark"></span>
-            </label>
-            <div class="tarea-content">
-              <span class="tarea-titulo">Enviar reporte CREG-102</span>
-              <span class="tarea-meta">Completada</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Alertas Recientes -->
-      <section class="section-card">
-        <div class="section-header">
-          <h2 class="section-title">Alertas</h2>
-          <a href="/roles/responsable/alertas" class="view-all">Ver todas</a>
-        </div>
-        <div class="alertas-list">
-          <div class="alerta-item critical">
-            <div class="alerta-icon">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-            </div>
-            <div class="alerta-content">
-              <span class="alerta-titulo">SUI-001 vence en 5 días</span>
-              <span class="alerta-tiempo">Hace 2 horas</span>
-            </div>
-          </div>
-          <div class="alerta-item info">
-            <div class="alerta-icon">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-            </div>
-            <div class="alerta-content">
-              <span class="alerta-titulo">Supervisor aprobó ANH-012</span>
-              <span class="alerta-tiempo">Ayer</span>
-            </div>
-          </div>
-          <div class="alerta-item warning">
-            <div class="alerta-icon">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </div>
-            <div class="alerta-content">
-              <span class="alerta-titulo">Nuevo reporte asignado: SUI-015</span>
-              <span class="alerta-tiempo">Hace 2 días</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Mi Calendario Resumen -->
-      <section class="section-card">
-        <div class="section-header">
-          <h2 class="section-title">Esta Semana</h2>
-          <a href="/roles/responsable/calendario" class="view-all">Ver calendario</a>
-        </div>
-        <div class="mini-calendar">
-          <div class="week-days">
-            <div class="week-day">
-              <span class="day-name">Lun</span>
-              <span class="day-num">10</span>
-              <span class="day-today">Hoy</span>
-            </div>
-            <div class="week-day">
-              <span class="day-name">Mar</span>
-              <span class="day-num">11</span>
-            </div>
-            <div class="week-day has-event">
-              <span class="day-name">Mié</span>
-              <span class="day-num">12</span>
-              <span class="event-dot pending"></span>
-            </div>
-            <div class="week-day">
-              <span class="day-name">Jue</span>
-              <span class="day-num">13</span>
-            </div>
-            <div class="week-day has-event">
-              <span class="day-name">Vie</span>
-              <span class="day-num">14</span>
-              <span class="event-dot progress"></span>
-            </div>
-            <div class="week-day has-event">
-              <span class="day-name">Sáb</span>
-              <span class="day-num">15</span>
-              <span class="event-dot urgent"></span>
-            </div>
-            <div class="week-day">
-              <span class="day-name">Dom</span>
-              <span class="day-num">16</span>
-            </div>
-          </div>
-          <div class="week-events">
-            <div class="week-event urgent">
-              <span class="event-date">15 Feb</span>
-              <span class="event-name">SUI-001 - Fecha límite</span>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
     </div>
 
-    <!-- Acción Rápida -->
-    <section class="quick-action-section">
-      <a href="/roles/responsable/crear-reporte" class="quick-action-card">
-        <div class="quick-action-icon">
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="11" x2="12" y2="17"/>
-            <line x1="9" y1="14" x2="15" y2="14"/>
-          </svg>
+    <!-- Historial de Cumplimiento -->
+    <section class="section-card historial-card">
+      <div class="card-header">
+        <h3 class="card-title">Historial de Cumplimiento</h3>
+        <div class="cumplimiento-badge">
+          <span class="cumplimiento-valor">87%</span>
+          <span class="cumplimiento-texto">promedio</span>
         </div>
-        <div class="quick-action-content">
-          <h3>Crear Nuevo Reporte</h3>
-          <p>Inicia la elaboración de un nuevo reporte regulatorio</p>
+      </div>
+      <div class="historial-content">
+        <div class="historial-bars" id="historial-bars">
+          {historialCumplimiento.mensual.map(item => (
+            <div class="historial-bar-group">
+              <div class="bar-stack">
+                <div class="bar-segment tarde" style={`height: ${item.tarde}%`} title={`Tarde: ${item.tarde}%`}></div>
+                <div class="bar-segment a-tiempo" style={`height: ${item.aTiempo}%`} title={`A tiempo: ${item.aTiempo}%`}></div>
+              </div>
+              <span class="bar-label">{item.mes}</span>
+            </div>
+          ))}
         </div>
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9,18 15,12 9,6"/>
-        </svg>
-      </a>
+        <div class="historial-legend">
+          <div class="legend-item">
+            <span class="legend-color" style="background: #4ADE80"></span>
+            <span class="legend-text">Enviados a tiempo</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #F97316"></span>
+            <span class="legend-text">Enviados tarde</span>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 </ResponsableLayout>
+
+<script>
+  const kpisData = {
+    mensual: {
+      pendientes: 4,
+      enviados: 8,
+      vencidos: 1,
+      porVencer: 3,
+      periodoTexto: 'en el último mes'
+    },
+    trimestral: {
+      pendientes: 6,
+      enviados: 22,
+      vencidos: 2,
+      porVencer: 5,
+      periodoTexto: 'en el último trimestre'
+    },
+    anual: {
+      pendientes: 8,
+      enviados: 85,
+      vencidos: 4,
+      porVencer: 8,
+      periodoTexto: 'en el último año'
+    }
+  };
+
+  const estadoReportes = {
+    mensual: { pendientes: 4, enProceso: 3, enviados: 8, total: 15 },
+    trimestral: { pendientes: 6, enProceso: 5, enviados: 22, total: 33 },
+    anual: { pendientes: 8, enProceso: 7, enviados: 85, total: 100 }
+  };
+
+  function actualizarDashboard(periodo: string) {
+    const data = kpisData[periodo as keyof typeof kpisData];
+    const estado = estadoReportes[periodo as keyof typeof estadoReportes];
+    
+    // Actualizar KPIs
+    const kpiPendientes = document.getElementById('kpi-pendientes');
+    const kpiEnviados = document.getElementById('kpi-enviados');
+    const kpiVencidos = document.getElementById('kpi-vencidos');
+    const kpiPorVencer = document.getElementById('kpi-por-vencer');
+    
+    if (kpiPendientes) kpiPendientes.textContent = data.pendientes.toString();
+    if (kpiEnviados) kpiEnviados.textContent = data.enviados.toString();
+    if (kpiVencidos) kpiVencidos.textContent = data.vencidos.toString();
+    if (kpiPorVencer) kpiPorVencer.textContent = data.porVencer.toString();
+    
+    // Actualizar textos de periodo
+    const periodosTextos = document.querySelectorAll('.kpi-periodo');
+    periodosTextos.forEach((el, index) => {
+      if (index < 3) {
+        el.textContent = data.periodoTexto;
+      }
+    });
+    
+    // Actualizar totales
+    const totalReportes = document.getElementById('total-reportes');
+    if (totalReportes) totalReportes.textContent = estado.total.toString();
+    
+    // Actualizar leyenda de estado
+    const pctPendientes = Math.round((estado.pendientes / estado.total) * 100);
+    const pctProceso = Math.round((estado.enProceso / estado.total) * 100);
+    const pctEnviados = Math.round((estado.enviados / estado.total) * 100);
+    
+    const legendPendientes = document.getElementById('legend-pendientes');
+    const legendProceso = document.getElementById('legend-proceso');
+    const legendEnviados = document.getElementById('legend-enviados');
+    
+    if (legendPendientes) legendPendientes.textContent = `${estado.pendientes} (${pctPendientes}%)`;
+    if (legendProceso) legendProceso.textContent = `${estado.enProceso} (${pctProceso}%)`;
+    if (legendEnviados) legendEnviados.textContent = `${estado.enviados} (${pctEnviados}%)`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const selectPeriodo = document.getElementById('periodo-select') as HTMLSelectElement;
+    if (selectPeriodo) {
+      selectPeriodo.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        actualizarDashboard(target.value);
+      });
+    }
+  });
+</script>
 
 <style>
   .dashboard-responsable {
@@ -297,62 +414,80 @@ import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
     gap: 1.5rem;
   }
 
-  /* Welcome Section */
-  .welcome-section {
+  /* Header Bar */
+  .dashboard-header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, var(--role-accent) 0%, #E5B800 100%);
-    border-radius: 16px;
-    color: var(--neutral-900);
-  }
-
-  .welcome-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .welcome-subtitle {
-    font-size: 0.9375rem;
-    margin: 0.25rem 0 0;
-    opacity: 0.8;
-  }
-
-  .welcome-date {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.25rem;
     background: white;
     border-radius: 12px;
     box-shadow: var(--shadow-card);
   }
 
-  .date-day {
-    font-size: 1.75rem;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--neutral-900);
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
-  .date-month {
-    font-size: 0.75rem;
+  .period-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .filter-label {
+    font-size: 0.875rem;
+    font-weight: 500;
     color: var(--neutral-600);
-    margin-top: 0.25rem;
   }
 
-  /* KPIs */
-  .kpis-grid {
+  .filter-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: #F4C453;
+    box-shadow: 0 0 0 3px rgba(244, 196, 83, 0.15);
+  }
+
+  .periodo-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+  }
+
+  /* KPIs Row */
+  .kpis-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
 
-  @media (max-width: 1024px) {
-    .kpis-grid {
+  @media (max-width: 1200px) {
+    .kpis-row {
       grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .kpis-row {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -362,15 +497,21 @@ import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
     padding: 1.25rem;
     box-shadow: var(--shadow-card);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 1rem;
     border-left: 4px solid;
+    transition: all 0.2s ease;
   }
 
-  .kpi-card.primary { border-left-color: var(--role-accent); }
-  .kpi-card.warning { border-left-color: var(--accent-orange-500); }
-  .kpi-card.danger { border-left-color: var(--error-red-500); }
-  .kpi-card.success { border-left-color: var(--success-green-500); }
+  .kpi-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .kpi-card.pendiente { border-left-color: #F4C453; }
+  .kpi-card.enviado { border-left-color: #4ADE80; }
+  .kpi-card.vencido { border-left-color: #EF4444; }
+  .kpi-card.por-vencer { border-left-color: #F97316; }
 
   .kpi-icon {
     width: 44px;
@@ -379,121 +520,232 @@ import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
-  .kpi-card.primary .kpi-icon { background: var(--role-accent-light); color: #92400E; }
-  .kpi-card.warning .kpi-icon { background: var(--accent-orange-100); color: var(--accent-orange-600); }
-  .kpi-card.danger .kpi-icon { background: var(--error-red-100); color: var(--error-red-600); }
-  .kpi-card.success .kpi-icon { background: var(--success-green-100); color: var(--success-green-600); }
+  .kpi-card.pendiente .kpi-icon { background: rgba(244, 196, 83, 0.15); color: #B45309; }
+  .kpi-card.enviado .kpi-icon { background: var(--success-green-100); color: var(--success-green-600); }
+  .kpi-card.vencido .kpi-icon { background: var(--error-red-100); color: var(--error-red-600); }
+  .kpi-card.por-vencer .kpi-icon { background: var(--accent-orange-100); color: var(--accent-orange-600); }
 
   .kpi-content {
     display: flex;
     flex-direction: column;
+    gap: 0.25rem;
   }
 
   .kpi-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--neutral-900);
     line-height: 1;
   }
 
   .kpi-label {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .kpi-periodo {
+    font-size: 0.75rem;
     color: var(--neutral-500);
-    margin-top: 0.25rem;
   }
 
-  /* Dashboard Grid */
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-
-  @media (max-width: 1024px) {
-    .dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
+  /* Section Card */
   .section-card {
     background: white;
     border-radius: 12px;
+    padding: 1.5rem;
     box-shadow: var(--shadow-card);
-    padding: 1.25rem;
   }
 
-  .section-header {
+  .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
   }
 
-  .section-title {
+  .card-title {
     font-size: 1rem;
     font-weight: 700;
     color: var(--neutral-800);
     margin: 0;
   }
 
-  .view-all {
+  .view-all-link {
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--color-primary-600);
     text-decoration: none;
   }
 
-  .view-all:hover {
+  .view-all-link:hover {
     text-decoration: underline;
   }
 
-  /* Reportes List */
-  .reportes-list {
+  /* Estado Reportes */
+  .estado-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .estado-content {
+      flex-direction: column;
+    }
+  }
+
+  .donut-chart-container {
+    flex-shrink: 0;
+  }
+
+  .donut-chart {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+
+  .donut-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .donut-total {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .donut-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+  }
+
+  .estado-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .legend-text {
+    font-size: 0.875rem;
+    color: var(--neutral-700);
+    flex: 1;
+  }
+
+  .legend-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  /* Content Row */
+  .content-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .content-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Vencimientos List */
+  .vencimientos-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
 
-  .reporte-item {
+  .vencimiento-item {
     padding: 1rem;
     background: var(--neutral-50);
     border-radius: 10px;
-    border-left: 3px solid;
+    border-left: 3px solid var(--neutral-300);
+    transition: all 0.2s;
   }
 
-  .reporte-item.urgent { border-left-color: var(--error-red-500); }
-  .reporte-item.warning { border-left-color: var(--warning-yellow-500); }
+  .vencimiento-item.urgent { border-left-color: var(--error-red-500); background: var(--error-red-50); }
+  .vencimiento-item.warning { border-left-color: var(--warning-yellow-500); background: var(--warning-yellow-50); }
 
-  .reporte-info {
+  .vencimiento-header {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 0.5rem;
   }
 
-  .reporte-code {
-    font-size: 0.75rem;
+  .vencimiento-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .vencimiento-codigo {
+    font-size: 0.6875rem;
     font-weight: 600;
     font-family: monospace;
     color: var(--neutral-500);
   }
 
-  .reporte-name {
-    font-size: 0.9375rem;
+  .vencimiento-nombre {
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--neutral-800);
   }
 
-  .reporte-meta {
+  .vencimiento-dias {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: var(--neutral-200);
+    color: var(--neutral-700);
+  }
+
+  .vencimiento-dias.urgent { background: var(--error-red-100); color: var(--error-red-700); }
+  .vencimiento-dias.warning { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
+
+  .vencimiento-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
   }
 
-  .reporte-entidad {
+  .vencimiento-entidad {
     font-size: 0.6875rem;
     font-weight: 600;
     padding: 0.125rem 0.5rem;
@@ -502,111 +754,102 @@ import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
     color: var(--neutral-700);
   }
 
-  .reporte-deadline {
+  .vencimiento-fecha {
     font-size: 0.75rem;
-    font-weight: 600;
+    color: var(--neutral-500);
   }
 
-  .reporte-deadline.urgent { color: var(--error-red-600); }
-  .reporte-deadline.warning { color: var(--warning-yellow-600); }
+  .progress-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
   .progress-bar {
+    flex: 1;
     height: 6px;
     background: var(--neutral-200);
     border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 0.375rem;
   }
 
   .progress-fill {
     height: 100%;
-    background: var(--role-accent);
+    background: #F4C453;
     border-radius: 3px;
     transition: width 0.3s ease;
   }
 
   .progress-text {
     font-size: 0.6875rem;
-    color: var(--neutral-500);
+    font-weight: 600;
+    color: var(--neutral-600);
+    min-width: 28px;
   }
 
-  /* Tareas List */
-  .tareas-list {
+  /* Actividad List */
+  .actividad-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .tarea-item {
+  .actividad-item {
     display: flex;
-    align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
     background: var(--neutral-50);
     border-radius: 8px;
+    transition: background 0.2s;
   }
 
-  .tarea-item.completed {
-    opacity: 0.6;
+  .actividad-item:hover {
+    background: var(--neutral-100);
   }
 
-  .tarea-item.completed .tarea-titulo {
-    text-decoration: line-through;
-  }
-
-  .tarea-checkbox {
-    position: relative;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-
-  .tarea-checkbox input {
-    display: none;
-  }
-
-  .checkmark {
-    width: 18px;
-    height: 18px;
-    border: 2px solid var(--neutral-300);
-    border-radius: 4px;
+  .actividad-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    flex-shrink: 0;
   }
 
-  .tarea-checkbox input:checked + .checkmark {
-    background: var(--success-green-500);
-    border-color: var(--success-green-500);
-  }
+  .actividad-icon.evidencia { background: var(--color-primary-100); color: var(--color-primary-600); }
+  .actividad-icon.confirmacion { background: var(--success-green-100); color: var(--success-green-600); }
+  .actividad-icon.correccion { background: var(--accent-orange-100); color: var(--accent-orange-600); }
 
-  .tarea-checkbox input:checked + .checkmark::after {
-    content: '✓';
-    color: white;
-    font-size: 0.75rem;
-    font-weight: bold;
-  }
-
-  .tarea-content {
+  .actividad-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
+    min-width: 0;
   }
 
-  .tarea-titulo {
-    font-size: 0.875rem;
-    font-weight: 500;
+  .actividad-descripcion {
+    font-size: 0.8125rem;
+    color: var(--neutral-700);
+    line-height: 1.4;
+    margin-bottom: 0.375rem;
+  }
+
+  .actividad-descripcion strong {
     color: var(--neutral-800);
+    font-family: monospace;
   }
 
-  .tarea-meta {
+  .actividad-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .actividad-tiempo {
     font-size: 0.6875rem;
     color: var(--neutral-500);
   }
 
-  .tarea-priority {
+  .actividad-estado {
     font-size: 0.625rem;
     font-weight: 600;
     padding: 0.125rem 0.375rem;
@@ -614,202 +857,89 @@ import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
     text-transform: uppercase;
   }
 
-  .tarea-priority.high { background: var(--error-red-100); color: var(--error-red-700); }
-  .tarea-priority.medium { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
-  .tarea-priority.low { background: var(--success-green-100); color: var(--success-green-700); }
+  .actividad-estado.en-revisión { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .actividad-estado.enviado { background: var(--success-green-100); color: var(--success-green-700); }
+  .actividad-estado.en-corrección { background: var(--accent-orange-100); color: var(--accent-orange-700); }
+  .actividad-estado.en-proceso { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
 
-  /* Alertas List */
-  .alertas-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+  /* Historial Card */
+  .historial-card {
+    margin-top: 0;
   }
 
-  .alerta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border-left: 3px solid;
-  }
-
-  .alerta-item.critical {
-    background: var(--error-red-50);
-    border-left-color: var(--error-red-500);
-  }
-
-  .alerta-item.warning {
-    background: var(--warning-yellow-50);
-    border-left-color: var(--warning-yellow-500);
-  }
-
-  .alerta-item.info {
-    background: var(--color-primary-50);
-    border-left-color: var(--color-primary-500);
-  }
-
-  .alerta-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+  .cumplimiento-badge {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: white;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--success-green-100);
+    border-radius: 8px;
   }
 
-  .alerta-item.critical .alerta-icon { color: var(--error-red-600); }
-  .alerta-item.warning .alerta-icon { color: var(--warning-yellow-600); }
-  .alerta-item.info .alerta-icon { color: var(--color-primary-600); }
-
-  .alerta-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
+  .cumplimiento-valor {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--success-green-700);
   }
 
-  .alerta-titulo {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--neutral-800);
-  }
-
-  .alerta-tiempo {
+  .cumplimiento-texto {
     font-size: 0.6875rem;
-    color: var(--neutral-500);
+    color: var(--success-green-600);
   }
 
-  /* Mini Calendar */
-  .mini-calendar {
+  .historial-content {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
 
-  .week-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.5rem;
-  }
-
-  .week-day {
+  .historial-bars {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.5rem;
-    border-radius: 8px;
-    position: relative;
-  }
-
-  .week-day:first-child {
-    background: var(--role-accent-light);
-  }
-
-  .day-name {
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: var(--neutral-500);
-    text-transform: uppercase;
-  }
-
-  .day-num {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--neutral-800);
-    margin: 0.25rem 0;
-  }
-
-  .day-today {
-    font-size: 0.5625rem;
-    font-weight: 600;
-    color: #92400E;
-  }
-
-  .event-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-  }
-
-  .event-dot.pending { background: var(--warning-yellow-500); }
-  .event-dot.progress { background: var(--color-primary-500); }
-  .event-dot.urgent { background: var(--error-red-500); }
-
-  .week-events {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .week-event {
-    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
     gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    height: 180px;
+    padding: 0.5rem 0;
   }
 
-  .week-event.urgent {
-    background: var(--error-red-100);
-    color: var(--error-red-700);
-  }
-
-  .event-date {
-    font-weight: 600;
-  }
-
-  /* Quick Action Section */
-  .quick-action-section {
-    margin-top: 0.5rem;
-  }
-
-  .quick-action-card {
+  .historial-bar-group {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, var(--role-accent) 0%, #E5B800 100%);
-    border-radius: 16px;
-    text-decoration: none;
-    transition: transform 0.2s;
-  }
-
-  .quick-action-card:hover {
-    transform: translateY(-2px);
-  }
-
-  .quick-action-icon {
-    width: 56px;
-    height: 56px;
-    background: white;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #92400E;
-    box-shadow: var(--shadow-card);
-  }
-
-  .quick-action-content {
+    gap: 0.5rem;
     flex: 1;
   }
 
-  .quick-action-content h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--neutral-900);
-    margin: 0;
+  .bar-stack {
+    width: 100%;
+    max-width: 48px;
+    height: 150px;
+    display: flex;
+    flex-direction: column-reverse;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--neutral-100);
   }
 
-  .quick-action-content p {
-    font-size: 0.875rem;
-    color: var(--neutral-700);
-    margin: 0.25rem 0 0;
+  .bar-segment {
+    width: 100%;
+    transition: height 0.3s ease;
   }
 
-  .quick-action-card svg:last-child {
-    color: var(--neutral-800);
+  .bar-segment.a-tiempo { background: #4ADE80; }
+  .bar-segment.tarde { background: #F97316; }
+
+  .bar-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--neutral-500);
+  }
+
+  .historial-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--neutral-200);
   }
 </style>
-

@@ -75,9 +75,27 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   const loginError = document.getElementById('login-error');
   const loginBtn = document.getElementById('loginBtn') as HTMLButtonElement;
 
+  // Función para obtener la ruta del dashboard según el rol
+  function getDashboardRoute(roles: string[]): string {
+    if (!roles || roles.length === 0) return '/dashboard';
+    
+    // Prioridad de roles: Admin > Auditor > Supervisor > Responsable
+    if (roles.includes('ROLE_ADMIN') || roles.includes('ADMIN')) {
+      return '/roles/admin/dashboard';
+    } else if (roles.includes('ROLE_AUDITOR') || roles.includes('AUDITOR')) {
+      return '/roles/auditor/dashboard';
+    } else if (roles.includes('ROLE_SUPERVISOR') || roles.includes('SUPERVISOR')) {
+      return '/roles/supervisor/dashboard';
+    } else if (roles.includes('ROLE_RESPONSABLE') || roles.includes('RESPONSABLE')) {
+      return '/roles/responsable/dashboard';
+    }
+    return '/dashboard';
+  }
+
   // Redirección si ya está autenticado
   if (authService.isAuthenticated()) {
-    window.location.href = "/dashboard";
+    const user = authService.getUser();
+    window.location.href = getDashboardRoute(user?.roles || []);
   }
 
   // Login
@@ -93,7 +111,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         password: data.get("password") as string,
       });
       authService.saveToken(response);
-      window.location.href = "/dashboard";
+      window.location.href = getDashboardRoute(response.roles || []);
     } catch (error: any) {
       const message =
         error.response?.data?.mensaje ||

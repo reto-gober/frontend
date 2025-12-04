@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const menuItems = [
   { 
@@ -75,6 +75,21 @@ const menuItems = [
 export default function SidebarSupervisor() {
   const [collapsed, setCollapsed] = useState(false);
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const container = document.querySelector('.role-container');
+      if (container) {
+        if (collapsed) {
+          container.classList.add('sidebar-collapsed');
+          container.classList.remove('sidebar-expanded');
+        } else {
+          container.classList.add('sidebar-expanded');
+          container.classList.remove('sidebar-collapsed');
+        }
+      }
+    }
+  }, [collapsed]);
 
   return (
     <aside className={`role-sidebar supervisor-sidebar ${collapsed ? 'is-collapsed' : ''}`}>

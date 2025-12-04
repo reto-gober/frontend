@@ -10,7 +10,7 @@ const { title } = Astro.props;
 ---
 
 <BaseLayout title={title}>
-  <div class="role-container role-supervisor">
+  <div class="role-container role-supervisor sidebar-expanded">
     <SidebarSupervisor client:load />
     <div class="role-content">
       <header class="role-topbar">
@@ -22,20 +22,12 @@ const { title } = Astro.props;
             <span class="status-dot"></span>
             <span class="status-text">Sistema operativo</span>
           </div>
-          <button class="icon-btn alerts">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <span class="alert-badge">5</span>
-          </button>
-          <button class="icon-btn notifications">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-          </button>
+          <div class="user-section">
+            <span class="user-name-display" id="user-name-display">Supervisor Demo</span>
+            <button class="btn-logout" id="btn-logout">
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </header>
       <main class="role-main">
@@ -57,24 +49,38 @@ const { title } = Astro.props;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
+    margin-left: 260px;
   }
 
   .role-topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
+    padding: 1.25rem 2rem;
     background: white;
     border-bottom: 1px solid var(--neutral-200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     position: sticky;
     top: 0;
     z-index: 10;
+    min-height: 72px;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+    margin-right: 2rem;
   }
 
   .page-title {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: var(--neutral-800);
+    color: var(--neutral-900);
+    line-height: 1.2;
+    margin: 0;
   }
 
   .topbar-right {
@@ -110,6 +116,43 @@ const { title } = Astro.props;
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--success-green-700);
+  }
+
+  .user-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-left: 1.5rem;
+    margin-left: 1rem;
+    border-left: 2px solid var(--neutral-200);
+  }
+
+  .user-name-display {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    white-space: nowrap;
+  }
+
+  .btn-logout {
+    padding: 0.5rem 1.25rem;
+    background: white;
+    border: 1.5px solid var(--neutral-300);
+    border-radius: 8px;
+    color: var(--neutral-700);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-logout:hover {
+    background: var(--error-red-50);
+    border-color: var(--error-red-400);
+    color: var(--error-red-700);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
   }
 
   .icon-btn {
@@ -182,6 +225,34 @@ const { title } = Astro.props;
     .role-main {
       padding: 1rem;
     }
+
+    .user-name-display {
+      display: none;
+    }
   }
 </style>
 
+<script>
+  import { authService } from '../../lib/auth';
+
+  // Mostrar nombre del usuario
+  if (typeof window !== 'undefined') {
+    const userNameDisplay = document.getElementById('user-name-display');
+    const user = authService.getUser();
+    
+    if (userNameDisplay && user) {
+      const fullName = `${user.firstName} ${user.firstLastname}`;
+      userNameDisplay.textContent = fullName;
+    }
+
+    // Manejar logout
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => {
+        if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+          authService.logout();
+        }
+      });
+    }
+  }
+</script>
