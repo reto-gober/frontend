@@ -1,4 +1,4 @@
----
+﻿---
 export const prerender = false;
 
 import MainLayout from '../layouts/MainLayout.astro';
@@ -191,3 +191,25 @@ import DashboardStats from '../components/DashboardStats';
     }
   }
 </style>
+
+<script>
+  // Redirección automática al dashboard específico del rol
+  if (typeof window !== 'undefined') {
+    const usuario = localStorage.getItem('usuario');
+    if (usuario) {
+      const user = JSON.parse(usuario);
+      const roles = user?.roles || [];
+      
+      // Prioridad de roles: Admin > Auditor > Supervisor > Responsable
+      if (roles.includes('ROLE_ADMIN') || roles.includes('ADMIN')) {
+        window.location.href = '/roles/admin/dashboard';
+      } else if (roles.includes('ROLE_AUDITOR') || roles.includes('AUDITOR')) {
+        window.location.href = '/roles/auditor/dashboard';
+      } else if (roles.includes('ROLE_SUPERVISOR') || roles.includes('SUPERVISOR')) {
+        window.location.href = '/roles/supervisor/dashboard';
+      } else if (roles.includes('ROLE_RESPONSABLE') || roles.includes('RESPONSABLE')) {
+        window.location.href = '/roles/responsable/dashboard';
+      }
+    }
+  }
+</script>

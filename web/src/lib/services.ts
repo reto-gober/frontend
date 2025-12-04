@@ -21,12 +21,10 @@ export interface Page<T> {
 }
 
 export interface EntidadRequest {
-  nit: string;
   nombre: string;
-  paginaWeb: string;
-  baseLegal: string;
-  observaciones: string;
-  estado: string;
+  codigo?: string;
+  descripcion?: string;
+  activa: boolean;
 }
 
 export interface EntidadResponse {
@@ -307,89 +305,33 @@ export const reportesService = {
 };
 
 export const entidadesService = {
-  async listar(
-    page = 0,
-    size = 100,
-    sort = "nombre,asc"
-  ): Promise<Page<EntidadResponse>> {
-    const response = await api.get("/api/entidades", {
-      params: { page, size, sort },
-    });
-    // Verificar si la respuesta tiene el formato { success, data }
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
-    }
+  async listar(page = 0, size = 100, sort = 'nombre,asc'): Promise<Page<EntidadResponse>> {
+    const response = await api.get('/api/entidades', { params: { page, size, sort } });
     return response.data;
   },
 
   async activas(page = 0, size = 100): Promise<Page<EntidadResponse>> {
-    const response = await api.get("/api/entidades/activas", {
-      params: { page, size },
-    });
-    // Verificar si la respuesta tiene el formato { success, data }
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
-    }
+    const response = await api.get('/api/entidades/activas', { params: { page, size } });
     return response.data;
   },
 
   async obtener(id: string): Promise<EntidadResponse> {
     const response = await api.get(`/api/entidades/${id}`);
-    // Verificar si la respuesta tiene el formato { success, data }
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
-    }
     return response.data;
   },
 
   async crear(data: EntidadRequest): Promise<EntidadResponse> {
-    const response = await api.post("/api/entidades", data);
-    // Verificar si la respuesta tiene el formato { success, data }
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
-    }
+    const response = await api.post('/api/entidades', data);
     return response.data;
   },
 
   async actualizar(id: string, data: EntidadRequest): Promise<EntidadResponse> {
     const response = await api.put(`/api/entidades/${id}`, data);
-    // Verificar si la respuesta tiene el formato { success, data }
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
-    }
     return response.data;
   },
 
   async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/entidades/${id}`);
-    // Verificar si la respuesta tiene el formato { success, data }
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
-    }
     return response.data;
   },
 };
@@ -397,14 +339,10 @@ export const entidadesService = {
 export const evidenciasService = {
   async subir(reporteId: string, file: File): Promise<EvidenciaResponse> {
     const formData = new FormData();
-    formData.append("file", file);
-    const response = await api.post(
-      `/api/evidencias/reporte/${reporteId}`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
-    );
+    formData.append('file', file);
+    const response = await api.post(`/api/evidencias/reporte/${reporteId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
@@ -421,8 +359,8 @@ export const evidenciasService = {
       type: response.headers["content-type"],
     });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const disposition = response.headers["content-disposition"];
+    const a = document.createElement('a');
+    const disposition = response.headers['content-disposition'];
     const match = disposition?.match(/filename="(.+)"/);
     a.href = url;
     a.download = match?.[1] || `evidencia-${id}`;
@@ -439,15 +377,12 @@ export const evidenciasService = {
 export const dashboardService = {
   async estadisticas(rango?: string): Promise<DashboardResponse> {
     const params = rango ? { rango } : undefined;
-    const response = await api.get(
-      "/api/dashboard/estadisticas",
-      params ? { params } : undefined
-    );
+    const response = await api.get('/api/dashboard/estadisticas', params ? { params } : undefined);
     return response.data;
   },
 
   async cumplimiento(): Promise<number> {
-    const response = await api.get("/api/dashboard/cumplimiento");
+    const response = await api.get('/api/dashboard/cumplimiento');
     return response.data;
   },
 };
@@ -494,10 +429,7 @@ export const usuariosService = {
     return response.data;
   },
 
-  async actualizar(
-    documentNumber: string,
-    data: UsuarioRequest
-  ): Promise<UsuarioResponse> {
+  async actualizar(documentNumber: string, data: UsuarioRequest): Promise<UsuarioResponse> {
     const response = await api.put(`/api/usuarios/${documentNumber}`, data);
     // Verificar si la respuesta tiene el formato { success, data }
     if (
