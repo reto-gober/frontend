@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { flujoReportesService, ReportePeriodo } from '../../lib/services';
 
 interface Alerta {
-  id: number;
+  id: string;
   titulo: string;
   descripcion: string;
   tipo: 'vencimiento' | 'sistema' | 'regulatorio' | 'urgente';
@@ -11,57 +12,58 @@ interface Alerta {
   entidad?: string;
 }
 
-const mockAlertas: Alerta[] = [
-  {
-    id: 1,
-    titulo: 'Vencimiento próximo SUI',
-    descripcion: 'El reporte mensual de consumos vence en 24 horas',
-    tipo: 'vencimiento',
-    prioridad: 'alta',
-    fecha: '2025-02-12',
-    leida: false,
-    entidad: 'SUI'
-  },
-  {
-    id: 2,
-    titulo: 'Actualización regulatoria CREG',
-    descripcion: 'Nueva resolución CREG 045-2025 requiere revisión',
-    tipo: 'regulatorio',
-    prioridad: 'media',
-    fecha: '2025-02-11',
-    leida: false,
-    entidad: 'CREG'
-  },
-  {
-    id: 3,
-    titulo: 'Mantenimiento programado',
-    descripcion: 'El sistema estará en mantenimiento el 15/02 de 2:00 a 4:00 AM',
-    tipo: 'sistema',
-    prioridad: 'baja',
-    fecha: '2025-02-10',
-    leida: true
-  },
-  {
-    id: 4,
-    titulo: 'Reporte ANH rechazado',
-    descripcion: 'El informe de producción fue rechazado por errores de formato',
-    tipo: 'urgente',
-    prioridad: 'alta',
-    fecha: '2025-02-10',
-    leida: false,
-    entidad: 'ANH'
-  },
-  {
-    id: 5,
-    titulo: 'Recordatorio SSPD',
-    descripcion: 'Quedan 5 días para enviar el informe trimestral',
-    tipo: 'vencimiento',
-    prioridad: 'media',
-    fecha: '2025-02-09',
-    leida: true,
-    entidad: 'SSPD'
+// Mapear ReportePeriodo a Alerta
+const mapPeriodoToAlerta = (periodo: ReportePeriodo): Alerta => {
+  const diasRestantes = Math.ceil((new Date(periodo.fechaVencimientoCalculada).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  
+  let tipo: Alerta['tipo'] = 'vencimiento';
+  let prioridad: Alerta['prioridad'] = 'media';
+  let titulo = '';
+  let descripcion = '';
+
+  if (periodo.estado === 'requiere_correccion') {
+    tipo = 'urgente';
+    prioridad = 'alta';
+    titulo = `Corrección requerida: ${periodo.reporteNombre}`;
+    descripcion = periodo.comentarios || 'El reporte requiere correcciones';
+  } else if (periodo.estado === 'rechazado') {
+    tipo = 'urgente';
+    prioridad = 'alta';
+    titulo = `Reporte rechazado: ${periodo.reporteNombre}`;
+    descripcion = periodo.comentarios || 'El reporte fue rechazado';
+  } else if (diasRestantes < 0) {
+    tipo = 'vencimiento';
+    prioridad = 'alta';
+    titulo = `Reporte vencido: ${periodo.reporteNombre}`;
+    descripcion = `Vencido hace ${Math.abs(diasRestantes)} días`;
+  } else if (diasRestantes <= 1) {
+    tipo = 'vencimiento';
+    prioridad = 'alta';
+    titulo = `Vencimiento inminente: ${periodo.reporteNombre}`;
+    descripcion = diasRestantes === 0 ? 'Vence hoy' : 'Vence mañana';
+  } else if (diasRestantes <= 3) {
+    tipo = 'vencimiento';
+    prioridad = 'alta';
+    titulo = `Vencimiento próximo: ${periodo.reporteNombre}`;
+    descripcion = `Vence en ${diasRestantes} días`;
+  } else {
+    tipo = 'vencimiento';
+    prioridad = 'media';
+    titulo = `Recordatorio: ${periodo.reporteNombre}`;
+    descripcion = `Vence en ${diasRestantes} días`;
   }
-];
+
+  return {
+    id: periodo.periodoId,
+    titulo,
+    descripcion,
+    tipo,
+    prioridad,
+    fecha: periodo.fechaVencimientoCalculada,
+    leida: false,
+    entidad: periodo.entidadNombre
+  };
+};
 
 interface AlertasListProps {
   maxItems?: number;
@@ -77,7 +79,33 @@ export default function AlertasList({
   onAlertClick 
 }: AlertasListProps) {
   const [filtro, setFiltro] = useState<string>('todas');
-  const [alertas, setAlertas] = useState<Alerta[]>(mockAlertas);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarAlertas();
+  }, []);
+
+  const cargarAlertas = async () => {
+    try {
+      setLoading(true);
+      // Cargar periodos pendientes y que requieren corrección
+      const [pendientes, correcciones] = await Promise.all([
+        flujoReportesService.misPeriodosPendientes(0, 10),
+        flujoReportesService.misPeríodosCorrecciones(0, 10)
+      ]);
+      
+      const alertasPendientes = pendientes.content.map(mapPeriodoToAlerta);
+      const alertasCorrecciones = correcciones.content.map(mapPeriodoToAlerta);
+      
+      setAlertas([...alertasCorrecciones, ...alertasPendientes]);
+    } catch (error) {
+      console.error('Error al cargar alertas:', error);
+      setAlertas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const alertasFiltradas = alertas.filter(alerta => {
     if (filtro === 'todas') return true;
@@ -85,7 +113,7 @@ export default function AlertasList({
     return alerta.tipo === filtro;
   }).slice(0, maxItems || alertas.length);
 
-  const marcarComoLeida = (id: number) => {
+  const marcarComoLeida = (id: string) => {
     setAlertas(alertas.map(a => 
       a.id === id ? { ...a, leida: true } : a
     ));

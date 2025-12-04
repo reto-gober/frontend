@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { reportesService, ReporteResponse, Page } from '../../lib/services';
 
 interface EntidadCumplimiento {
-  id: number;
+  id: string;
   nombre: string;
   codigo: string;
   reportesTotales: number;
@@ -13,68 +14,62 @@ interface EntidadCumplimiento {
   tendencia: 'up' | 'down' | 'stable';
 }
 
-const mockEntidades: EntidadCumplimiento[] = [
-  {
-    id: 1,
-    nombre: 'Sistema Único de Información',
-    codigo: 'SUI',
-    reportesTotales: 24,
-    reportesEnviados: 23,
-    reportesPendientes: 1,
-    porcentaje: 96,
-    estado: 'excelente',
-    ultimoReporte: '2025-02-10',
-    tendencia: 'up'
-  },
-  {
-    id: 2,
-    nombre: 'Comisión de Regulación de Energía y Gas',
-    codigo: 'CREG',
-    reportesTotales: 12,
-    reportesEnviados: 11,
-    reportesPendientes: 1,
-    porcentaje: 92,
-    estado: 'excelente',
-    ultimoReporte: '2025-02-08',
-    tendencia: 'stable'
-  },
-  {
-    id: 3,
-    nombre: 'Agencia Nacional de Hidrocarburos',
-    codigo: 'ANH',
-    reportesTotales: 8,
-    reportesEnviados: 6,
-    reportesPendientes: 2,
-    porcentaje: 75,
-    estado: 'riesgo',
-    ultimoReporte: '2025-02-05',
-    tendencia: 'down'
-  },
-  {
-    id: 4,
-    nombre: 'Superintendencia de Servicios Públicos',
-    codigo: 'SSPD',
-    reportesTotales: 6,
-    reportesEnviados: 6,
-    reportesPendientes: 0,
-    porcentaje: 100,
-    estado: 'excelente',
-    ultimoReporte: '2025-02-11',
-    tendencia: 'up'
-  },
-  {
-    id: 5,
-    nombre: 'Ministerio de Minas y Energía',
-    codigo: 'MinEnergía',
-    reportesTotales: 4,
-    reportesEnviados: 3,
-    reportesPendientes: 1,
-    porcentaje: 75,
-    estado: 'riesgo',
-    ultimoReporte: '2025-01-28',
-    tendencia: 'down'
-  }
-];
+// Función para calcular el estado de cumplimiento
+const calcularEstado = (porcentaje: number): EntidadCumplimiento['estado'] => {
+  if (porcentaje >= 90) return 'excelente';
+  if (porcentaje >= 75) return 'bueno';
+  if (porcentaje >= 50) return 'riesgo';
+  return 'critico';
+};
+
+// Función para agrupar reportes por entidad
+const agruparPorEntidad = (reportes: ReporteResponse[]): EntidadCumplimiento[] => {
+  const entidadesMap = new Map<string, EntidadCumplimiento>();
+
+  reportes.forEach(reporte => {
+    const key = reporte.entidadId;
+    
+    if (!entidadesMap.has(key)) {
+      entidadesMap.set(key, {
+        id: reporte.entidadId,
+        nombre: reporte.entidadNombre,
+        codigo: reporte.entidadNombre.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 6),
+        reportesTotales: 0,
+        reportesEnviados: 0,
+        reportesPendientes: 0,
+        porcentaje: 0,
+        estado: 'critico',
+        ultimoReporte: reporte.updatedAt || reporte.createdAt,
+        tendencia: 'stable'
+      });
+    }
+
+    const entidad = entidadesMap.get(key)!;
+    entidad.reportesTotales++;
+
+    if (reporte.estado === 'ENVIADO' || reporte.estado === 'COMPLETADO' || reporte.estado === 'EN_REVISION' || reporte.estado === 'aprobado') {
+      entidad.reportesEnviados++;
+    } else {
+      entidad.reportesPendientes++;
+    }
+
+    // Actualizar último reporte si es más reciente
+    const fechaReporte = new Date(reporte.updatedAt || reporte.createdAt);
+    const fechaUltimo = new Date(entidad.ultimoReporte);
+    if (fechaReporte > fechaUltimo) {
+      entidad.ultimoReporte = reporte.updatedAt || reporte.createdAt;
+    }
+  });
+
+  // Calcular porcentajes y estados
+  return Array.from(entidadesMap.values()).map(entidad => {
+    entidad.porcentaje = entidad.reportesTotales > 0 
+      ? Math.round((entidad.reportesEnviados / entidad.reportesTotales) * 100)
+      : 0;
+    entidad.estado = calcularEstado(entidad.porcentaje);
+    return entidad;
+  });
+};
 
 interface CumplimientoTableProps {
   showSearch?: boolean;
@@ -92,8 +87,29 @@ export default function CumplimientoTable({
   const [busqueda, setBusqueda] = useState('');
   const [ordenarPor, setOrdenarPor] = useState<keyof EntidadCumplimiento>('porcentaje');
   const [ordenAsc, setOrdenAsc] = useState(false);
+  const [entidades, setEntidades] = useState<EntidadCumplimiento[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const entidadesFiltradas = mockEntidades
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      // Cargar todos los reportes y agrupar por entidad
+      const response = await reportesService.listar(0, 1000);
+      const entidadesAgrupadas = agruparPorEntidad(response.content);
+      setEntidades(entidadesAgrupadas);
+    } catch (error) {
+      console.error('Error al cargar datos de cumplimiento:', error);
+      setEntidades([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const entidadesFiltradas = entidades
     .filter(e => 
       e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       e.codigo.toLowerCase().includes(busqueda.toLowerCase())

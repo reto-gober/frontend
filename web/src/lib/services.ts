@@ -21,10 +21,12 @@ export interface Page<T> {
 }
 
 export interface EntidadRequest {
+  nit: string;
   nombre: string;
-  codigo?: string;
-  descripcion?: string;
-  activa: boolean;
+  paginaWeb?: string;
+  baseLegal?: string;
+  observaciones?: string;
+  estado: string;
 }
 
 export interface EntidadResponse {
@@ -80,19 +82,34 @@ export interface ReporteResponse {
   formatoRequerido: string;
   baseLegal?: string;
   fechaInicioVigencia?: string;
-  fechaFinVigencia?: string;
+  fechaFinVigencia?: string | null;
   fechaVencimiento: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
-  responsableElaboracionId: string[];
-  responsableElaboracionNombre: string;
+  // Campos legacy (compatibilidad)
+  responsableElaboracionId?: string[];
+  responsableElaboracionNombre?: string;
+  responsableElaboracionIds?: string[];
+  responsableElaboracionNombres?: string;
   responsableSupervisionId?: string[];
   responsableSupervisionNombre?: string;
+  responsableSupervisionIds?: string[];
+  responsableSupervisionNombres?: string;
+  // Nuevo formato con array de responsables
+  responsables?: Array<{
+    usuarioId: string;
+    nombreCompleto: string;
+    tipoResponsabilidad: 'elaboracion' | 'supervision' | 'revision';
+    esPrincipal: boolean;
+  }>;
   correosNotificacion?: string[];
   telefonoResponsable?: string;
   estado: string;
-  creadoEn: string;
-  actualizadoEn: string;
+  createdAt: string;
+  updatedAt: string;
+  // Legacy aliases
+  creadoEn?: string;
+  actualizadoEn?: string;
 }
 
 export interface EvidenciaResponse {
@@ -307,31 +324,50 @@ export const reportesService = {
 export const entidadesService = {
   async listar(page = 0, size = 100, sort = 'nombre,asc'): Promise<Page<EntidadResponse>> {
     const response = await api.get('/api/entidades', { params: { page, size, sort } });
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async activas(page = 0, size = 100): Promise<Page<EntidadResponse>> {
     const response = await api.get('/api/entidades/activas', { params: { page, size } });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async obtener(id: string): Promise<EntidadResponse> {
     const response = await api.get(`/api/entidades/${id}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async crear(data: EntidadRequest): Promise<EntidadResponse> {
     const response = await api.post('/api/entidades', data);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async actualizar(id: string, data: EntidadRequest): Promise<EntidadResponse> {
     const response = await api.put(`/api/entidades/${id}`, data);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/entidades/${id}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 };
@@ -343,11 +379,18 @@ export const evidenciasService = {
     const response = await api.post(`/api/evidencias/reporte/${reporteId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async listarPorReporte(reporteId: string): Promise<EvidenciaResponse[]> {
     const response = await api.get(`/api/evidencias/reporte/${reporteId}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
@@ -370,19 +413,64 @@ export const evidenciasService = {
 
   async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/evidencias/${id}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 };
 
 export const dashboardService = {
-  async estadisticas(rango?: string): Promise<DashboardResponse> {
-    const params = rango ? { rango } : undefined;
-    const response = await api.get('/api/dashboard/estadisticas', params ? { params } : undefined);
+  async estadisticas(periodo?: string, fechaInicio?: string, fechaFin?: string): Promise<DashboardResponse> {
+    const params: any = {};
+    if (periodo) params.periodo = periodo;
+    if (fechaInicio) params.fechaInicio = fechaInicio;
+    if (fechaFin) params.fechaFin = fechaFin;
+    const response = await api.get('/api/dashboard/estadisticas', { params });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async cumplimiento(): Promise<number> {
     const response = await api.get('/api/dashboard/cumplimiento');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Dashboard por rol
+  async dashboardAdmin(): Promise<any> {
+    const response = await api.get('/api/dashboard/admin');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async dashboardResponsable(): Promise<any> {
+    const response = await api.get('/api/dashboard/responsable');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async dashboardSupervisor(): Promise<any> {
+    const response = await api.get('/api/dashboard/supervisor');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async dashboardAuditor(): Promise<any> {
+    const response = await api.get('/api/dashboard/auditor');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 };

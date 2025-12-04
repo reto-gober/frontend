@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { flujoReportesService, ReportePeriodo } from '../../lib/services';
 
 interface Tarea {
-  id: number;
+  id: string;
   titulo: string;
   descripcion: string;
   entidad: string;
@@ -12,60 +13,22 @@ interface Tarea {
   progreso?: number;
 }
 
-const mockTareas: Tarea[] = [
-  {
-    id: 1,
-    titulo: 'Reporte mensual SUI',
-    descripcion: 'Generar y enviar el reporte mensual de consumos al SUI',
-    entidad: 'SUI',
-    fechaLimite: '2025-02-15',
-    prioridad: 'alta',
-    estado: 'en-progreso',
-    asignadoA: 'Juan Pérez',
-    progreso: 65
-  },
-  {
-    id: 2,
-    titulo: 'Actualización tarifas CREG',
-    descripcion: 'Cargar nuevas tarifas según resolución 045-2025',
-    entidad: 'CREG',
-    fechaLimite: '2025-02-18',
-    prioridad: 'media',
-    estado: 'pendiente',
-    asignadoA: 'María García'
-  },
-  {
-    id: 3,
-    titulo: 'Informe trimestral ANH',
-    descripcion: 'Preparar informe de producción y reservas',
-    entidad: 'ANH',
-    fechaLimite: '2025-02-28',
-    prioridad: 'alta',
-    estado: 'pendiente',
-    asignadoA: 'Carlos López',
-    progreso: 20
-  },
-  {
-    id: 4,
-    titulo: 'Revisión evidencias SSPD',
-    descripcion: 'Revisar y aprobar las evidencias cargadas',
-    entidad: 'SSPD',
-    fechaLimite: '2025-02-14',
-    prioridad: 'media',
-    estado: 'en-progreso',
-    asignadoA: 'Ana Martínez',
-    progreso: 80
-  },
-  {
-    id: 5,
-    titulo: 'Auditoría interna',
-    descripcion: 'Completar checklist de auditoría mensual',
-    entidad: 'Interno',
-    fechaLimite: '2025-02-20',
-    prioridad: 'baja',
-    estado: 'pendiente'
-  }
-];
+// Mapear ReportePeriodo a Tarea
+const mapPeriodoToTarea = (periodo: ReportePeriodo): Tarea => {
+  const diasRestantes = Math.ceil((new Date(periodo.fechaVencimientoCalculada).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  
+  return {
+    id: periodo.periodoId,
+    titulo: periodo.reporteNombre,
+    descripcion: periodo.estadoDescripcion || '',
+    entidad: periodo.entidadNombre,
+    fechaLimite: periodo.fechaVencimientoCalculada,
+    prioridad: diasRestantes <= 3 ? 'alta' : diasRestantes <= 7 ? 'media' : 'baja',
+    estado: periodo.estado === 'pendiente' ? 'pendiente' : periodo.estado === 'en_elaboracion' ? 'en-progreso' : 'completada',
+    asignadoA: periodo.responsableElaboracion?.nombreCompleto,
+    progreso: periodo.estado === 'pendiente' ? 0 : periodo.estado === 'en_elaboracion' ? 50 : 100
+  };
+};
 
 interface TareasPendientesProps {
   maxItems?: number;
@@ -85,7 +48,26 @@ export default function TareasPendientes({
   onCompletarClick
 }: TareasPendientesProps) {
   const [filtroEstado, setFiltroEstado] = useState<string>('todas');
-  const [tareas, setTareas] = useState<Tarea[]>(mockTareas);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarTareas();
+  }, []);
+
+  const cargarTareas = async () => {
+    try {
+      setLoading(true);
+      const response = await flujoReportesService.misPeriodosPendientes(0, 20);
+      const tareasMap = response.content.map(mapPeriodoToTarea);
+      setTareas(tareasMap);
+    } catch (error) {
+      console.error('Error al cargar tareas:', error);
+      setTareas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tareasFiltradas = tareas
     .filter(tarea => {
@@ -94,7 +76,7 @@ export default function TareasPendientes({
     })
     .slice(0, maxItems || tareas.length);
 
-  const marcarCompletada = (id: number) => {
+  const marcarCompletada = (id: string) => {
     setTareas(tareas.map(t =>
       t.id === id ? { ...t, estado: 'completada' as const, progreso: 100 } : t
     ));
