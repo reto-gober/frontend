@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react';
-import { entidadesService, type EntidadResponse, type EntidadRequest, type Page } from '../lib/services';
-import { Building2, Edit, Trash2, Plus } from 'lucide-react';
-import { useToast, ToastContainer } from './Toast';
+import { useState, useEffect } from "react";
+import {
+  entidadesService,
+  type EntidadResponse,
+  type EntidadRequest,
+  type Page,
+} from "../lib/services";
+import { Building2, Edit, Trash2, Plus } from "lucide-react";
+import { useToast, ToastContainer } from "./Toast";
 
 export default function EntidadesList() {
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
@@ -10,9 +15,12 @@ export default function EntidadesList() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const { toasts, removeToast, success, error: showError } = useToast();
   const [formData, setFormData] = useState<EntidadRequest>({
-    nombre: '',
-    descripcion: '',
-    activa: true,
+    nit: "",
+    nombre: "",
+    paginaWeb: "",
+    baseLegal: "",
+    observaciones: "",
+    estado: "ACTIVO",
   });
 
   useEffect(() => {
@@ -38,14 +46,21 @@ export default function EntidadesList() {
     try {
       if (editingId) {
         await entidadesService.actualizar(editingId, formData);
-        success('Entidad actualizada exitosamente');
+        success("Entidad actualizada exitosamente");
       } else {
         await entidadesService.crear(formData);
-        success('Entidad creada exitosamente');
+        success("Entidad creada exitosamente");
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ nombre: '', descripcion: '', activa: true });
+      setFormData({
+        nit: "",
+        nombre: "",
+        paginaWeb: "",
+        baseLegal: "",
+        observaciones: "",
+        estado: "ACTIVO",
+      });
       loadEntidades();
     } catch (err: any) {
       showError(err.response?.data?.mensaje || 'Error al guardar la entidad');
@@ -54,20 +69,23 @@ export default function EntidadesList() {
 
   const handleEdit = (entidad: EntidadResponse) => {
     setFormData({
+      nit: entidad.nit,
       nombre: entidad.nombre,
-      descripcion: entidad.descripcion || '',
-      activa: entidad.activa,
+      paginaWeb: entidad.paginaWeb,
+      baseLegal: entidad.baseLegal,
+      observaciones: entidad.observaciones,
+      estado: entidad.estado,
     });
     setEditingId(entidad.id);
     setShowForm(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar esta entidad?')) return;
-    
+    if (!confirm("¿Estás seguro de eliminar esta entidad?")) return;
+
     try {
       await entidadesService.eliminar(id);
-      success('Entidad eliminada exitosamente');
+      success("Entidad eliminada exitosamente");
       loadEntidades();
     } catch (err: any) {
       showError(err.response?.data?.mensaje || 'Error al eliminar la entidad');
@@ -77,11 +95,22 @@ export default function EntidadesList() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({ nombre: '', descripcion: '', activa: true });
+    setFormData({
+      nit: "",
+      nombre: "",
+      paginaWeb: "",
+      baseLegal: "",
+      observaciones: "",
+      estado: "ACTIVO",
+    });
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando entidades...</div>;
+    return (
+      <div style={{ textAlign: "center", padding: "2rem" }}>
+        Cargando entidades...
+      </div>
+    );
   }
 
   return (
@@ -90,7 +119,9 @@ export default function EntidadesList() {
       <div className="entidades-header">
         <div>
           <h2 className="entidades-title">Entidades de Control</h2>
-          <p className="entidades-subtitle">Gestiona las entidades regulatorias</p>
+          <p className="entidades-subtitle">
+            Gestiona las entidades regulatorias
+          </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -104,45 +135,99 @@ export default function EntidadesList() {
 
       {showForm && (
         <div className="card mb-2">
-          <h3 className="form-subtitle">{editingId ? 'Editar Entidad' : 'Nueva Entidad'}</h3>
+          <h3 className="form-subtitle">
+            {editingId ? "Editar Entidad" : "Nueva Entidad"}
+          </h3>
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">NIT *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.nit}
+                onChange={(e) =>
+                  setFormData({ ...formData, nit: e.target.value })
+                }
+                required
+              />
+            </div>
+
             <div className="form-group">
               <label className="form-label">Nombre *</label>
               <input
                 type="text"
                 className="form-input"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre: e.target.value })
+                }
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Descripción</label>
-              <textarea
-                className="form-textarea"
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                rows={3}
+              <label className="form-label">Página Web *</label>
+              <input
+                type="url"
+                className="form-input"
+                value={formData.paginaWeb}
+                onChange={(e) =>
+                  setFormData({ ...formData, paginaWeb: e.target.value })
+                }
+                required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-checkbox">
-                <input
-                  type="checkbox"
-                  checked={formData.activa}
-                  onChange={(e) => setFormData({ ...formData, activa: e.target.checked })}
-                />
-                <span>Activa</span>
-              </label>
+              <label className="form-label">Base Legal *</label>
+              <textarea
+                className="form-textarea"
+                value={formData.baseLegal}
+                onChange={(e) =>
+                  setFormData({ ...formData, baseLegal: e.target.value })
+                }
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Observaciones *</label>
+              <textarea
+                className="form-textarea"
+                value={formData.observaciones}
+                onChange={(e) =>
+                  setFormData({ ...formData, observaciones: e.target.value })
+                }
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Estado *</label>
+              <select
+                className="form-input"
+                value={formData.estado}
+                onChange={(e) =>
+                  setFormData({ ...formData, estado: e.target.value })
+                }
+                required
+              >
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+              </select>
             </div>
 
             <div className="form-actions-inline">
               <button type="submit" className="btn btn-orange">
                 {editingId ? 'Actualizar' : 'Crear'}
               </button>
-              <button type="button" onClick={handleCancel} className="btn btn-secondary">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="btn btn-secondary"
+              >
                 Cancelar
               </button>
             </div>
@@ -151,8 +236,8 @@ export default function EntidadesList() {
       )}
 
       {entidades.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p style={{ color: 'var(--color-text-light)' }}>
+        <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
+          <p style={{ color: "var(--color-text-light)" }}>
             No hay entidades registradas.
           </p>
         </div>
@@ -166,19 +251,56 @@ export default function EntidadesList() {
                 </div>
                 <div className="entidad-info">
                   <h3 className="entidad-name">{entidad.nombre}</h3>
+                  <p
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "var(--color-text-light)",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    NIT: {entidad.nit}
+                  </p>
                 </div>
                 <div>
-                  {entidad.activa ? (
-                    <span className="badge badge-enviado">Activa</span>
+                  {entidad.estado === "ACTIVO" ? (
+                    <span className="badge badge-enviado">Activo</span>
                   ) : (
-                    <span className="badge badge-pendiente">Inactiva</span>
+                    <span className="badge badge-pendiente">Inactivo</span>
                   )}
                 </div>
               </div>
 
-              {entidad.descripcion && (
-                <p className="entidad-description">{entidad.descripcion}</p>
-              )}
+              <div
+                style={{
+                  marginTop: "1rem",
+                  fontSize: "0.875rem",
+                  color: "var(--color-text)",
+                }}
+              >
+                {entidad.paginaWeb && (
+                  <p style={{ marginBottom: "0.5rem" }}>
+                    <strong>Web:</strong>{" "}
+                    <a
+                      href={entidad.paginaWeb}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "var(--color-primary)" }}
+                    >
+                      {entidad.paginaWeb}
+                    </a>
+                  </p>
+                )}
+                {entidad.baseLegal && (
+                  <p style={{ marginBottom: "0.5rem" }}>
+                    <strong>Base Legal:</strong> {entidad.baseLegal}
+                  </p>
+                )}
+                {entidad.observaciones && (
+                  <p style={{ marginBottom: "0.5rem" }}>
+                    <strong>Observaciones:</strong> {entidad.observaciones}
+                  </p>
+                )}
+              </div>
 
               <div className="entidad-actions">
                 <button
