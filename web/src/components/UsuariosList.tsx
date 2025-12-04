@@ -14,9 +14,9 @@ export default function UsuariosList() {
     documentType: 'CC',
     email: '',
     firstName: '',
-    middleName: '',
-    lastName: '',
-    secondLastName: '',
+    secondName: '',
+    firstLastname: '',
+    secondLastname: '',
     password: '',
     birthDate: '',
     roles: ['RESPONSABLE'],
@@ -67,9 +67,9 @@ export default function UsuariosList() {
       documentType: usuario.documentType,
       email: usuario.email,
       firstName: usuario.firstName,
-      middleName: usuario.middleName || '',
-      lastName: usuario.lastName,
-      secondLastName: usuario.secondLastName || '',
+      secondName: usuario.secondName || '',
+      firstLastname: usuario.firstLastname,
+      secondLastname: usuario.secondLastname || '',
       password: '', // No mostrar password al editar
       birthDate: usuario.birthDate,
       roles: usuario.roles,
@@ -102,9 +102,9 @@ export default function UsuariosList() {
       documentType: 'CC',
       email: '',
       firstName: '',
-      middleName: '',
-      lastName: '',
-      secondLastName: '',
+      secondName: '',
+      firstLastname: '',
+      secondLastname: '',
       password: '',
       birthDate: '',
       roles: ['RESPONSABLE'],
@@ -192,8 +192,8 @@ export default function UsuariosList() {
                 <input
                   type="text"
                   className="form-input"
-                  value={formData.middleName}
-                  onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                  value={formData.secondName}
+                  onChange={(e) => setFormData({ ...formData, secondName: e.target.value })}
                 />
               </div>
             </div>
@@ -204,8 +204,8 @@ export default function UsuariosList() {
                 <input
                   type="text"
                   className="form-input"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  value={formData.firstLastname}
+                  onChange={(e) => setFormData({ ...formData, firstLastname: e.target.value })}
                   required
                 />
               </div>
@@ -215,8 +215,8 @@ export default function UsuariosList() {
                 <input
                   type="text"
                   className="form-input"
-                  value={formData.secondLastName}
-                  onChange={(e) => setFormData({ ...formData, secondLastName: e.target.value })}
+                  value={formData.secondLastname}
+                  onChange={(e) => setFormData({ ...formData, secondLastname: e.target.value })}
                 />
               </div>
             </div>
@@ -335,7 +335,7 @@ export default function UsuariosList() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Users size={16} style={{ color: 'var(--color-primary-600)' }} />
                         <span>
-                          {usuario.firstName} {usuario.middleName || ''} {usuario.lastName} {usuario.secondLastName || ''}
+                          {usuario.firstName} {usuario.secondName || ''} {usuario.firstLastname} {usuario.secondLastname || ''}
                         </span>
                       </div>
                     </td>

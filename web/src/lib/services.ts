@@ -44,7 +44,7 @@ export interface EntidadResponse {
 export interface ReporteRequest {
   nombre: string;
   descripcion?: string;
-  entidadId: number;
+  entidadId: string;
   frecuencia: "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL";
   formatoRequerido: "PDF" | "EXCEL" | "WORD" | "OTRO";
   baseLegal?: string;
@@ -53,8 +53,8 @@ export interface ReporteRequest {
   fechaVencimiento: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
-  responsableElaboracionId: number;
-  responsableSupervisionId?: number;
+  responsableElaboracionId: string;
+  responsableSupervisionId?: string;
   correosNotificacion?: string[];
   telefonoResponsable?: string;
   estado?: "PENDIENTE" | "EN_PROGRESO" | "ENVIADO";
@@ -64,7 +64,7 @@ export interface ReporteResponse {
   reporteId: string;
   nombre: string;
   descripcion?: string;
-  entidadId: number;
+  entidadId: string;
   entidadNombre: string;
   frecuencia: string;
   formatoRequerido: string;
@@ -74,9 +74,9 @@ export interface ReporteResponse {
   fechaVencimiento: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
-  responsableElaboracionId: number;
+  responsableElaboracionId: string;
   responsableElaboracionNombre: string;
-  responsableSupervisionId?: number;
+  responsableSupervisionId?: string;
   responsableSupervisionNombre?: string;
   correosNotificacion?: string[];
   telefonoResponsable?: string;
@@ -106,17 +106,18 @@ export interface DashboardResponse {
 }
 
 export interface UsuarioResponse {
+  usuarioId: string;
   documentNumber: string;
   documentType: string;
   email: string;
   firstName: string;
-  middleName?: string;
-  lastName: string;
-  secondLastName?: string;
+  secondName?: string;
+  firstLastname: string;
+  secondLastname?: string;
   birthDate: string;
   roles: string[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UsuarioRequest {
@@ -124,9 +125,9 @@ export interface UsuarioRequest {
   documentType: string;
   email: string;
   firstName: string;
-  middleName?: string;
-  lastName: string;
-  secondLastName?: string;
+  secondName?: string;
+  firstLastname: string;
+  secondLastname?: string;
   password?: string;
   birthDate: string;
   roles: string[];
@@ -239,7 +240,7 @@ export const reportesService = {
   },
 
   async porResponsable(
-    responsableId: number,
+    responsableId: string,
     page = 0,
     size = 10
   ): Promise<Page<ReporteResponse>> {
@@ -423,16 +424,40 @@ export const usuariosService = {
     const response = await api.get("/api/usuarios", {
       params: { page, size, sort: "firstName,asc" },
     });
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async obtener(documentNumber: string): Promise<UsuarioResponse> {
     const response = await api.get(`/api/usuarios/${documentNumber}`);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async crear(data: UsuarioRequest): Promise<UsuarioResponse> {
     const response = await api.post("/api/auth/registro", data);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
@@ -441,11 +466,27 @@ export const usuariosService = {
     data: UsuarioRequest
   ): Promise<UsuarioResponse> {
     const response = await api.put(`/api/usuarios/${documentNumber}`, data);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async eliminar(documentNumber: string): Promise<void> {
     const response = await api.delete(`/api/usuarios/${documentNumber}`);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 };

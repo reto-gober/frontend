@@ -8,10 +8,13 @@ export interface LoginRequest {
 export interface JwtResponse {
   token: string;
   tipo: string;
+  usuarioId: string;
   documentNumber: string;
   email: string;
   firstName: string;
-  lastName: string;
+  secondName?: string;
+  firstLastname: string;
+  secondLastname?: string;
   roles: string[];
 }
 
@@ -20,9 +23,9 @@ export interface RegistroRequest {
   documentType: string;
   email: string;
   firstName: string;
-  middleName?: string;
-  lastName: string;
-  secondLastName?: string;
+  secondName?: string;
+  firstLastname: string;
+  secondLastname?: string;
   password: string;
   birthDate: string;
   roles: string[];
@@ -47,10 +50,13 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify({
+        usuarioId: data.usuarioId,
         documentNumber: data.documentNumber,
         email: data.email,
-        nombre: data.firstName,
-        apellido: data.lastName,
+        firstName: data.firstName,
+        secondName: data.secondName,
+        firstLastname: data.firstLastname,
+        secondLastname: data.secondLastname,
         roles: data.roles,
       }));
       // Guardar token en cookie para validación del lado del servidor
