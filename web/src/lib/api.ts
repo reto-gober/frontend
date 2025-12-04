@@ -23,13 +23,32 @@ api.interceptors.response.use(
   (error) => {
     if (typeof window !== 'undefined') {
       const status = error.response?.status;
+      const message = error.response?.data?.message || '';
       const currentPath = window.location.pathname;
       const isLoginRequest = error.config?.url?.includes('/api/auth/login');
       const isRegisterRequest = error.config?.url?.includes('/api/auth/registro');
       
-      // Handle 401 (Unauthorized) and 403 (Forbidden) - session expired or invalid token
+      // Mensajes que indican problemas de autenticación (token inválido, expirado, faltante)
+      const authenticationErrors = [
+        'Autenticación requerida',
+        'Token JWT con firma inválida',
+        'Token expirado',
+        'Token JWT expirado',
+        'proporcione un token válido',
+        'Autenticación rechazada',
+        'JWT expired',
+        'invalid signature',
+        'malformed',
+      ];
+      
+      // Verificar si el mensaje indica un problema real de autenticación
+      const isAuthenticationError = authenticationErrors.some(errMsg => 
+        message.toLowerCase().includes(errMsg.toLowerCase())
+      );
+      
+      // Handle 401 (Unauthorized) ONLY if it's an authentication issue (not permission issue)
       // BUT: Don't redirect if we're attempting to login/register (let the form handle it)
-      if ((status === 401 || status === 403) && !isLoginRequest && !isRegisterRequest) {
+      if (status === 401 && isAuthenticationError && !isLoginRequest && !isRegisterRequest) {
         // Clear stored auth data
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
@@ -39,13 +58,15 @@ api.interceptors.response.use(
         
         // Show session expired message
         if (currentPath !== '/login' && currentPath !== '/registro') {
-          // Only show alert if not already on login page
-          alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+          alert('Tu sesión ha expirado o el token es inválido. Por favor, inicia sesión nuevamente.');
         }
         
         // Redirect to login
         window.location.href = '/login';
       }
+      
+      // For 403 or 401 without authentication error message, let the application handle it
+      // (could be permission denied, access forbidden, etc.)
     }
     return Promise.reject(error);
   }
