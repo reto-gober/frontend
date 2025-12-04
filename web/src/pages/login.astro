@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Iniciar Sesión">
   <div class="page-bg">
@@ -77,26 +77,29 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   // Redirección si ya está autenticado
   if (authService.isAuthenticated()) {
-    window.location.href = '/dashboard';
+    window.location.href = "/dashboard";
   }
 
   // Login
-  loginForm?.addEventListener('submit', async (e) => {
+  loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (loginError) loginError.innerHTML = '';
+    if (loginError) loginError.innerHTML = "";
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinner"><circle cx="12" cy="12" r="10"/></svg> Iniciando sesión...';
     const data = new FormData(loginForm);
     try {
       const response = await authService.login({
-        email: data.get('email') as string,
-        password: data.get('password') as string,
+        email: data.get("email") as string,
+        password: data.get("password") as string,
       });
       authService.saveToken(response);
-      window.location.href = '/dashboard';
+      window.location.href = "/dashboard";
     } catch (error: any) {
-      const message = error.response?.data?.mensaje || 'Error al iniciar sesión. Verifica tus credenciales.';
-      if (loginError) loginError.innerHTML = `<div class="alert alert-error">${message}</div>`;
+      const message =
+        error.response?.data?.mensaje ||
+        "Error al iniciar sesión. Verifica tus credenciales.";
+      if (loginError)
+        loginError.innerHTML = `<div class="alert alert-error">${message}</div>`;
       loginBtn.disabled = false;
       loginBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/></svg> Iniciar Sesión';
     }

@@ -82,4 +82,23 @@ export const authService = {
     }
     return false;
   },
+
+  async validateToken(): Promise<boolean> {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return false;
+      }
+      
+      try {
+        // Intentar hacer una petición simple para validar el token
+        await api.get('/api/usuarios', { params: { page: 0, size: 1 } });
+        return true;
+      } catch (error: any) {
+        // Si falla (401/403), el interceptor ya limpiará el token y redirigirá
+        return false;
+      }
+    }
+    return false;
+  },
 };

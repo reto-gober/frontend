@@ -1,4 +1,13 @@
-import api from './api';
+import api from "./api";
+
+// Wrapper genérico para respuestas del backend
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+  statusCode: number;
+  timestamp: string;
+}
 
 export interface Page<T> {
   content: T[];
@@ -29,31 +38,45 @@ export interface EntidadResponse {
 }
 
 export interface ReporteRequest {
-  titulo: string;
+  nombre: string;
   descripcion?: string;
   entidadId: number;
-  frecuencia: 'MENSUAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
-  formato: 'PDF' | 'EXCEL' | 'WORD' | 'OTRO';
-  resolucion?: string;
-  responsableId: string | number;
+  frecuencia: "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL";
+  formatoRequerido: "PDF" | "EXCEL" | "WORD" | "OTRO";
+  baseLegal?: string;
+  fechaInicioVigencia?: string;
+  fechaFinVigencia?: string;
   fechaVencimiento: string;
-  estado?: 'PENDIENTE' | 'EN_PROGRESO' | 'ENVIADO';
+  plazoAdicionalDias?: number;
+  linkInstrucciones?: string;
+  responsableElaboracionId: number;
+  responsableSupervisionId?: number;
+  correosNotificacion?: string[];
+  telefonoResponsable?: string;
+  estado?: "PENDIENTE" | "EN_PROGRESO" | "ENVIADO";
 }
 
 export interface ReporteResponse {
-  id: number;
-  titulo: string;
+  reporteId: string;
+  nombre: string;
   descripcion?: string;
   entidadId: number;
   entidadNombre: string;
   frecuencia: string;
-  formato: string;
-  resolucion?: string;
-  responsableId: string;
-  responsableNombre: string;
+  formatoRequerido: string;
+  baseLegal?: string;
+  fechaInicioVigencia?: string;
+  fechaFinVigencia?: string;
   fechaVencimiento: string;
+  plazoAdicionalDias?: number;
+  linkInstrucciones?: string;
+  responsableElaboracionId: number;
+  responsableElaboracionNombre: string;
+  responsableSupervisionId?: number;
+  responsableSupervisionNombre?: string;
+  correosNotificacion?: string[];
+  telefonoResponsable?: string;
   estado: string;
-  fechaEnvio?: string;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -106,48 +129,141 @@ export interface UsuarioRequest {
 }
 
 export const reportesService = {
-  async listar(page = 0, size = 10, sort = 'fechaVencimiento,asc'): Promise<Page<ReporteResponse>> {
-    const response = await api.get('/api/reportes', { params: { page, size, sort } });
+  async listar(
+    page = 0,
+    size = 10,
+    sort = "fechaVencimiento,asc"
+  ): Promise<Page<ReporteResponse>> {
+    const response = await api.get("/api/reportes", {
+      params: { page, size, sort },
+    });
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
-  async obtener(id: number): Promise<ReporteResponse> {
+  async obtener(id: string): Promise<ReporteResponse> {
     const response = await api.get(`/api/reportes/${id}`);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async crear(data: ReporteRequest): Promise<ReporteResponse> {
-    const response = await api.post('/api/reportes', data);
+    const response = await api.post("/api/reportes", data);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
-  async actualizar(id: number, data: ReporteRequest): Promise<ReporteResponse> {
+  async actualizar(id: string, data: ReporteRequest): Promise<ReporteResponse> {
     const response = await api.put(`/api/reportes/${id}`, data);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
-  async eliminar(id: number): Promise<{ mensaje: string }> {
+  async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/reportes/${id}`);
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
-  async cambiarEstado(id: number, estado: string): Promise<ReporteResponse> {
-    const response = await api.patch(`/api/reportes/${id}/estado`, null, { params: { estado } });
+  async cambiarEstado(id: string, estado: string): Promise<ReporteResponse> {
+    const response = await api.patch(`/api/reportes/${id}/estado`, null, {
+      params: { estado },
+    });
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
-  async porEstado(estado: string, page = 0, size = 10): Promise<Page<ReporteResponse>> {
-    const response = await api.get(`/api/reportes/estado/${estado}`, { params: { page, size } });
+  async porEstado(
+    estado: string,
+    page = 0,
+    size = 10
+  ): Promise<Page<ReporteResponse>> {
+    const response = await api.get(`/api/reportes/estado/${estado}`, {
+      params: { page, size },
+    });
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
-  async porResponsable(responsableId: number, page = 0, size = 10): Promise<Page<ReporteResponse>> {
-    const response = await api.get(`/api/reportes/responsable/${responsableId}`, { params: { page, size } });
+  async porResponsable(
+    responsableId: number,
+    page = 0,
+    size = 10
+  ): Promise<Page<ReporteResponse>> {
+    const response = await api.get(
+      `/api/reportes/responsable/${responsableId}`,
+      { params: { page, size } }
+    );
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 
   async vencidos(): Promise<ReporteResponse[]> {
-    const response = await api.get('/api/reportes/vencidos');
+    const response = await api.get("/api/reportes/vencidos");
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
     return response.data;
   },
 };
