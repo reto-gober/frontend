@@ -41,6 +41,15 @@ export interface EntidadResponse {
   updatedAt: string;
 }
 
+export interface ResponsableReporte {
+  usuarioId: string;
+  tipoResponsabilidad: 'elaboracion' | 'supervision' | 'revision';
+  esPrincipal: boolean;
+  fechaInicio: string;
+  fechaFin?: string;
+  observaciones?: string;
+}
+
 export interface ReporteRequest {
   nombre: string;
   descripcion?: string;
@@ -50,10 +59,13 @@ export interface ReporteRequest {
   baseLegal?: string;
   fechaInicioVigencia?: string;
   fechaFinVigencia?: string;
-  fechaVencimiento: string;
+  fechaVencimiento?: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
-  responsableElaboracionId: string[];
+  // Nuevo formato con array de responsables
+  responsables?: ResponsableReporte[];
+  // Formato legacy (aún funciona)
+  responsableElaboracionId?: string[];
   responsableSupervisionId?: string[];
   correosNotificacion?: string[];
   telefonoResponsable?: string;
@@ -198,6 +210,24 @@ export const reportesService = {
   async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/reportes/${id}`);
     // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async agregarResponsable(
+    reporteId: string,
+    responsable: ResponsableReporte
+  ): Promise<ReporteResponse> {
+    const response = await api.post(
+      `/api/reportes/${reporteId}/responsables`,
+      responsable
+    );
     if (
       response.data &&
       typeof response.data === "object" &&
