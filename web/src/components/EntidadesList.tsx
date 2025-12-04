@@ -13,7 +13,7 @@ export default function EntidadesList() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const { toasts, removeToast, success, error } = useToast();
+  const { toasts, removeToast, success, error: showError } = useToast();
   const [formData, setFormData] = useState<EntidadRequest>({
     nit: "",
     nombre: "",
@@ -31,9 +31,11 @@ export default function EntidadesList() {
     setLoading(true);
     try {
       const data: Page<EntidadResponse> = await entidadesService.listar();
-      setEntidades(data.content);
-    } catch (error) {
-      console.error("Error loading entidades:", error);
+      setEntidades(data.content || []);
+    } catch (err) {
+      console.error('Error loading entidades:', err);
+      setEntidades([]);
+      showError('Error al cargar las entidades');
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export default function EntidadesList() {
       });
       loadEntidades();
     } catch (err: any) {
-      error(err.response?.data?.mensaje || "Error al guardar la entidad");
+      showError(err.response?.data?.mensaje || 'Error al guardar la entidad');
     }
   };
 
@@ -86,7 +88,7 @@ export default function EntidadesList() {
       success("Entidad eliminada exitosamente");
       loadEntidades();
     } catch (err: any) {
-      error(err.response?.data?.mensaje || "Error al eliminar la entidad");
+      showError(err.response?.data?.mensaje || 'Error al eliminar la entidad');
     }
   };
 
@@ -123,7 +125,7 @@ export default function EntidadesList() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="btn btn-primary"
+          className="btn btn-orange"
           disabled={showForm}
         >
           <Plus size={16} />
@@ -218,8 +220,8 @@ export default function EntidadesList() {
             </div>
 
             <div className="form-actions-inline">
-              <button type="submit" className="btn btn-primary">
-                {editingId ? "Actualizar" : "Crear"}
+              <button type="submit" className="btn btn-orange">
+                {editingId ? 'Actualizar' : 'Crear'}
               </button>
               <button
                 type="button"

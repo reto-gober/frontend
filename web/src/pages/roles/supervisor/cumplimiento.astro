@@ -1,0 +1,1097 @@
+---
+import SupervisorLayout from '../../../layouts/roles/SupervisorLayout.astro';
+---
+
+<SupervisorLayout title="Cumplimiento">
+  <div class="cumplimiento-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-info">
+        <h1 class="page-title">Cumplimiento Regulatorio</h1>
+        <p class="page-description">Monitoreo detallado del cumplimiento de reportes del equipo</p>
+      </div>
+      <div class="header-actions">
+        <select class="period-select">
+          <option value="feb-2025" selected>Febrero 2025</option>
+          <option value="ene-2025">Enero 2025</option>
+          <option value="dic-2024">Diciembre 2024</option>
+          <option value="q1-2025">Q1 2025</option>
+        </select>
+        <button class="btn-export">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar
+        </button>
+      </div>
+    </div>
+
+    <!-- Resumen General -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-ring green">
+          <svg viewBox="0 0 36 36" class="circular-chart">
+            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            <path class="circle" stroke-dasharray="82, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            <text x="18" y="20.35" class="percentage-text">82%</text>
+          </svg>
+        </div>
+        <div class="summary-info">
+          <span class="summary-label">Cumplimiento General</span>
+          <span class="summary-value">18 de 22 reportes</span>
+        </div>
+      </div>
+      <div class="summary-card mini">
+        <div class="mini-stat green">
+          <span class="mini-value">18</span>
+          <span class="mini-label">Enviados</span>
+        </div>
+      </div>
+      <div class="summary-card mini">
+        <div class="mini-stat yellow">
+          <span class="mini-value">2</span>
+          <span class="mini-label">En Progreso</span>
+        </div>
+      </div>
+      <div class="summary-card mini">
+        <div class="mini-stat red">
+          <span class="mini-value">2</span>
+          <span class="mini-label">Vencidos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs de vista -->
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="equipo">Por Miembro</button>
+      <button class="view-tab" data-view="entidad">Por Entidad</button>
+      <button class="view-tab" data-view="timeline">Línea de Tiempo</button>
+    </div>
+
+    <!-- Vista: Por Miembro del Equipo -->
+    <div class="view-content" data-view="equipo">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" placeholder="Buscar miembro..." class="search-input" />
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Miembro</th>
+              <th>Asignados</th>
+              <th>Enviados</th>
+              <th>En Progreso</th>
+              <th>Pendientes</th>
+              <th>Vencidos</th>
+              <th>Cumplimiento</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="member-avatar">ML</div>
+                  <div class="member-info">
+                    <span class="member-name">María López</span>
+                    <span class="member-role">Analista Senior</span>
+                  </div>
+                </div>
+              </td>
+              <td class="number">6</td>
+              <td class="number success">6</td>
+              <td class="number">0</td>
+              <td class="number">0</td>
+              <td class="number">0</td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-mini">
+                    <div class="progress-fill-green" style="width: 100%"></div>
+                  </div>
+                  <span class="progress-text green">100%</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-view">Ver Detalle</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="member-avatar">JR</div>
+                  <div class="member-info">
+                    <span class="member-name">Juan Rodríguez</span>
+                    <span class="member-role">Analista</span>
+                  </div>
+                </div>
+              </td>
+              <td class="number">5</td>
+              <td class="number success">4</td>
+              <td class="number warning">1</td>
+              <td class="number">0</td>
+              <td class="number">0</td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-mini">
+                    <div class="progress-fill-green" style="width: 80%"></div>
+                  </div>
+                  <span class="progress-text green">80%</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-view">Ver Detalle</button>
+              </td>
+            </tr>
+            <tr class="warning-row">
+              <td>
+                <div class="member-cell">
+                  <div class="member-avatar">AG</div>
+                  <div class="member-info">
+                    <span class="member-name">Ana García</span>
+                    <span class="member-role">Analista</span>
+                  </div>
+                </div>
+              </td>
+              <td class="number">5</td>
+              <td class="number success">3</td>
+              <td class="number warning">1</td>
+              <td class="number">0</td>
+              <td class="number danger">1</td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-mini">
+                    <div class="progress-fill-yellow" style="width: 60%"></div>
+                  </div>
+                  <span class="progress-text yellow">60%</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-view">Ver Detalle</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="member-avatar">CP</div>
+                  <div class="member-info">
+                    <span class="member-name">Carlos Pérez</span>
+                    <span class="member-role">Analista Junior</span>
+                  </div>
+                </div>
+              </td>
+              <td class="number">4</td>
+              <td class="number success">3</td>
+              <td class="number">0</td>
+              <td class="number warning">1</td>
+              <td class="number">0</td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-mini">
+                    <div class="progress-fill-green" style="width: 75%"></div>
+                  </div>
+                  <span class="progress-text green">75%</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-view">Ver Detalle</button>
+              </td>
+            </tr>
+            <tr class="danger-row">
+              <td>
+                <div class="member-cell">
+                  <div class="member-avatar">LS</div>
+                  <div class="member-info">
+                    <span class="member-name">Laura Sánchez</span>
+                    <span class="member-role">Analista Junior</span>
+                  </div>
+                </div>
+              </td>
+              <td class="number">4</td>
+              <td class="number success">2</td>
+              <td class="number warning">1</td>
+              <td class="number">0</td>
+              <td class="number danger">1</td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-mini">
+                    <div class="progress-fill-red" style="width: 50%"></div>
+                  </div>
+                  <span class="progress-text red">50%</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-view">Ver Detalle</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Vista: Por Entidad -->
+    <div class="view-content hidden" data-view="entidad">
+      <div class="entities-grid">
+        <div class="entity-card">
+          <div class="entity-header">
+            <div class="entity-badge sui">SUI</div>
+            <span class="entity-full-name">Sistema Único de Información</span>
+          </div>
+          <div class="entity-stats">
+            <div class="entity-main-stat">
+              <span class="stat-value green">92%</span>
+              <span class="stat-label">Cumplimiento</span>
+            </div>
+            <div class="entity-detail-stats">
+              <div class="detail-stat">
+                <span class="detail-value">12</span>
+                <span class="detail-label">Total</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value success">11</span>
+                <span class="detail-label">Enviados</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value danger">1</span>
+                <span class="detail-label">Vencidos</span>
+              </div>
+            </div>
+          </div>
+          <div class="entity-progress">
+            <div class="progress-track">
+              <div class="progress-fill green" style="width: 92%"></div>
+            </div>
+          </div>
+          <div class="entity-reports">
+            <span class="reports-label">Reportes:</span>
+            <div class="report-dots">
+              <span class="dot sent" title="SUI-001 - Enviado"></span>
+              <span class="dot sent" title="SUI-002 - Enviado"></span>
+              <span class="dot sent" title="SUI-003 - Enviado"></span>
+              <span class="dot sent" title="SUI-004 - Enviado"></span>
+              <span class="dot sent" title="SUI-005 - Enviado"></span>
+              <span class="dot sent" title="SUI-006 - Enviado"></span>
+              <span class="dot sent" title="SUI-007 - Enviado"></span>
+              <span class="dot sent" title="SUI-008 - Enviado"></span>
+              <span class="dot sent" title="SUI-009 - Enviado"></span>
+              <span class="dot sent" title="SUI-010 - Enviado"></span>
+              <span class="dot sent" title="SUI-011 - Enviado"></span>
+              <span class="dot overdue" title="SUI-012 - Vencido"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="entity-card">
+          <div class="entity-header">
+            <div class="entity-badge creg">CREG</div>
+            <span class="entity-full-name">Comisión de Regulación</span>
+          </div>
+          <div class="entity-stats">
+            <div class="entity-main-stat">
+              <span class="stat-value green">100%</span>
+              <span class="stat-label">Cumplimiento</span>
+            </div>
+            <div class="entity-detail-stats">
+              <div class="detail-stat">
+                <span class="detail-value">6</span>
+                <span class="detail-label">Total</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value success">6</span>
+                <span class="detail-label">Enviados</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value">0</span>
+                <span class="detail-label">Vencidos</span>
+              </div>
+            </div>
+          </div>
+          <div class="entity-progress">
+            <div class="progress-track">
+              <div class="progress-fill green" style="width: 100%"></div>
+            </div>
+          </div>
+          <div class="entity-reports">
+            <span class="reports-label">Reportes:</span>
+            <div class="report-dots">
+              <span class="dot sent" title="CREG-001 - Enviado"></span>
+              <span class="dot sent" title="CREG-002 - Enviado"></span>
+              <span class="dot sent" title="CREG-003 - Enviado"></span>
+              <span class="dot sent" title="CREG-004 - Enviado"></span>
+              <span class="dot sent" title="CREG-005 - Enviado"></span>
+              <span class="dot sent" title="CREG-006 - Enviado"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="entity-card">
+          <div class="entity-header">
+            <div class="entity-badge anh">ANH</div>
+            <span class="entity-full-name">Agencia Nacional de Hidrocarburos</span>
+          </div>
+          <div class="entity-stats">
+            <div class="entity-main-stat">
+              <span class="stat-value yellow">75%</span>
+              <span class="stat-label">Cumplimiento</span>
+            </div>
+            <div class="entity-detail-stats">
+              <div class="detail-stat">
+                <span class="detail-value">4</span>
+                <span class="detail-label">Total</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value success">3</span>
+                <span class="detail-label">Enviados</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value warning">1</span>
+                <span class="detail-label">Pendiente</span>
+              </div>
+            </div>
+          </div>
+          <div class="entity-progress">
+            <div class="progress-track">
+              <div class="progress-fill yellow" style="width: 75%"></div>
+            </div>
+          </div>
+          <div class="entity-reports">
+            <span class="reports-label">Reportes:</span>
+            <div class="report-dots">
+              <span class="dot sent" title="ANH-001 - Enviado"></span>
+              <span class="dot sent" title="ANH-002 - Enviado"></span>
+              <span class="dot sent" title="ANH-003 - Enviado"></span>
+              <span class="dot pending" title="ANH-004 - Pendiente"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="entity-card warning">
+          <div class="entity-header">
+            <div class="entity-badge sspd">SSPD</div>
+            <span class="entity-full-name">Superintendencia de Servicios</span>
+          </div>
+          <div class="entity-stats">
+            <div class="entity-main-stat">
+              <span class="stat-value red">50%</span>
+              <span class="stat-label">Cumplimiento</span>
+            </div>
+            <div class="entity-detail-stats">
+              <div class="detail-stat">
+                <span class="detail-value">2</span>
+                <span class="detail-label">Total</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value success">1</span>
+                <span class="detail-label">Enviados</span>
+              </div>
+              <div class="detail-stat">
+                <span class="detail-value danger">1</span>
+                <span class="detail-label">Vencido</span>
+              </div>
+            </div>
+          </div>
+          <div class="entity-progress">
+            <div class="progress-track">
+              <div class="progress-fill red" style="width: 50%"></div>
+            </div>
+          </div>
+          <div class="entity-reports">
+            <span class="reports-label">Reportes:</span>
+            <div class="report-dots">
+              <span class="dot sent" title="SSPD-001 - Enviado"></span>
+              <span class="dot overdue" title="SSPD-002 - Vencido"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vista: Línea de Tiempo -->
+    <div class="view-content hidden" data-view="timeline">
+      <div class="timeline-card">
+        <div class="timeline-header">
+          <div class="timeline-legend">
+            <span class="legend-item"><span class="legend-dot sent"></span> Enviado</span>
+            <span class="legend-item"><span class="legend-dot progress"></span> En Progreso</span>
+            <span class="legend-item"><span class="legend-dot pending"></span> Pendiente</span>
+            <span class="legend-item"><span class="legend-dot overdue"></span> Vencido</span>
+          </div>
+        </div>
+        <div class="timeline-container">
+          <div class="timeline-row">
+            <div class="timeline-label">Semana 1</div>
+            <div class="timeline-items">
+              <div class="timeline-item sent">
+                <span class="item-code">SUI-001</span>
+                <span class="item-date">05 Feb</span>
+              </div>
+              <div class="timeline-item sent">
+                <span class="item-code">CREG-045</span>
+                <span class="item-date">06 Feb</span>
+              </div>
+              <div class="timeline-item sent">
+                <span class="item-code">ANH-012</span>
+                <span class="item-date">07 Feb</span>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-row">
+            <div class="timeline-label">Semana 2</div>
+            <div class="timeline-items">
+              <div class="timeline-item sent">
+                <span class="item-code">SUI-002</span>
+                <span class="item-date">10 Feb</span>
+              </div>
+              <div class="timeline-item sent">
+                <span class="item-code">SUI-003</span>
+                <span class="item-date">11 Feb</span>
+              </div>
+              <div class="timeline-item overdue">
+                <span class="item-code">SSPD-023</span>
+                <span class="item-date">12 Feb (Vencido)</span>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-row">
+            <div class="timeline-label">Semana 3</div>
+            <div class="timeline-items">
+              <div class="timeline-item progress">
+                <span class="item-code">SUI-008</span>
+                <span class="item-date">Vence 15 Feb</span>
+              </div>
+              <div class="timeline-item pending">
+                <span class="item-code">CREG-102</span>
+                <span class="item-date">Vence 18 Feb</span>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-row">
+            <div class="timeline-label">Semana 4</div>
+            <div class="timeline-items">
+              <div class="timeline-item pending">
+                <span class="item-code">ANH-018</span>
+                <span class="item-date">Vence 25 Feb</span>
+              </div>
+              <div class="timeline-item pending">
+                <span class="item-code">SUI-015</span>
+                <span class="item-date">Vence 28 Feb</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</SupervisorLayout>
+
+<style>
+  .cumplimiento-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin: 0;
+  }
+
+  .page-description {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    margin: 0.25rem 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .period-select {
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+  }
+
+  .btn-export {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-export:hover {
+    background: var(--neutral-100);
+  }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .summary-card.mini {
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .summary-ring {
+    width: 80px;
+    height: 80px;
+  }
+
+  .circular-chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  .circle-bg {
+    fill: none;
+    stroke: var(--neutral-200);
+    stroke-width: 3;
+  }
+
+  .circle {
+    fill: none;
+    stroke: var(--success-green-500);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
+  .percentage-text {
+    fill: var(--neutral-800);
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-anchor: middle;
+  }
+
+  .summary-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .summary-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  .summary-value {
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+  }
+
+  .mini-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .mini-value {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .mini-stat.green .mini-value { color: var(--success-green-600); }
+  .mini-stat.yellow .mini-value { color: var(--warning-yellow-600); }
+  .mini-stat.red .mini-value { color: var(--error-red-600); }
+
+  .mini-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  /* View Tabs */
+  .view-tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: var(--shadow-card);
+    width: fit-content;
+  }
+
+  .view-tab {
+    padding: 0.625rem 1.25rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .view-tab:hover {
+    background: var(--neutral-100);
+  }
+
+  .view-tab.active {
+    background: var(--role-accent);
+    color: var(--neutral-900);
+  }
+
+  /* View Content */
+  .view-content.hidden {
+    display: none;
+  }
+
+  /* Table Card */
+  .table-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--neutral-100);
+    border-radius: 8px;
+    max-width: 300px;
+  }
+
+  .search-box svg {
+    color: var(--neutral-400);
+  }
+
+  .search-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.875rem;
+    width: 100%;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 0.875rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    background: var(--neutral-50);
+  }
+
+  .data-table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .data-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .data-table tr.warning-row {
+    background: var(--warning-yellow-50);
+  }
+
+  .data-table tr.danger-row {
+    background: var(--error-red-50);
+  }
+
+  .member-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--role-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .member-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-800);
+    display: block;
+  }
+
+  .member-role {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+  }
+
+  .number.success { color: var(--success-green-600); }
+  .number.warning { color: var(--warning-yellow-600); }
+  .number.danger { color: var(--error-red-600); }
+
+  .progress-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .progress-bar-mini {
+    width: 80px;
+    height: 6px;
+    background: var(--neutral-200);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill-green { height: 100%; background: var(--success-green-500); border-radius: 3px; }
+  .progress-fill-yellow { height: 100%; background: var(--warning-yellow-500); border-radius: 3px; }
+  .progress-fill-red { height: 100%; background: var(--error-red-500); border-radius: 3px; }
+
+  .progress-text {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .progress-text.green { color: var(--success-green-600); }
+  .progress-text.yellow { color: var(--warning-yellow-600); }
+  .progress-text.red { color: var(--error-red-600); }
+
+  .btn-view {
+    padding: 0.375rem 0.75rem;
+    background: var(--neutral-100);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-view:hover {
+    background: var(--role-accent);
+  }
+
+  /* Entities Grid */
+  .entities-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .entity-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    padding: 1.5rem;
+  }
+
+  .entity-card.warning {
+    border: 2px solid var(--error-red-200);
+  }
+
+  .entity-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .entity-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+  }
+
+  .entity-badge.sui { background: #3b82f6; }
+  .entity-badge.creg { background: #8b5cf6; }
+  .entity-badge.anh { background: #f59e0b; }
+  .entity-badge.sspd { background: #ef4444; }
+
+  .entity-full-name {
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+  }
+
+  .entity-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .entity-main-stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .stat-value.green { color: var(--success-green-600); }
+  .stat-value.yellow { color: var(--warning-yellow-600); }
+  .stat-value.red { color: var(--error-red-600); }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .entity-detail-stats {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .detail-stat {
+    text-align: center;
+  }
+
+  .detail-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+  }
+
+  .detail-value.success { color: var(--success-green-600); }
+  .detail-value.warning { color: var(--warning-yellow-600); }
+  .detail-value.danger { color: var(--error-red-600); }
+
+  .detail-label {
+    font-size: 0.6875rem;
+    color: var(--neutral-500);
+  }
+
+  .entity-progress {
+    margin-bottom: 1rem;
+  }
+
+  .progress-track {
+    height: 8px;
+    background: var(--neutral-200);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  .progress-fill.green { background: var(--success-green-500); }
+  .progress-fill.yellow { background: var(--warning-yellow-500); }
+  .progress-fill.red { background: var(--error-red-500); }
+
+  .entity-reports {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .reports-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  .report-dots {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .dot.sent { background: var(--success-green-500); }
+  .dot.progress { background: var(--warning-yellow-500); }
+  .dot.pending { background: var(--neutral-300); }
+  .dot.overdue { background: var(--error-red-500); }
+
+  /* Timeline */
+  .timeline-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    padding: 1.5rem;
+  }
+
+  .timeline-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .timeline-legend {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--neutral-600);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .legend-dot.sent { background: var(--success-green-500); }
+  .legend-dot.progress { background: var(--warning-yellow-500); }
+  .legend-dot.pending { background: var(--neutral-300); }
+  .legend-dot.overdue { background: var(--error-red-500); }
+
+  .timeline-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+  }
+
+  .timeline-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    min-width: 100px;
+  }
+
+  .timeline-items {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .timeline-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.625rem 1rem;
+    border-radius: 8px;
+    border-left: 3px solid;
+  }
+
+  .timeline-item.sent {
+    background: var(--success-green-50);
+    border-left-color: var(--success-green-500);
+  }
+
+  .timeline-item.progress {
+    background: var(--warning-yellow-50);
+    border-left-color: var(--warning-yellow-500);
+  }
+
+  .timeline-item.pending {
+    background: var(--neutral-100);
+    border-left-color: var(--neutral-400);
+  }
+
+  .timeline-item.overdue {
+    background: var(--error-red-50);
+    border-left-color: var(--error-red-500);
+  }
+
+  .item-code {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  .item-date {
+    font-size: 0.6875rem;
+    color: var(--neutral-500);
+  }
+
+  @media (max-width: 1024px) {
+    .summary-cards {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .entities-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .data-table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+</style>

@@ -72,13 +72,13 @@ export default function Calendario() {
       <div className="calendario-grid">
         <div className="calendario-panel">
           <div className="calendario-nav">
-            <button onClick={handlePrevMonth} className="btn btn-sm btn-secondary">
+            <button onClick={handlePrevMonth} className="btn btn-sm btn-green">
               <ChevronLeft size={16} />
             </button>
             <h3 className="calendario-month">
               {format(currentDate, 'MMMM yyyy', { locale: es })}
             </h3>
-            <button onClick={handleNextMonth} className="btn btn-sm btn-secondary">
+            <button onClick={handleNextMonth} className="btn btn-sm btn-green">
               <ChevronRight size={16} />
             </button>
           </div>
@@ -110,7 +110,7 @@ export default function Calendario() {
                 >
                   <span className="day-number">{format(day, 'd')}</span>
                   {hasReportes && (
-                    <span className="day-indicator">{dayReportes.length}</span>
+                    <span className="day-indicator"></span>
                   )}
                 </div>
               );
@@ -146,7 +146,7 @@ export default function Calendario() {
                       </div>
                       <h4 className="sidebar-reporte-title">{reporte.titulo}</h4>
                       <p className="sidebar-reporte-info">{reporte.entidadNombre}</p>
-                      <a href={`/reportes/${reporte.id}`} className="btn btn-sm btn-secondary" style={{ marginTop: '0.5rem' }}>
+                      <a href={`/reportes/${reporte.id}`} className="btn btn-sm btn-green" style={{ marginTop: '0.5rem' }}>
                         Ver detalles
                       </a>
                     </div>
@@ -156,17 +156,28 @@ export default function Calendario() {
             </div>
           ) : (
             <div className="sidebar-content">
-              <p style={{ color: 'var(--color-text-light)', marginBottom: '1rem' }}>
+              <p style={{ color: 'var(--neutral-600)', marginBottom: '1rem', fontSize: '0.875rem' }}>
                 Haz clic en un día con reportes para ver los detalles.
               </p>
               <div className="calendario-legend">
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--success-green-700)', marginBottom: '0.5rem' }}>Leyenda</h4>
                 <div className="legend-item">
-                  <div className="legend-color" style={{ backgroundColor: 'var(--color-primary-200)' }}></div>
+                  <div className="legend-color" style={{ borderColor: 'var(--success-green-300)', background: 'white' }}>
+                    <div style={{ width: '6px', height: '6px', background: 'var(--success-green-600)', borderRadius: '50%', margin: '6px auto' }}></div>
+                  </div>
                   <span>Día con reportes</span>
                 </div>
                 <div className="legend-item">
-                  <div className="legend-color" style={{ backgroundColor: '#fee2e2' }}></div>
+                  <div className="legend-color" style={{ borderColor: '#FDA4AF', background: '#FFE4E6' }}>
+                    <div style={{ width: '6px', height: '6px', background: '#BE123C', borderRadius: '50%', margin: '6px auto' }}></div>
+                  </div>
                   <span>Reportes vencidos</span>
+                </div>
+                <div className="legend-item">
+                  <div className="legend-color" style={{ borderColor: 'var(--success-green-600)', background: 'var(--success-green-600)' }}>
+                    <div style={{ width: '6px', height: '6px', background: 'white', borderRadius: '50%', margin: '6px auto' }}></div>
+                  </div>
+                  <span>Día seleccionado</span>
                 </div>
               </div>
             </div>

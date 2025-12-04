@@ -68,7 +68,7 @@ export default function ReportesList() {
           <h2 className="reportes-title">Reportes Regulatorios</h2>
           <p className="reportes-subtitle">Gestiona todos los reportes del sistema</p>
         </div>
-        <a href="/reportes/nuevo" className="btn btn-primary">
+        <a href="/reportes/nuevo" className="btn btn-purple">
           Nuevo Reporte
         </a>
       </div>
