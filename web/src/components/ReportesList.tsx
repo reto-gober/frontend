@@ -35,7 +35,7 @@ export default function ReportesList() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este reporte?')) return;
     
     try {
@@ -100,9 +100,9 @@ export default function ReportesList() {
         <>
           <div className="reportes-grid">
             {reportes.map((reporte) => (
-              <div key={reporte.id} className="reporte-card">
+              <div key={reporte.reporteId} className="reporte-card">
                 <div className="reporte-card-header">
-                  <h3 className="reporte-card-title">{reporte.titulo}</h3>
+                  <h3 className="reporte-card-title">{reporte.nombre}</h3>
                   <span className={`badge ${getEstadoBadge(reporte.estado)}`}>
                     {reporte.estado.replace('_', ' ')}
                   </span>
@@ -119,7 +119,7 @@ export default function ReportesList() {
                   </div>
                   <div className="reporte-detail">
                     <User size={16} />
-                    <span>{reporte.responsableNombre}</span>
+                    <span>{reporte.responsableElaboracionNombre}</span>
                   </div>
                   <div className="reporte-detail">
                     <Calendar size={16} />
@@ -129,17 +129,17 @@ export default function ReportesList() {
                   </div>
                   <div className="reporte-detail">
                     <FileText size={16} />
-                    <span>{reporte.frecuencia} - {reporte.formato}</span>
+                    <span>{reporte.frecuencia} - {reporte.formatoRequerido}</span>
                   </div>
                 </div>
 
                 <div className="reporte-card-actions">
-                  <a href={`/reportes/${reporte.id}`} className="btn btn-sm btn-secondary">
+                  <a href={`/reportes/${reporte.reporteId}`} className="btn btn-sm btn-secondary">
                     <Edit size={14} />
                     Ver/Editar
                   </a>
                   <button
-                    onClick={() => handleDelete(reporte.id)}
+                    onClick={() => handleDelete(reporte.reporteId)}
                     className="btn btn-sm btn-danger"
                   >
                     <Trash2 size={14} />
