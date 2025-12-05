@@ -1,8 +1,11 @@
 ---
 import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
+import ResponsableCalendarioClient from '../../../components/responsable/ResponsableCalendarioClient';
 ---
 
 <ResponsableLayout title="Calendario">
+  <ResponsableCalendarioClient client:load />
+</ResponsableLayout>
   <div class="calendario-page">
     <!-- Header -->
     <div class="page-header">

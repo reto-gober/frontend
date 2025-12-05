@@ -1,8 +1,11 @@
 ---
 import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
+import AuditorCalendarioClient from '../../../components/auditor/AuditorCalendarioClient';
 ---
 
 <AuditorLayout title="Calendario de Auditoría">
+  <AuditorCalendarioClient client:load />
+</AuditorLayout>
   <div class="calendario-page">
     <!-- Header -->
     <div class="page-header">
