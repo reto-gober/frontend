@@ -1,425 +1,24 @@
-﻿---
+---
 import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
-
-// =============================================
-// DATOS DE EJEMPLO (DUMMY DATA)
-// =============================================
-
-const periodos = [
-  { value: 'mensual', label: 'Mensual' },
-  { value: 'trimestral', label: 'Trimestral' },
-  { value: 'anual', label: 'Anual' }
-];
-
-// KPIs del responsable
-const kpisData = {
-  mensual: {
-    pendientes: 4,
-    enviados: 8,
-    vencidos: 1,
-    porVencer: 3,
-    periodoTexto: 'en el último mes'
-  },
-  trimestral: {
-    pendientes: 6,
-    enviados: 22,
-    vencidos: 2,
-    porVencer: 5,
-    periodoTexto: 'en el último trimestre'
-  },
-  anual: {
-    pendientes: 8,
-    enviados: 85,
-    vencidos: 4,
-    porVencer: 8,
-    periodoTexto: 'en el último año'
-  }
-};
-
-// Estado de reportes para gráfica donut
-const estadoReportes = {
-  mensual: { pendientes: 4, enProceso: 3, enviados: 8, total: 15 },
-  trimestral: { pendientes: 6, enProceso: 5, enviados: 22, total: 33 },
-  anual: { pendientes: 8, enProceso: 7, enviados: 85, total: 100 }
-};
-
-// Próximos vencimientos
-const proximosVencimientos = [
-  { codigo: 'SUI-001', nombre: 'Informe Comercial de Gas Natural', entidad: 'SUI', fechaVencimiento: '2025-12-10', diasRestantes: 7, progreso: 65 },
-  { codigo: 'CREG-045', nombre: 'Reporte de Tarifas Reguladas', entidad: 'CREG', fechaVencimiento: '2025-12-15', diasRestantes: 12, progreso: 40 },
-  { codigo: 'ANH-012', nombre: 'Informe de Producción Mensual', entidad: 'ANH', fechaVencimiento: '2025-12-18', diasRestantes: 15, progreso: 25 },
-  { codigo: 'SUI-008', nombre: 'Reporte de Calidad del Servicio', entidad: 'SUI', fechaVencimiento: '2025-12-22', diasRestantes: 19, progreso: 10 }
-];
-
-// Actividad personal reciente
-const actividadPersonal = [
-  { tipo: 'evidencia', reporte: 'SUI-001', descripcion: 'Subió evidencia: Facturación_Nov.xlsx', tiempo: 'Hace 30 minutos', estado: 'En revisión' },
-  { tipo: 'confirmacion', reporte: 'CREG-102', descripcion: 'Confirmó envío del reporte', tiempo: 'Hace 2 horas', estado: 'Enviado' },
-  { tipo: 'correccion', reporte: 'ANH-008', descripcion: 'Recibió solicitud de corrección', tiempo: 'Ayer, 16:45', estado: 'En corrección' },
-  { tipo: 'evidencia', reporte: 'SUI-005', descripcion: 'Actualizó archivo adjunto', tiempo: 'Ayer, 10:30', estado: 'En proceso' },
-  { tipo: 'confirmacion', reporte: 'CREG-098', descripcion: 'Reporte aprobado por supervisor', tiempo: 'Hace 2 días', estado: 'Enviado' }
-];
-
-// Historial de cumplimiento
-const historialCumplimiento = {
-  mensual: [
-    { mes: 'Jul', aTiempo: 85, tarde: 15 },
-    { mes: 'Ago', aTiempo: 90, tarde: 10 },
-    { mes: 'Sep', aTiempo: 88, tarde: 12 },
-    { mes: 'Oct', aTiempo: 92, tarde: 8 },
-    { mes: 'Nov', aTiempo: 95, tarde: 5 },
-    { mes: 'Dic', aTiempo: 87, tarde: 13 }
-  ],
-  trimestral: [
-    { mes: 'Q1', aTiempo: 82, tarde: 18 },
-    { mes: 'Q2', aTiempo: 88, tarde: 12 },
-    { mes: 'Q3', aTiempo: 91, tarde: 9 },
-    { mes: 'Q4', aTiempo: 89, tarde: 11 }
-  ],
-  anual: [
-    { mes: '2022', aTiempo: 78, tarde: 22 },
-    { mes: '2023', aTiempo: 85, tarde: 15 },
-    { mes: '2024', aTiempo: 91, tarde: 9 },
-    { mes: '2025', aTiempo: 88, tarde: 12 }
-  ]
-};
+import ResponsableDashboardClient from '../../../components/responsable/ResponsableDashboardClient';
 ---
 
 <ResponsableLayout title="Mi Panel de Reportes">
-  <div class="dashboard-responsable">
-    <!-- Barra Superior con Filtros -->
-    <header class="dashboard-header-bar">
-      <div class="header-left">
-        <div class="period-filter">
-          <label for="periodo-select" class="filter-label">Periodo:</label>
-          <select id="periodo-select" class="filter-select">
-            {periodos.map(p => (
-              <option value={p.value}>{p.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div class="header-right">
-        <span class="periodo-info">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          Mostrando datos de mis reportes
-        </span>
-      </div>
-    </header>
-
-    <!-- Fila de Tarjetas KPI -->
-    <section class="kpis-row">
-      <div class="kpi-card pendiente">
-        <div class="kpi-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-value" id="kpi-pendientes">4</span>
-          <span class="kpi-label">Reportes pendientes</span>
-          <span class="kpi-periodo" id="kpi-periodo-1">en el último mes</span>
-        </div>
-      </div>
-
-      <div class="kpi-card enviado">
-        <div class="kpi-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-value" id="kpi-enviados">8</span>
-          <span class="kpi-label">Reportes enviados</span>
-          <span class="kpi-periodo" id="kpi-periodo-2">en el último mes</span>
-        </div>
-      </div>
-
-      <div class="kpi-card vencido">
-        <div class="kpi-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-value" id="kpi-vencidos">1</span>
-          <span class="kpi-label">Reportes vencidos</span>
-          <span class="kpi-periodo" id="kpi-periodo-3">en el último mes</span>
-        </div>
-      </div>
-
-      <div class="kpi-card por-vencer">
-        <div class="kpi-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-value" id="kpi-por-vencer">3</span>
-          <span class="kpi-label">Vencen pronto</span>
-          <span class="kpi-periodo">próximos 7 días</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Bloque Central: Estado de Reportes -->
-    <section class="estado-reportes-section">
-      <div class="section-card">
-        <div class="card-header">
-          <h3 class="card-title">Estado de Mis Reportes</h3>
-        </div>
-        <div class="estado-content">
-          <div class="donut-chart-container">
-            <div class="donut-chart">
-              <svg viewBox="0 0 36 36" class="donut-svg">
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F4C453" stroke-width="3" stroke-dasharray="27 73" stroke-dashoffset="25"></circle>
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3d85d1" stroke-width="3" stroke-dasharray="20 80" stroke-dashoffset="-2"></circle>
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ADE80" stroke-width="3" stroke-dasharray="53 47" stroke-dashoffset="-22"></circle>
-              </svg>
-              <div class="donut-center">
-                <span class="donut-total" id="total-reportes">15</span>
-                <span class="donut-label">reportes</span>
-              </div>
-            </div>
-          </div>
-          <div class="estado-legend">
-            <div class="legend-item">
-              <span class="legend-color" style="background: #F4C453"></span>
-              <span class="legend-text">Pendientes</span>
-              <span class="legend-value" id="legend-pendientes">4 (27%)</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color" style="background: #3d85d1"></span>
-              <span class="legend-text">En proceso</span>
-              <span class="legend-value" id="legend-proceso">3 (20%)</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color" style="background: #4ADE80"></span>
-              <span class="legend-text">Enviados</span>
-              <span class="legend-value" id="legend-enviados">8 (53%)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Fila de Contenido: Vencimientos y Actividad -->
-    <div class="content-row">
-      <!-- Próximos Vencimientos -->
-      <section class="section-card vencimientos-card">
-        <div class="card-header">
-          <h3 class="card-title">Próximos Vencimientos</h3>
-          <a href="/responsable/mis-reportes" class="view-all-link">Ver todos</a>
-        </div>
-        <div class="vencimientos-list">
-          {proximosVencimientos.map(item => (
-            <div class={`vencimiento-item ${item.diasRestantes <= 7 ? 'urgent' : item.diasRestantes <= 14 ? 'warning' : 'normal'}`}>
-              <div class="vencimiento-header">
-                <div class="vencimiento-info">
-                  <span class="vencimiento-codigo">{item.codigo}</span>
-                  <span class="vencimiento-nombre">{item.nombre}</span>
-                </div>
-                <span class={`vencimiento-dias ${item.diasRestantes <= 7 ? 'urgent' : item.diasRestantes <= 14 ? 'warning' : ''}`}>
-                  {item.diasRestantes} días
-                </span>
-              </div>
-              <div class="vencimiento-meta">
-                <span class="vencimiento-entidad">{item.entidad}</span>
-                <span class="vencimiento-fecha">Vence: {new Date(item.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</span>
-              </div>
-              <div class="progress-container">
-                <div class="progress-bar">
-                  <div class="progress-fill" style={`width: ${item.progreso}%`}></div>
-                </div>
-                <span class="progress-text">{item.progreso}%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <!-- Actividad Personal Reciente -->
-      <section class="section-card actividad-card">
-        <div class="card-header">
-          <h3 class="card-title">Mi Actividad Reciente</h3>
-        </div>
-        <div class="actividad-list">
-          {actividadPersonal.map(item => (
-            <div class="actividad-item">
-              <div class={`actividad-icon ${item.tipo}`}>
-                {item.tipo === 'evidencia' ? (
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                ) : item.tipo === 'confirmacion' ? (
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                  </svg>
-                )}
-              </div>
-              <div class="actividad-content">
-                <div class="actividad-descripcion">
-                  <strong>{item.reporte}</strong> - {item.descripcion}
-                </div>
-                <div class="actividad-footer">
-                  <span class="actividad-tiempo">{item.tiempo}</span>
-                  <span class={`actividad-estado ${item.estado.toLowerCase().replace(' ', '-')}`}>{item.estado}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-
-    <!-- Historial de Cumplimiento -->
-    <section class="section-card historial-card">
-      <div class="card-header">
-        <h3 class="card-title">Historial de Cumplimiento</h3>
-        <div class="cumplimiento-badge">
-          <span class="cumplimiento-valor">87%</span>
-          <span class="cumplimiento-texto">promedio</span>
-        </div>
-      </div>
-      <div class="historial-content">
-        <div class="historial-bars" id="historial-bars">
-          {historialCumplimiento.mensual.map(item => (
-            <div class="historial-bar-group">
-              <div class="bar-stack">
-                <div class="bar-segment tarde" style={`height: ${item.tarde}%`} title={`Tarde: ${item.tarde}%`}></div>
-                <div class="bar-segment a-tiempo" style={`height: ${item.aTiempo}%`} title={`A tiempo: ${item.aTiempo}%`}></div>
-              </div>
-              <span class="bar-label">{item.mes}</span>
-            </div>
-          ))}
-        </div>
-        <div class="historial-legend">
-          <div class="legend-item">
-            <span class="legend-color" style="background: #4ADE80"></span>
-            <span class="legend-text">Enviados a tiempo</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-color" style="background: #F97316"></span>
-            <span class="legend-text">Enviados tarde</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
+  <ResponsableDashboardClient client:load />
 </ResponsableLayout>
 
-<script>
-  const kpisData = {
-    mensual: {
-      pendientes: 4,
-      enviados: 8,
-      vencidos: 1,
-      porVencer: 3,
-      periodoTexto: 'en el último mes'
-    },
-    trimestral: {
-      pendientes: 6,
-      enviados: 22,
-      vencidos: 2,
-      porVencer: 5,
-      periodoTexto: 'en el último trimestre'
-    },
-    anual: {
-      pendientes: 8,
-      enviados: 85,
-      vencidos: 4,
-      porVencer: 8,
-      periodoTexto: 'en el último año'
-    }
-  };
-
-  const estadoReportes = {
-    mensual: { pendientes: 4, enProceso: 3, enviados: 8, total: 15 },
-    trimestral: { pendientes: 6, enProceso: 5, enviados: 22, total: 33 },
-    anual: { pendientes: 8, enProceso: 7, enviados: 85, total: 100 }
-  };
-
-  function actualizarDashboard(periodo: string) {
-    const data = kpisData[periodo as keyof typeof kpisData];
-    const estado = estadoReportes[periodo as keyof typeof estadoReportes];
-    
-    // Actualizar KPIs
-    const kpiPendientes = document.getElementById('kpi-pendientes');
-    const kpiEnviados = document.getElementById('kpi-enviados');
-    const kpiVencidos = document.getElementById('kpi-vencidos');
-    const kpiPorVencer = document.getElementById('kpi-por-vencer');
-    
-    if (kpiPendientes) kpiPendientes.textContent = data.pendientes.toString();
-    if (kpiEnviados) kpiEnviados.textContent = data.enviados.toString();
-    if (kpiVencidos) kpiVencidos.textContent = data.vencidos.toString();
-    if (kpiPorVencer) kpiPorVencer.textContent = data.porVencer.toString();
-    
-    // Actualizar textos de periodo
-    const periodosTextos = document.querySelectorAll('.kpi-periodo');
-    periodosTextos.forEach((el, index) => {
-      if (index < 3) {
-        el.textContent = data.periodoTexto;
-      }
-    });
-    
-    // Actualizar totales
-    const totalReportes = document.getElementById('total-reportes');
-    if (totalReportes) totalReportes.textContent = estado.total.toString();
-    
-    // Actualizar leyenda de estado
-    const pctPendientes = Math.round((estado.pendientes / estado.total) * 100);
-    const pctProceso = Math.round((estado.enProceso / estado.total) * 100);
-    const pctEnviados = Math.round((estado.enviados / estado.total) * 100);
-    
-    const legendPendientes = document.getElementById('legend-pendientes');
-    const legendProceso = document.getElementById('legend-proceso');
-    const legendEnviados = document.getElementById('legend-enviados');
-    
-    if (legendPendientes) legendPendientes.textContent = `${estado.pendientes} (${pctPendientes}%)`;
-    if (legendProceso) legendProceso.textContent = `${estado.enProceso} (${pctProceso}%)`;
-    if (legendEnviados) legendEnviados.textContent = `${estado.enviados} (${pctEnviados}%)`;
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const selectPeriodo = document.getElementById('periodo-select') as HTMLSelectElement;
-    if (selectPeriodo) {
-      selectPeriodo.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        actualizarDashboard(target.value);
-      });
-    }
-  });
-</script>
-
-<style>
+<style is:global>
   .dashboard-responsable {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  /* Header Bar */
   .dashboard-header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.25rem;
+    padding: 1.25rem 1.5rem;
     background: white;
     border-radius: 12px;
     box-shadow: var(--shadow-card);
@@ -427,8 +26,8 @@ const historialCumplimiento = {
 
   .header-left {
     display: flex;
-    align-items: center;
     gap: 1rem;
+    align-items: center;
   }
 
   .period-filter {
@@ -439,250 +38,211 @@ const historialCumplimiento = {
 
   .filter-label {
     font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--neutral-600);
+    font-weight: 600;
+    color: var(--neutral-700);
   }
 
   .filter-select {
-    padding: 0.5rem 2rem 0.5rem 0.75rem;
-    border: 1px solid var(--neutral-300);
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--neutral-200);
     border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--neutral-700);
     background: white;
+    font-size: 0.875rem;
+    color: var(--neutral-700);
     cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
+    transition: all 0.2s;
+  }
+
+  .filter-select:hover {
+    border-color: var(--color-primary-400);
   }
 
   .filter-select:focus {
     outline: none;
-    border-color: #F4C453;
-    box-shadow: 0 0 0 3px rgba(244, 196, 83, 0.15);
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(61, 133, 209, 0.1);
   }
 
-  .periodo-info {
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .btn-create-report {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.8125rem;
-    color: var(--neutral-500);
+    padding: 0.625rem 1.125rem;
+    background: var(--color-primary-600);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
   }
 
-  /* KPIs Row */
-  .kpis-row {
+  .btn-create-report:hover {
+    background: var(--color-primary-700);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .kpis-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-  }
-
-  @media (max-width: 1200px) {
-    .kpis-row {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 640px) {
-    .kpis-row {
-      grid-template-columns: 1fr;
-    }
+    gap: 1.5rem;
   }
 
   .kpi-card {
     background: white;
+    padding: 1.5rem;
     border-radius: 12px;
-    padding: 1.25rem;
     box-shadow: var(--shadow-card);
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 1rem;
-    border-left: 4px solid;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
   }
 
   .kpi-card:hover {
-    box-shadow: var(--shadow-hover);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
   }
 
-  .kpi-card.pendiente { border-left-color: #F4C453; }
-  .kpi-card.enviado { border-left-color: #4ADE80; }
-  .kpi-card.vencido { border-left-color: #EF4444; }
-  .kpi-card.por-vencer { border-left-color: #F97316; }
+  .kpi-card.neutral { border-left: 4px solid var(--neutral-600); }
+  .kpi-card.success { border-left: 4px solid var(--success-green-600); }
+  .kpi-card.danger { border-left: 4px solid var(--error-red-600); }
+  .kpi-card.warning { border-left: 4px solid var(--accent-orange-600); }
 
   .kpi-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
   }
 
-  .kpi-card.pendiente .kpi-icon { background: rgba(244, 196, 83, 0.15); color: #B45309; }
-  .kpi-card.enviado .kpi-icon { background: var(--success-green-100); color: var(--success-green-600); }
-  .kpi-card.vencido .kpi-icon { background: var(--error-red-100); color: var(--error-red-600); }
-  .kpi-card.por-vencer .kpi-icon { background: var(--accent-orange-100); color: var(--accent-orange-600); }
+  .kpi-card.neutral .kpi-icon {
+    background: var(--neutral-100);
+    color: var(--neutral-600);
+  }
+
+  .kpi-card.success .kpi-icon {
+    background: var(--success-green-100);
+    color: var(--success-green-600);
+  }
+
+  .kpi-card.danger .kpi-icon {
+    background: var(--error-red-100);
+    color: var(--error-red-600);
+  }
+
+  .kpi-card.warning .kpi-icon {
+    background: var(--accent-orange-100);
+    color: var(--accent-orange-600);
+  }
 
   .kpi-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    flex: 1;
   }
 
   .kpi-value {
-    font-size: 1.75rem;
+    display: block;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--neutral-900);
     line-height: 1;
+    margin-bottom: 0.25rem;
   }
 
   .kpi-label {
+    display: block;
     font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--neutral-700);
+    color: var(--neutral-600);
   }
 
-  .kpi-periodo {
-    font-size: 0.75rem;
-    color: var(--neutral-500);
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 
-  /* Section Card */
-  .section-card {
+  .dashboard-card {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
     box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .dashboard-card.wide {
+    grid-column: span 2;
   }
 
   .card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--neutral-100);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
   }
 
   .card-title {
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 700;
-    color: var(--neutral-800);
+    color: var(--neutral-900);
     margin: 0;
   }
 
-  .view-all-link {
-    font-size: 0.8125rem;
-    font-weight: 500;
+  .card-link {
+    font-size: 0.875rem;
     color: var(--color-primary-600);
     text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
   }
 
-  .view-all-link:hover {
-    text-decoration: underline;
+  .card-link:hover {
+    color: var(--color-primary-700);
   }
 
-  /* Estado Reportes */
-  .estado-content {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-  }
-
-  @media (max-width: 640px) {
-    .estado-content {
-      flex-direction: column;
-    }
+  .card-body {
+    padding: 1.5rem;
   }
 
   .donut-chart-container {
-    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
   }
 
   .donut-chart {
-    position: relative;
-    width: 160px;
-    height: 160px;
+    width: 200px;
+    height: 200px;
   }
 
-  .donut-svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-  }
-
-  .donut-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-  }
-
-  .donut-total {
-    display: block;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--neutral-900);
-    line-height: 1;
-  }
-
-  .donut-label {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--neutral-500);
-    margin-top: 0.25rem;
-  }
-
-  .estado-legend {
+  .legend-grid {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    flex: 1;
   }
 
   .legend-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--neutral-700);
   }
 
-  .legend-color {
+  .legend-dot {
     width: 12px;
     height: 12px;
     border-radius: 3px;
-    flex-shrink: 0;
   }
 
-  .legend-text {
-    font-size: 0.875rem;
-    color: var(--neutral-700);
-    flex: 1;
-  }
-
-  .legend-value {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--neutral-800);
-  }
-
-  /* Content Row */
-  .content-row {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 1.5rem;
-  }
-
-  @media (max-width: 1024px) {
-    .content-row {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Vencimientos List */
   .vencimientos-list {
     display: flex;
     flex-direction: column;
@@ -692,254 +252,115 @@ const historialCumplimiento = {
   .vencimiento-item {
     padding: 1rem;
     background: var(--neutral-50);
-    border-radius: 10px;
-    border-left: 3px solid var(--neutral-300);
-    transition: all 0.2s;
+    border-radius: 8px;
+    border-left: 4px solid var(--color-primary-500);
   }
-
-  .vencimiento-item.urgent { border-left-color: var(--error-red-500); background: var(--error-red-50); }
-  .vencimiento-item.warning { border-left-color: var(--warning-yellow-500); background: var(--warning-yellow-50); }
 
   .vencimiento-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 0.5rem;
   }
 
-  .vencimiento-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+  .vencimiento-codigo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--neutral-600);
+    text-transform: uppercase;
   }
 
-  .vencimiento-codigo {
-    font-size: 0.6875rem;
+  .dias-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
     font-weight: 600;
-    font-family: monospace;
-    color: var(--neutral-500);
+  }
+
+  .dias-badge.urgent {
+    background: var(--error-red-100);
+    color: var(--error-red-700);
+  }
+
+  .dias-badge.normal {
+    background: var(--accent-orange-100);
+    color: var(--accent-orange-700);
   }
 
   .vencimiento-nombre {
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--neutral-800);
+    color: var(--neutral-900);
+    margin: 0 0 0.5rem 0;
   }
-
-  .vencimiento-dias {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    background: var(--neutral-200);
-    color: var(--neutral-700);
-  }
-
-  .vencimiento-dias.urgent { background: var(--error-red-100); color: var(--error-red-700); }
-  .vencimiento-dias.warning { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
 
   .vencimiento-meta {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: var(--neutral-600);
     margin-bottom: 0.75rem;
   }
 
-  .vencimiento-entidad {
-    font-size: 0.6875rem;
-    font-weight: 600;
+  .entidad-badge {
     padding: 0.125rem 0.5rem;
-    background: var(--neutral-200);
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
     border-radius: 4px;
-    color: var(--neutral-700);
-  }
-
-  .vencimiento-fecha {
-    font-size: 0.75rem;
-    color: var(--neutral-500);
-  }
-
-  .progress-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    font-weight: 600;
   }
 
   .progress-bar {
-    flex: 1;
     height: 6px;
     background: var(--neutral-200);
     border-radius: 3px;
     overflow: hidden;
+    margin-bottom: 0.25rem;
   }
 
   .progress-fill {
     height: 100%;
-    background: #F4C453;
+    background: var(--color-primary-600);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width 0.3s;
   }
 
-  .progress-text {
-    font-size: 0.6875rem;
-    font-weight: 600;
+  .progress-label {
+    font-size: 0.75rem;
     color: var(--neutral-600);
-    min-width: 28px;
   }
 
-  /* Actividad List */
-  .actividad-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+  .loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--neutral-200);
+    border-top-color: var(--color-primary-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 
-  .actividad-item {
-    display: flex;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    background: var(--neutral-50);
-    border-radius: 8px;
-    transition: background 0.2s;
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
-  .actividad-item:hover {
-    background: var(--neutral-100);
+  @media (max-width: 1024px) {
+    .kpis-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-card.wide {
+      grid-column: span 1;
+    }
   }
 
-  .actividad-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .actividad-icon.evidencia { background: var(--color-primary-100); color: var(--color-primary-600); }
-  .actividad-icon.confirmacion { background: var(--success-green-100); color: var(--success-green-600); }
-  .actividad-icon.correccion { background: var(--accent-orange-100); color: var(--accent-orange-600); }
-
-  .actividad-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .actividad-descripcion {
-    font-size: 0.8125rem;
-    color: var(--neutral-700);
-    line-height: 1.4;
-    margin-bottom: 0.375rem;
-  }
-
-  .actividad-descripcion strong {
-    color: var(--neutral-800);
-    font-family: monospace;
-  }
-
-  .actividad-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .actividad-tiempo {
-    font-size: 0.6875rem;
-    color: var(--neutral-500);
-  }
-
-  .actividad-estado {
-    font-size: 0.625rem;
-    font-weight: 600;
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    text-transform: uppercase;
-  }
-
-  .actividad-estado.en-revisión { background: var(--color-primary-100); color: var(--color-primary-700); }
-  .actividad-estado.enviado { background: var(--success-green-100); color: var(--success-green-700); }
-  .actividad-estado.en-corrección { background: var(--accent-orange-100); color: var(--accent-orange-700); }
-  .actividad-estado.en-proceso { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
-
-  /* Historial Card */
-  .historial-card {
-    margin-top: 0;
-  }
-
-  .cumplimiento-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    background: var(--success-green-100);
-    border-radius: 8px;
-  }
-
-  .cumplimiento-valor {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--success-green-700);
-  }
-
-  .cumplimiento-texto {
-    font-size: 0.6875rem;
-    color: var(--success-green-600);
-  }
-
-  .historial-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .historial-bars {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 0.75rem;
-    height: 180px;
-    padding: 0.5rem 0;
-  }
-
-  .historial-bar-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-  }
-
-  .bar-stack {
-    width: 100%;
-    max-width: 48px;
-    height: 150px;
-    display: flex;
-    flex-direction: column-reverse;
-    border-radius: 4px;
-    overflow: hidden;
-    background: var(--neutral-100);
-  }
-
-  .bar-segment {
-    width: 100%;
-    transition: height 0.3s ease;
-  }
-
-  .bar-segment.a-tiempo { background: #4ADE80; }
-  .bar-segment.tarde { background: #F97316; }
-
-  .bar-label {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    color: var(--neutral-500);
-  }
-
-  .historial-legend {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--neutral-200);
+  @media (max-width: 640px) {
+    .kpis-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
