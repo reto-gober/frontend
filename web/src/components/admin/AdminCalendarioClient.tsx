@@ -47,15 +47,21 @@ export default function AdminCalendarioClient() {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const getPeriodosDelDia = (dia: number): EventoCalendario[] => {
+  const getEventosDelDia = (dia: number): EventoCalendario[] => {
     if (!calendario) return [];
     
     const fecha = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia);
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      const fechaEvento = evento.fecha.split('T')[0];
-      return fechaEvento === fechaStr;
+      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
+      const start = new Date(evento.startDate);
+      const end = new Date(evento.endDate);
+      const vencimiento = new Date(evento.fechaVencimiento);
+      const current = new Date(fechaStr);
+      
+      return (current >= start && current <= end) || 
+             vencimiento.toISOString().split('T')[0] === fechaStr;
     });
   };
 
@@ -162,7 +168,7 @@ export default function AdminCalendarioClient() {
         {/* Días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const dia = i + 1;
-          const eventosDelDia = getPeriodosDelDia(dia);
+          const eventosDelDia = getEventosDelDia(dia);
           const esHoy = new Date().toDateString() === new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toDateString();
           
           return (
@@ -170,17 +176,25 @@ export default function AdminCalendarioClient() {
               <div className="day-number">{dia}</div>
               {eventosDelDia.length > 0 && (
                 <div className="day-events">
-                  {eventosDelDia.slice(0, 3).map((evento, idx) => (
-                    <div
-                      key={idx}
-                      className="event-item"
-                      style={{ borderLeftColor: evento.color }}
-                      title={`${evento.titulo}\n${evento.tipo} - ${evento.estado}`}
-                    >
-                      <div className="event-title">{evento.titulo}</div>
-                      <div className="event-tipo">{evento.tipo}</div>
-                    </div>
-                  ))}
+                  {eventosDelDia.slice(0, 3).map((evento, idx) => {
+                    const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
+                    const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className="event-item"
+                        style={{ borderLeftColor: evento.color }}
+                        title={`${evento.titulo}\n${evento.descripcion}\n${esVencimiento ? '⏰ VENCIMIENTO' : 'Periodo activo'}`}
+                      >
+                        <div className="event-title">
+                          {esVencimiento && '⏰ '}
+                          {evento.titulo}
+                        </div>
+                        <div className="event-tipo">{evento.tipo} - {evento.estado}</div>
+                      </div>
+                    );
+                  })}
                   {eventosDelDia.length > 3 && (
                     <div className="more-events">+{eventosDelDia.length - 3} más</div>
                   )}

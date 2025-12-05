@@ -707,18 +707,25 @@ export const flujoReportesService = {
 // ============================================
 
 export interface EventoCalendario {
+  eventoId: string;
   reporteId: string;
   titulo: string;
-  fecha: string;
+  startDate: string;
+  endDate: string;
+  fechaVencimiento: string;
   tipo: 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
   estado: string;
   color: string;
+  descripcion: string;
   // Campos opcionales según rol
   esMio?: boolean;
   puedoActuar?: boolean;
   responsableNombre?: string;
+  responsable?: string; // Para supervisor
   supervisorNombre?: string;
   entidadNombre?: string;
+  entidad?: string; // Para auditor
+  tipoIncidencia?: string; // Para supervisor
   diasPendiente?: number;
   diasVencido?: number;
   requiereAccion?: boolean;

@@ -55,8 +55,14 @@ export default function ResponsableCalendarioClient() {
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      const fechaEvento = evento.fecha.split('T')[0];
-      return fechaEvento === fechaStr;
+      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
+      const start = new Date(evento.startDate);
+      const end = new Date(evento.endDate);
+      const vencimiento = new Date(evento.fechaVencimiento);
+      const current = new Date(fechaStr);
+      
+      return (current >= start && current <= end) || 
+             vencimiento.toISOString().split('T')[0] === fechaStr;
     });
   };
 
@@ -75,14 +81,16 @@ export default function ResponsableCalendarioClient() {
     
     const hoy = new Date();
     return calendario.eventos
-      .filter(evento => new Date(evento.fecha) >= hoy)
-      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+      .filter(evento => new Date(evento.fechaVencimiento) >= hoy)
+      .sort((a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime())
       .slice(0, 5);
   };
 
-  const getDiasHastaVencimiento = (fecha: string): number => {
-    const fechaVenc = new Date(fecha);
+  const getDiasHastaVencimiento = (fechaVencimiento: string): number => {
+    const fechaVenc = new Date(fechaVencimiento);
     const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    fechaVenc.setHours(0, 0, 0, 0);
     const diff = fechaVenc.getTime() - hoy.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
@@ -158,8 +166,8 @@ export default function ResponsableCalendarioClient() {
                 </p>
               ) : (
                 proximosEventos.map((evento, idx) => {
-                  const dias = getDiasHastaVencimiento(evento.fecha);
-                  const fecha = new Date(evento.fecha);
+                  const dias = getDiasHastaVencimiento(evento.fechaVencimiento);
+                  const fecha = new Date(evento.fechaVencimiento);
                   const urgente = dias <= 2;
                   const warning = dias > 2 && dias <= 7;
                   
@@ -177,6 +185,11 @@ export default function ResponsableCalendarioClient() {
                         <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)', marginTop: '0.25rem' }}>
                           {evento.tipo} - {evento.estado}
                         </div>
+                        {evento.descripcion && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
+                            {evento.descripcion}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -255,14 +268,21 @@ export default function ResponsableCalendarioClient() {
                     <div className="day-number">{dia}</div>
                     {eventosDelDia.length > 0 && (
                       <div className="day-events">
-                        {eventosDelDia.slice(0, 2).map((evento, idx) => (
-                          <div
-                            key={idx}
-                            className="event-dot"
-                            style={{ backgroundColor: evento.color }}
-                            title={evento.titulo}
-                          />
-                        ))}
+                        {eventosDelDia.slice(0, 2).map((evento, idx) => {
+                          const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
+                          const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                          
+                          return (
+                            <div
+                              key={idx}
+                              className="event-dot"
+                              style={{ backgroundColor: evento.color }}
+                              title={`${evento.titulo}${esVencimiento ? ' ⏰ VENCIMIENTO' : ''}`}
+                            >
+                              {esVencimiento && <span style={{ fontSize: '0.6rem' }}>⏰</span>}
+                            </div>
+                          );
+                        })}
                         {eventosDelDia.length > 2 && (
                           <div className="more-count">+{eventosDelDia.length - 2}</div>
                         )}

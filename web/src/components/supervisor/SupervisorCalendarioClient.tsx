@@ -56,13 +56,19 @@ export default function SupervisorCalendarioClient() {
     const fechaStr = fecha.toISOString().split('T')[0];
     
     let eventos = calendario.eventos.filter(evento => {
-      const fechaEvento = evento.fecha.split('T')[0];
-      return fechaEvento === fechaStr;
+      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
+      const start = new Date(evento.startDate);
+      const end = new Date(evento.endDate);
+      const vencimiento = new Date(evento.fechaVencimiento);
+      const current = new Date(fechaStr);
+      
+      return (current >= start && current <= end) || 
+             vencimiento.toISOString().split('T')[0] === fechaStr;
     });
 
     // Filtrar por responsable si hay filtro activo
     if (filtroResponsable) {
-      eventos = eventos.filter(e => e.responsableNombre === filtroResponsable);
+      eventos = eventos.filter(e => e.responsableNombre === filtroResponsable || e.responsable === filtroResponsable);
     }
 
     return eventos;
@@ -86,6 +92,9 @@ export default function SupervisorCalendarioClient() {
       if (evento.responsableNombre) {
         responsables.add(evento.responsableNombre);
       }
+      if (evento.responsable) {
+        responsables.add(evento.responsable);
+      }
     });
     return Array.from(responsables).sort();
   };
@@ -95,7 +104,7 @@ export default function SupervisorCalendarioClient() {
     
     return calendario.eventos
       .filter(evento => evento.requiereAccion || evento.estado === 'requiere_correccion' || evento.estado === 'vencido')
-      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+      .sort((a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime())
       .slice(0, 5);
   };
 
@@ -185,7 +194,7 @@ export default function SupervisorCalendarioClient() {
                 </p>
               ) : (
                 incidenciasCriticas.map((evento, idx) => {
-                  const fecha = new Date(evento.fecha);
+                  const fecha = new Date(evento.fechaVencimiento);
                   
                   return (
                     <div key={idx} className="incidencia-item">
@@ -193,14 +202,19 @@ export default function SupervisorCalendarioClient() {
                         <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{evento.titulo}</div>
                         <span className="badge-critical">{evento.estado}</span>
                       </div>
-                      {evento.responsableNombre && (
+                      {(evento.responsableNombre || evento.responsable) && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)', marginTop: '0.25rem' }}>
-                          👤 {evento.responsableNombre}
+                          👤 {evento.responsableNombre || evento.responsable}
                         </div>
                       )}
                       <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)', marginTop: '0.25rem' }}>
-                        📅 {fecha.toLocaleDateString('es', { day: 'numeric', month: 'short' })} - {evento.tipo}
+                        📅 {fecha.toLocaleDateString('es', { day: 'numeric', month: 'short' })} - {evento.tipo || evento.tipoIncidencia || 'N/A'}
                       </div>
+                      {evento.descripcion && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
+                          {evento.descripcion}
+                        </div>
+                      )}
                       {evento.diasVencido && evento.diasVencido > 0 && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--error-red-600)', marginTop: '0.25rem', fontWeight: 500 }}>
                           ⚠️ Vencido hace {evento.diasVencido} días
@@ -314,14 +328,19 @@ export default function SupervisorCalendarioClient() {
                   <div className="day-number">{dia}</div>
                   {eventosDelDia.length > 0 && (
                     <div className="day-events">
-                      {eventosDelDia.slice(0, 3).map((evento, idx) => (
-                        <div
-                          key={idx}
-                          className="event-dot"
-                          style={{ backgroundColor: evento.color }}
-                          title={`${evento.titulo} - ${evento.responsableNombre || 'Sin asignar'}`}
-                        />
-                      ))}
+                      {eventosDelDia.slice(0, 3).map((evento, idx) => {
+                        const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
+                        const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                        
+                        return (
+                          <div
+                            key={idx}
+                            className="event-dot"
+                            style={{ backgroundColor: evento.color }}
+                            title={`${evento.titulo} - ${evento.responsableNombre || evento.responsable || 'Sin asignar'}${esVencimiento ? ' ⏰ VENCIMIENTO' : ''}`}
+                          />
+                        );
+                      })}
                       {eventosDelDia.length > 3 && (
                         <div className="more-count">+{eventosDelDia.length - 3}</div>
                       )}

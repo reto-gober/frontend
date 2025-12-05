@@ -59,8 +59,14 @@ export default function AuditorCalendarioClient() {
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      const fechaEvento = evento.fecha.split('T')[0];
-      return fechaEvento === fechaStr;
+      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
+      const start = new Date(evento.startDate);
+      const end = new Date(evento.endDate);
+      const vencimiento = new Date(evento.fechaVencimiento);
+      const current = new Date(fechaStr);
+      
+      return (current >= start && current <= end) || 
+             vencimiento.toISOString().split('T')[0] === fechaStr;
     });
   };
 
@@ -82,6 +88,9 @@ export default function AuditorCalendarioClient() {
       if (evento.entidadNombre) {
         entidades.add(evento.entidadNombre);
       }
+      if (evento.entidad) {
+        entidades.add(evento.entidad);
+      }
     });
     return Array.from(entidades).sort();
   };
@@ -91,8 +100,8 @@ export default function AuditorCalendarioClient() {
     
     const hoy = new Date();
     return calendario.eventos
-      .filter(evento => new Date(evento.fecha) >= hoy)
-      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+      .filter(evento => new Date(evento.fechaVencimiento) >= hoy)
+      .sort((a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime())
       .slice(0, 8);
   };
 
@@ -101,12 +110,16 @@ export default function AuditorCalendarioClient() {
     
     // Preparar datos para exportación
     const data = calendario.eventos.map(evento => ({
-      Fecha: evento.fecha,
+      'Inicio Periodo': evento.startDate,
+      'Fin Periodo': evento.endDate,
+      'Fecha Vencimiento': evento.fechaVencimiento,
       Titulo: evento.titulo,
       Tipo: evento.tipo,
       Estado: evento.estado,
-      Entidad: evento.entidadNombre || 'N/A',
-      Responsable: evento.responsableNombre || 'N/A'
+      Entidad: evento.entidadNombre || evento.entidad || 'N/A',
+      Responsable: evento.responsableNombre || 'N/A',
+      Descripcion: evento.descripcion || '',
+      Color: evento.color
     }));
 
     // Convertir a CSV
@@ -117,7 +130,7 @@ export default function AuditorCalendarioClient() {
     ].join('\n');
 
     // Descargar
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -251,7 +264,7 @@ export default function AuditorCalendarioClient() {
                 </p>
               ) : (
                 proximosVencimientos.map((evento, idx) => {
-                  const fecha = new Date(evento.fecha);
+                  const fecha = new Date(evento.fechaVencimiento);
                   
                   return (
                     <div key={idx} className="evento-item" style={{ borderLeft: `3px solid ${evento.color}` }}>
@@ -262,14 +275,19 @@ export default function AuditorCalendarioClient() {
                         </span>
                       </div>
                       <div style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>{evento.titulo}</div>
-                      {evento.entidadNombre && (
+                      {(evento.entidadNombre || evento.entidad) && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)' }}>
-                          🏢 {evento.entidadNombre}
+                          🏢 {evento.entidadNombre || evento.entidad}
                         </div>
                       )}
                       {evento.responsableNombre && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)' }}>
                           👤 {evento.responsableNombre}
+                        </div>
+                      )}
+                      {evento.descripcion && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
+                          {evento.descripcion}
                         </div>
                       )}
                       <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
@@ -396,14 +414,19 @@ export default function AuditorCalendarioClient() {
                   <div className="day-number">{dia}</div>
                   {eventosDelDia.length > 0 && (
                     <div className="day-events">
-                      {eventosDelDia.slice(0, 3).map((evento, idx) => (
-                        <div
-                          key={idx}
-                          className="event-dot"
-                          style={{ backgroundColor: evento.color }}
-                          title={`${evento.titulo} - ${evento.entidadNombre || ''}`}
-                        />
-                      ))}
+                      {eventosDelDia.slice(0, 3).map((evento, idx) => {
+                        const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
+                        const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                        
+                        return (
+                          <div
+                            key={idx}
+                            className="event-dot"
+                            style={{ backgroundColor: evento.color }}
+                            title={`${evento.titulo} - ${evento.entidadNombre || evento.entidad || ''}${esVencimiento ? ' ⏰ VENCIMIENTO' : ''}`}
+                          />
+                        );
+                      })}
                       {eventosDelDia.length > 3 && (
                         <div className="more-count">+{eventosDelDia.length - 3}</div>
                       )}
@@ -425,10 +448,15 @@ export default function AuditorCalendarioClient() {
                   <div key={idx} className="evento-detail" style={{ borderLeftColor: evento.color }}>
                     <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>{evento.titulo}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--neutral-600)' }}>
-                      {evento.entidadNombre && `🏢 ${evento.entidadNombre} • `}
+                      {(evento.entidadNombre || evento.entidad) && `🏢 ${evento.entidadNombre || evento.entidad} • `}
                       {evento.responsableNombre && `👤 ${evento.responsableNombre} • `}
                       {evento.tipo} - <span style={{ color: evento.color, fontWeight: 500 }}>{evento.estado}</span>
                     </div>
+                    {evento.descripcion && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--neutral-500)', marginTop: '0.25rem', padding: '0.5rem', background: 'var(--neutral-50)', borderRadius: '4px' }}>
+                        {evento.descripcion}
+                      </div>
+                    )}
                     {evento.cumplimiento && (
                       <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', fontWeight: 500 }}>
                         Cumplimiento: <span style={{ 
