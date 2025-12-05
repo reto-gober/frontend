@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { flujoReportesService, type ReportePeriodo } from '../../lib/services';
+import { useState, useEffect } from "react";
+import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 
 interface EventoCalendario {
   id: string;
@@ -7,18 +7,18 @@ interface EventoCalendario {
   fecha: Date;
   titulo: string;
   descripcion: string;
-  tipo: 'vencimiento' | 'enviado' | 'aprobado';
+  tipo: "vencimiento" | "enviado" | "aprobado";
   estado: string;
 }
 
-type VistaCalendario = 'mes' | 'lista';
+type VistaCalendario = "mes" | "lista";
 
 export default function CalendarioClient() {
   const [eventos, setEventos] = useState<EventoCalendario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [vista, setVista] = useState<VistaCalendario>('lista');
+  const [vista, setVista] = useState<VistaCalendario>("lista");
   const [mesActual, setMesActual] = useState(new Date());
-  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
 
   useEffect(() => {
     loadEventos();
@@ -27,18 +27,18 @@ export default function CalendarioClient() {
   const loadEventos = async () => {
     try {
       setLoading(true);
-      
+
       const response = await flujoReportesService.misPeriodos(0, 1000);
       const periodos = response.content;
-      
+
       const eventosGenerados: EventoCalendario[] = [];
       const now = new Date();
 
-      periodos.forEach(periodo => {
+      periodos.forEach((periodo) => {
         if (!periodo.fechaVencimientoCalculada) return;
 
         const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
-        
+
         // Evento de vencimiento
         eventosGenerados.push({
           id: `venc-${periodo.periodoId}`,
@@ -46,71 +46,79 @@ export default function CalendarioClient() {
           fecha: fechaVenc,
           titulo: periodo.reporteNombre,
           descripcion: `Vencimiento - ${periodo.entidadNombre}`,
-          tipo: 'vencimiento',
-          estado: periodo.estado
+          tipo: "vencimiento",
+          estado: periodo.estado,
         });
 
         // Evento de envío si el estado indica que fue enviado
-        if (periodo.estado === 'ENVIADO' || periodo.estado === 'APROBADO') {
+        if (periodo.estado === "ENVIADO" || periodo.estado === "APROBADO") {
           eventosGenerados.push({
             id: `env-${periodo.periodoId}`,
             periodoId: periodo.periodoId,
             fecha: new Date(periodo.updatedAt),
             titulo: periodo.reporteNombre,
             descripcion: `Enviado - ${periodo.entidadNombre}`,
-            tipo: 'enviado',
-            estado: periodo.estado
+            tipo: "enviado",
+            estado: periodo.estado,
           });
         }
 
         // Evento de aprobación si fue aprobado
-        if (periodo.estado === 'APROBADO' && periodo.updatedAt) {
+        if (periodo.estado === "APROBADO" && periodo.updatedAt) {
           eventosGenerados.push({
             id: `apr-${periodo.periodoId}`,
             periodoId: periodo.periodoId,
             fecha: new Date(periodo.updatedAt),
             titulo: periodo.reporteNombre,
             descripcion: `Aprobado - ${periodo.entidadNombre}`,
-            tipo: 'aprobado',
-            estado: periodo.estado
+            tipo: "aprobado",
+            estado: periodo.estado,
           });
         }
       });
 
       // Ordenar por fecha
       eventosGenerados.sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
-      
+
       setEventos(eventosGenerados);
     } catch (err) {
-      console.error('Error al cargar eventos del calendario:', err);
+      console.error("Error al cargar eventos del calendario:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const eventosFiltrados = eventos.filter(evento => {
-    if (filtroEstado === 'pendientes') {
-      return evento.tipo === 'vencimiento' && (evento.estado === 'PENDIENTE' || evento.estado === 'REQUIERE_CORRECCION');
+  const eventosFiltrados = eventos.filter((evento) => {
+    if (filtroEstado === "pendientes") {
+      return (
+        evento.tipo === "vencimiento" &&
+        (evento.estado === "PENDIENTE" ||
+          evento.estado === "REQUIERE_CORRECCION")
+      );
     }
-    if (filtroEstado === 'enviados') {
-      return evento.estado === 'ENVIADO' || evento.estado === 'APROBADO';
+    if (filtroEstado === "enviados") {
+      return evento.estado === "ENVIADO" || evento.estado === "APROBADO";
     }
     return true;
   });
 
   // Filtrar eventos por mes si la vista es 'mes'
-  const eventosMes = vista === 'mes' 
-    ? eventosFiltrados.filter(e => {
-        const eventoMes = e.fecha.getMonth();
-        const eventoAno = e.fecha.getFullYear();
-        return eventoMes === mesActual.getMonth() && eventoAno === mesActual.getFullYear();
-      })
-    : eventosFiltrados;
+  const eventosMes =
+    vista === "mes"
+      ? eventosFiltrados.filter((e) => {
+          const eventoMes = e.fecha.getMonth();
+          const eventoAno = e.fecha.getFullYear();
+          return (
+            eventoMes === mesActual.getMonth() &&
+            eventoAno === mesActual.getFullYear()
+          );
+        })
+      : eventosFiltrados;
 
-  const cambiarMes = (direccion: 'prev' | 'next') => {
-    setMesActual(prev => {
+  const cambiarMes = (direccion: "prev" | "next") => {
+    setMesActual((prev) => {
       const nuevaFecha = new Date(prev);
-      if (direccion === 'prev') {
+      if (direccion === "prev") {
         nuevaFecha.setMonth(nuevaFecha.getMonth() - 1);
       } else {
         nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
@@ -121,45 +129,64 @@ export default function CalendarioClient() {
 
   const formatearFecha = (fecha: Date) => {
     const dia = fecha.getDate();
-    const mes = fecha.toLocaleDateString('es-CO', { month: 'short' });
-    return { dia: dia.toString().padStart(2, '0'), mes };
+    const mes = fecha.toLocaleDateString("es-CO", { month: "short" });
+    return { dia: dia.toString().padStart(2, "0"), mes };
   };
 
   const formatearFechaCompleta = (fecha: Date) => {
-    return fecha.toLocaleDateString('es-CO', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return fecha.toLocaleDateString("es-CO", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const getColorEvento = (tipo: string) => {
-    switch(tipo) {
-      case 'vencimiento': return 'var(--color-warning-500)';
-      case 'enviado': return 'var(--color-info-500)';
-      case 'aprobado': return 'var(--color-success-500)';
-      default: return 'var(--neutral-400)';
+    switch (tipo) {
+      case "vencimiento":
+        return "var(--color-warning-500)";
+      case "enviado":
+        return "var(--color-info-500)";
+      case "aprobado":
+        return "var(--color-success-500)";
+      default:
+        return "var(--neutral-400)";
     }
   };
 
   const contadores = {
     todos: eventos.length,
-    pendientes: eventos.filter(e => e.tipo === 'vencimiento' && (e.estado === 'PENDIENTE' || e.estado === 'REQUIERE_CORRECCION')).length,
-    enviados: eventos.filter(e => e.estado === 'ENVIADO' || e.estado === 'APROBADO').length
+    pendientes: eventos.filter(
+      (e) =>
+        e.tipo === "vencimiento" &&
+        (e.estado === "PENDIENTE" || e.estado === "REQUIERE_CORRECCION")
+    ).length,
+    enviados: eventos.filter(
+      (e) => e.estado === "ENVIADO" || e.estado === "APROBADO"
+    ).length,
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid var(--neutral-200)',
-          borderTop: '4px solid var(--role-accent)',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }} />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+        }}
+      >
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            border: "4px solid var(--neutral-200)",
+            borderTop: "4px solid var(--role-accent)",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        />
       </div>
     );
   }
@@ -170,33 +197,49 @@ export default function CalendarioClient() {
       <div className="page-header">
         <div className="header-info">
           <h1 className="page-title">Calendario de Reportes</h1>
-          <p className="page-description">Visualiza fechas importantes y eventos de tus reportes</p>
+          <p className="page-description">
+            Visualiza fechas importantes y eventos de tus reportes
+          </p>
         </div>
         <div className="header-actions">
           <div className="view-switcher">
-            <button 
-              className={`view-btn ${vista === 'lista' ? 'active' : ''}`}
-              onClick={() => setVista('lista')}
+            <button
+              className={`view-btn ${vista === "lista" ? "active" : ""}`}
+              onClick={() => setVista("lista")}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/>
-                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
               </svg>
               Lista
             </button>
-            <button 
-              className={`view-btn ${vista === 'mes' ? 'active' : ''}`}
-              onClick={() => setVista('mes')}
+            <button
+              className={`view-btn ${vista === "mes" ? "active" : ""}`}
+              onClick={() => setVista("mes")}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
               Mes
             </button>
@@ -205,19 +248,36 @@ export default function CalendarioClient() {
       </div>
 
       {/* Navegación de mes (solo en vista mes) */}
-      {vista === 'mes' && (
+      {vista === "mes" && (
         <div className="month-navigation">
-          <button className="month-nav-btn" onClick={() => cambiarMes('prev')}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15 18 9 12 15 6"/>
+          <button className="month-nav-btn" onClick={() => cambiarMes("prev")}>
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
           <h2 className="month-title">
-            {mesActual.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+            {mesActual.toLocaleDateString("es-CO", {
+              month: "long",
+              year: "numeric",
+            })}
           </h2>
-          <button className="month-nav-btn" onClick={() => cambiarMes('next')}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
+          <button className="month-nav-btn" onClick={() => cambiarMes("next")}>
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
         </div>
@@ -226,21 +286,21 @@ export default function CalendarioClient() {
       {/* Filtros */}
       <div className="filters-bar">
         <div className="filter-tabs">
-          <button 
-            className={`filter-tab ${filtroEstado === 'todos' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('todos')}
+          <button
+            className={`filter-tab ${filtroEstado === "todos" ? "active" : ""}`}
+            onClick={() => setFiltroEstado("todos")}
           >
             Todos ({contadores.todos})
           </button>
-          <button 
-            className={`filter-tab ${filtroEstado === 'pendientes' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('pendientes')}
+          <button
+            className={`filter-tab ${filtroEstado === "pendientes" ? "active" : ""}`}
+            onClick={() => setFiltroEstado("pendientes")}
           >
             Pendientes ({contadores.pendientes})
           </button>
-          <button 
-            className={`filter-tab ${filtroEstado === 'enviados' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('enviados')}
+          <button
+            className={`filter-tab ${filtroEstado === "enviados" ? "active" : ""}`}
+            onClick={() => setFiltroEstado("enviados")}
           >
             Completados ({contadores.enviados})
           </button>
@@ -250,30 +310,33 @@ export default function CalendarioClient() {
       {/* Eventos */}
       <div className="eventos-container">
         {eventosMes.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '3rem',
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            boxShadow: 'var(--shadow-card)'
-          }}>
-            <p style={{ color: 'var(--neutral-500)' }}>
-              {vista === 'mes' 
-                ? `No hay eventos programados para ${mesActual.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}`
-                : 'No hay eventos para mostrar'
-              }
+          <div
+            style={{
+              textAlign: "center",
+              padding: "3rem",
+              backgroundColor: "white",
+              borderRadius: "12px",
+              boxShadow: "var(--shadow-card)",
+            }}
+          >
+            <p style={{ color: "var(--neutral-500)" }}>
+              {vista === "mes"
+                ? `No hay eventos programados para ${mesActual.toLocaleDateString("es-CO", { month: "long", year: "numeric" })}`
+                : "No hay eventos para mostrar"}
             </p>
           </div>
         ) : (
           <div className="eventos-list">
-            {eventosMes.map(evento => {
+            {eventosMes.map((evento) => {
               const { dia, mes } = formatearFecha(evento.fecha);
-              const esProximo = evento.fecha > new Date() && evento.fecha < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-              
+              const esProximo =
+                evento.fecha > new Date() &&
+                evento.fecha < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
               return (
-                <div 
-                  key={evento.id} 
-                  className={`evento-card ${evento.tipo} ${esProximo ? 'proximo' : ''}`}
+                <div
+                  key={evento.id}
+                  className={`evento-card ${evento.tipo} ${esProximo ? "proximo" : ""}`}
                   style={{ borderLeftColor: getColorEvento(evento.tipo) }}
                 >
                   <div className="evento-date">
@@ -283,18 +346,26 @@ export default function CalendarioClient() {
                   <div className="evento-content">
                     <div className="evento-header">
                       <h4 className="evento-title">{evento.titulo}</h4>
-                      <span className="evento-badge" style={{ backgroundColor: getColorEvento(evento.tipo) }}>
-                        {evento.tipo === 'vencimiento' && 'Vencimiento'}
-                        {evento.tipo === 'enviado' && 'Enviado'}
-                        {evento.tipo === 'aprobado' && 'Aprobado'}
+                      <span
+                        className="evento-badge"
+                        style={{ backgroundColor: getColorEvento(evento.tipo) }}
+                      >
+                        {evento.tipo === "vencimiento" && "Vencimiento"}
+                        {evento.tipo === "enviado" && "Enviado"}
+                        {evento.tipo === "aprobado" && "Aprobado"}
                       </span>
                     </div>
                     <p className="evento-description">{evento.descripcion}</p>
                     <div className="evento-footer">
-                      <span className="evento-date-full">{formatearFechaCompleta(evento.fecha)}</span>
-                      <button 
+                      <span className="evento-date-full">
+                        {formatearFechaCompleta(evento.fecha)}
+                      </span>
+                      <button
                         className="evento-action-btn"
-                        onClick={() => window.location.href = '/roles/responsable/mis-reportes'}
+                        onClick={() =>
+                          (window.location.href =
+                            "/roles/responsable/mis-reportes")
+                        }
                       >
                         Ver detalles
                       </button>

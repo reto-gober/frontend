@@ -73,7 +73,7 @@ const menuItems = [
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
-    badgeKey: 'alertas',
+    badgeKey: "alertas",
   },
   {
     label: "Calendario",
@@ -114,16 +114,17 @@ export default function SidebarResponsable() {
       try {
         const response = await flujoReportesService.misPeriodos(0, 1000);
         const periodos = response.content;
-        
+
         const now = new Date();
         const tresDias = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
         let alertasCount = 0;
 
-        periodos.forEach(periodo => {
+        periodos.forEach((periodo) => {
           if (!periodo.fechaVencimientoCalculada) return;
-          
+
           const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
-          const esEnviado = periodo.estado === 'ENVIADO' || periodo.estado === 'APROBADO';
+          const esEnviado =
+            periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
 
           // Contar alertas críticas - Reportes vencidos
           if (fechaVenc < now && !esEnviado) {
@@ -136,14 +137,14 @@ export default function SidebarResponsable() {
           }
 
           // Contar alertas de corrección requerida
-          if (periodo.estado === 'REQUIERE_CORRECCION') {
+          if (periodo.estado === "REQUIERE_CORRECCION") {
             alertasCount++;
           }
         });
 
         setBadges({ alertas: alertasCount });
       } catch (err) {
-        console.error('Error al cargar badges:', err);
+        console.error("Error al cargar badges:", err);
         setBadges({ alertas: 0 });
       }
     };
@@ -215,9 +216,11 @@ export default function SidebarResponsable() {
           >
             <span className="nav-icon">{item.icon}</span>
             {!collapsed && <span className="nav-label">{item.label}</span>}
-            {!collapsed && item.badgeKey && badges[item.badgeKey] !== undefined && (
-              <span className="nav-badge">{badges[item.badgeKey]}</span>
-            )}
+            {!collapsed &&
+              item.badgeKey &&
+              badges[item.badgeKey] !== undefined && (
+                <span className="nav-badge">{badges[item.badgeKey]}</span>
+              )}
           </a>
         ))}
       </nav>
