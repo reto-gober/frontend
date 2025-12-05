@@ -1,27 +1,13 @@
 import { useState, useEffect } from 'react';
-import { reportesService, usuariosService, entidadesService } from '../../lib/services';
+import { dashboardService, type DashboardSupervisorResponse, type CargaResponsable, type DistribucionEntidad } from '../../lib/services';
 
 export default function SupervisorDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState('mensual');
   
-  // Estados para datos
-  const [kpis, setKpis] = useState({
-    enRevision: 0,
-    enCorreccion: 0,
-    pendientesRevision: 0,
-    atrasados: 0
-  });
-  const [estadoReportes, setEstadoReportes] = useState({
-    pendiente: 0,
-    enRevision: 0,
-    enCorreccion: 0,
-    aprobado: 0,
-    atrasado: 0,
-    total: 0
-  });
-  const [cargaResponsables, setCargaResponsables] = useState<any[]>([]);
+  // Estado para datos del dashboard
+  const [dashboardData, setDashboardData] = useState<DashboardSupervisorResponse | null>(null);
 
   useEffect(() => {
     cargarDatos();
@@ -32,85 +18,27 @@ export default function SupervisorDashboardClient() {
       setLoading(true);
       setError(null);
 
-      // Cargar datos en paralelo
-      const [reportesData, usuariosData] = await Promise.all([
-        reportesService.listar(0, 1000),
-        usuariosService.listar(0, 100)
-      ]);
+      // Llamar al endpoint real del dashboard supervisor
+      const data = await dashboardService.dashboardSupervisor();
+      setDashboardData(data);
 
-      const reportes = reportesData.content;
-      const usuarios = usuariosData.content;
-      const ahora = new Date();
-
-      // Calcular KPIs
-      const enRevision = reportes.filter(r => r.estado === 'EN_REVISION').length;
-      const enCorreccion = reportes.filter(r => r.estado === 'REQUIERE_CORRECCION').length;
-      const pendientesRevision = reportes.filter(r => r.estado === 'ENVIADO').length;
-      const atrasados = reportes.filter(r => {
-        if (r.fechaVencimiento && r.estado !== 'COMPLETADO' && r.estado !== 'APROBADO') {
-          return new Date(r.fechaVencimiento) < ahora;
-        }
-        return false;
-      }).length;
-
-      setKpis({ enRevision, enCorreccion, pendientesRevision, atrasados });
-
-      // Estado general de reportes
-      const pendiente = reportes.filter(r => 
-        r.estado === 'PENDIENTE' || r.estado === 'NO_INICIADO'
-      ).length;
-      const aprobado = reportes.filter(r => 
-        r.estado === 'COMPLETADO' || r.estado === 'APROBADO'
-      ).length;
-
-      setEstadoReportes({
-        pendiente,
-        enRevision,
-        enCorreccion,
-        aprobado,
-        atrasado: atrasados,
-        total: reportes.length
-      });
-
-      // Carga de trabajo por responsable (usuarios con rol responsable)
-      const responsables = usuarios.filter(u => u.roles?.includes('responsable'));
-      const cargaPorResponsable = responsables.map(responsable => {
-        // Filtrar reportes por responsable (en producción se usaría responsableElaboracionIds)
-        const reportesResponsable = reportes.filter(r => 
-          r.responsableElaboracionIds?.includes(responsable.usuarioId)
-        );
-        
-        const totalResponsable = reportesResponsable.length;
-        const pendienteResponsable = reportesResponsable.filter(r => 
-          r.estado === 'PENDIENTE' || r.estado === 'NO_INICIADO'
-        ).length;
-        const enRevisionResponsable = reportesResponsable.filter(r => 
-          r.estado === 'EN_REVISION'
-        ).length;
-        const atrasadoResponsable = reportesResponsable.filter(r => {
-          if (r.fechaVencimiento && r.estado !== 'COMPLETADO' && r.estado !== 'APROBADO') {
-            return new Date(r.fechaVencimiento) < ahora;
-          }
-          return false;
-        }).length;
-
-        return {
-          nombre: `${responsable.firstName} ${responsable.firstLastname}`,
-          total: totalResponsable,
-          pendiente: pendienteResponsable,
-          enRevision: enRevisionResponsable,
-          atrasado: atrasadoResponsable
-        };
-      }).filter(r => r.total > 0).slice(0, 5);
-
-      setCargaResponsables(cargaPorResponsable);
-
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al cargar datos del supervisor:', err);
-      setError('Error al cargar los datos');
+      setError(err.response?.data?.message || 'Error al cargar los datos del dashboard');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calcular totales desde estadoGeneral
+  const calcularTotalReportes = (): number => {
+    if (!dashboardData?.estadoGeneral) return 0;
+    return Object.values(dashboardData.estadoGeneral).reduce((acc, val) => acc + val, 0);
+  };
+
+  const calcularAprobados = (): number => {
+    if (!dashboardData?.estadoGeneral) return 0;
+    return (dashboardData.estadoGeneral['aprobado'] || 0) + (dashboardData.estadoGeneral['enviado'] || 0);
   };
 
   if (loading) {
@@ -133,6 +61,18 @@ export default function SupervisorDashboardClient() {
     );
   }
 
+  const kpis = dashboardData?.kpis || {
+    reportesEnRevision: 0,
+    reportesRequierenCorreccion: 0,
+    reportesPendientes: 0,
+    reportesAtrasados: 0
+  };
+
+  const estadoGeneral = dashboardData?.estadoGeneral || {};
+  const cargaResponsables = dashboardData?.cargaPorResponsable || [];
+  const totalReportes = calcularTotalReportes();
+  const aprobados = calcularAprobados();
+
   return (
     <div className="dashboard-supervisor">
       {/* Barra Superior con Filtros */}
@@ -153,7 +93,7 @@ export default function SupervisorDashboardClient() {
           </div>
         </div>
         <div className="header-actions">
-          <button className="btn-review">
+          <a href="/roles/supervisor/reportes" className="btn-review">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
@@ -162,7 +102,7 @@ export default function SupervisorDashboardClient() {
               <polyline points="10 9 9 9 8 9"/>
             </svg>
             Revisar Reportes
-          </button>
+          </a>
         </div>
       </header>
 
@@ -176,7 +116,7 @@ export default function SupervisorDashboardClient() {
             </svg>
           </div>
           <div className="kpi-content">
-            <h3 className="kpi-value">{kpis.enRevision}</h3>
+            <h3 className="kpi-value">{kpis.reportesEnRevision}</h3>
             <p className="kpi-label">En Revisión</p>
           </div>
         </div>
@@ -190,8 +130,8 @@ export default function SupervisorDashboardClient() {
             </svg>
           </div>
           <div className="kpi-content">
-            <h3 className="kpi-value">{kpis.enCorreccion}</h3>
-            <p className="kpi-label">En Corrección</p>
+            <h3 className="kpi-value">{kpis.reportesRequierenCorreccion}</h3>
+            <p className="kpi-label">Requieren Corrección</p>
           </div>
         </div>
 
@@ -203,8 +143,8 @@ export default function SupervisorDashboardClient() {
             </svg>
           </div>
           <div className="kpi-content">
-            <h3 className="kpi-value">{kpis.pendientesRevision}</h3>
-            <p className="kpi-label">Pendientes de Revisión</p>
+            <h3 className="kpi-value">{kpis.reportesPendientes}</h3>
+            <p className="kpi-label">Pendientes Validación</p>
           </div>
         </div>
 
@@ -216,7 +156,7 @@ export default function SupervisorDashboardClient() {
             </svg>
           </div>
           <div className="kpi-content">
-            <h3 className="kpi-value">{kpis.atrasados}</h3>
+            <h3 className="kpi-value">{kpis.reportesAtrasados}</h3>
             <p className="kpi-label">Atrasados</p>
           </div>
         </div>
@@ -240,11 +180,11 @@ export default function SupervisorDashboardClient() {
                   fill="none" 
                   stroke="#10b981" 
                   strokeWidth="40"
-                  strokeDasharray={`${(estadoReportes.aprobado / estadoReportes.total) * 502.4} 502.4`}
+                  strokeDasharray={`${totalReportes > 0 ? (aprobados / totalReportes) * 502.4 : 0} 502.4`}
                   transform="rotate(-90 100 100)"
                 />
                 <text x="100" y="95" textAnchor="middle" fontSize="32" fontWeight="700" fill="#111827">
-                  {estadoReportes.total}
+                  {totalReportes}
                 </text>
                 <text x="100" y="115" textAnchor="middle" fontSize="14" fill="#6b7280">
                   Total
@@ -254,19 +194,23 @@ export default function SupervisorDashboardClient() {
             <div className="legend-grid">
               <div className="legend-item">
                 <span className="legend-dot" style={{ background: '#6b7280' }}></span>
-                <span>Pendiente: {estadoReportes.pendiente}</span>
+                <span>Pendiente: {estadoGeneral['pendiente_validacion'] || estadoGeneral['pendiente'] || 0}</span>
               </div>
               <div className="legend-item">
                 <span className="legend-dot" style={{ background: '#3b82f6' }}></span>
-                <span>En Revisión: {estadoReportes.enRevision}</span>
+                <span>En Revisión: {estadoGeneral['en_revision'] || 0}</span>
               </div>
               <div className="legend-item">
                 <span className="legend-dot" style={{ background: '#f59e0b' }}></span>
-                <span>En Corrección: {estadoReportes.enCorreccion}</span>
+                <span>En Corrección: {estadoGeneral['requiere_correccion'] || 0}</span>
               </div>
               <div className="legend-item">
                 <span className="legend-dot" style={{ background: '#10b981' }}></span>
-                <span>Aprobado: {estadoReportes.aprobado}</span>
+                <span>Aprobado: {estadoGeneral['aprobado'] || 0}</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-dot" style={{ background: '#8b5cf6' }}></span>
+                <span>Enviado: {estadoGeneral['enviado'] || 0}</span>
               </div>
             </div>
           </div>
@@ -291,50 +235,118 @@ export default function SupervisorDashboardClient() {
                       <th>Total</th>
                       <th>Pendiente</th>
                       <th>En Revisión</th>
+                      <th>Aprobado</th>
                       <th>Atrasado</th>
-                      <th>Carga</th>
+                      <th>Cumplimiento</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cargaResponsables.map((resp, idx) => {
-                      const porcentajeCarga = resp.total > 0 
-                        ? Math.round(((resp.pendiente + resp.enRevision) / resp.total) * 100)
-                        : 0;
-                      
-                      return (
-                        <tr key={idx}>
-                          <td><strong>{resp.nombre}</strong></td>
-                          <td>{resp.total}</td>
-                          <td>
-                            <span className="badge neutral">{resp.pendiente}</span>
-                          </td>
-                          <td>
-                            <span className="badge info">{resp.enRevision}</span>
-                          </td>
-                          <td>
-                            <span className="badge danger">{resp.atrasado}</span>
-                          </td>
-                          <td>
-                            <div className="progress-bar-small">
-                              <div 
-                                className="progress-fill-small" 
-                                style={{ 
-                                  width: `${porcentajeCarga}%`,
-                                  background: porcentajeCarga > 80 ? '#ef4444' : porcentajeCarga > 50 ? '#f59e0b' : '#10b981'
-                                }}
-                              ></div>
-                            </div>
-                            <span className="progress-label-small">{porcentajeCarga}%</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {cargaResponsables.map((resp: CargaResponsable) => (
+                      <tr key={resp.responsableId}>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong>{resp.nombreCompleto}</strong>
+                            <small style={{ color: 'var(--neutral-500)' }}>{resp.email}</small>
+                          </div>
+                        </td>
+                        <td>{resp.totalReportes}</td>
+                        <td>
+                          <span className="badge neutral">{resp.pendientes}</span>
+                        </td>
+                        <td>
+                          <span className="badge info">{resp.enRevision}</span>
+                        </td>
+                        <td>
+                          <span className="badge success">{resp.aprobados}</span>
+                        </td>
+                        <td>
+                          <span className="badge danger">{resp.atrasados}</span>
+                        </td>
+                        <td>
+                          <div className="progress-bar-small">
+                            <div 
+                              className="progress-fill-small" 
+                              style={{ 
+                                width: `${resp.porcentajeCumplimiento}%`,
+                                background: resp.porcentajeCumplimiento >= 80 ? '#10b981' : 
+                                           resp.porcentajeCumplimiento >= 50 ? '#f59e0b' : '#ef4444'
+                              }}
+                            ></div>
+                          </div>
+                          <span className="progress-label-small">{resp.porcentajeCumplimiento.toFixed(0)}%</span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
         </div>
+
+        {/* Distribución por Entidad */}
+        {dashboardData?.distribucionPorEntidad && dashboardData.distribucionPorEntidad.length > 0 && (
+          <div className="dashboard-card wide">
+            <div className="card-header">
+              <h2 className="card-title">Distribución por Entidad</h2>
+            </div>
+            <div className="card-body">
+              <div className="entidades-grid" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+                gap: '1rem' 
+              }}>
+                {dashboardData.distribucionPorEntidad.map((entidad: DistribucionEntidad) => (
+                  <div key={entidad.entidadId} className="entidad-card" style={{
+                    background: 'var(--neutral-50)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    border: '1px solid var(--neutral-200)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span className="badge entity" style={{ 
+                        background: 'var(--primary-100)', 
+                        color: 'var(--primary-700)',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontWeight: 600
+                      }}>
+                        {entidad.sigla}
+                      </span>
+                      <span style={{ 
+                        fontSize: '1.25rem', 
+                        fontWeight: 700,
+                        color: entidad.porcentajeCumplimiento >= 80 ? '#10b981' : 
+                               entidad.porcentajeCumplimiento >= 50 ? '#f59e0b' : '#ef4444'
+                      }}>
+                        {entidad.porcentajeCumplimiento.toFixed(0)}%
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--neutral-600)', marginBottom: '0.75rem' }}>
+                      {entidad.nombreEntidad}
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--neutral-500)' }}>
+                        Total: {entidad.totalReportes}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#10b981' }}>
+                        ✓ {entidad.aprobados}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#f59e0b' }}>
+                        ⏳ {entidad.pendientes}
+                      </span>
+                      {entidad.atrasados > 0 && (
+                        <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>
+                          ⚠ {entidad.atrasados}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
