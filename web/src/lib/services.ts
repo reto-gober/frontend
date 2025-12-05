@@ -132,6 +132,71 @@ export interface DashboardResponse {
   tasaCumplimiento: number;
 }
 
+// ==================== DASHBOARD SUPERVISOR ====================
+
+export interface KpisSupervisor {
+  reportesEnRevision: number;
+  reportesRequierenCorreccion: number;
+  reportesPendientes: number;
+  reportesAtrasados: number;
+}
+
+export interface CargaResponsable {
+  responsableId: string;
+  nombreCompleto: string;
+  email: string;
+  totalReportes: number;
+  pendientes: number;
+  enRevision: number;
+  aprobados: number;
+  atrasados: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface DistribucionEntidad {
+  entidadId: string;
+  nombreEntidad: string;
+  sigla: string;
+  totalReportes: number;
+  pendientes: number;
+  aprobados: number;
+  atrasados: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface DashboardSupervisorResponse {
+  kpis: KpisSupervisor;
+  estadoGeneral: Record<string, number>;
+  cargaPorResponsable: CargaResponsable[];
+  distribucionPorEntidad: DistribucionEntidad[];
+}
+
+// ==================== EVIDENCIAS SUPERVISOR ====================
+
+export interface EvidenciaSupervisor {
+  id: string;
+  nombreArchivo: string;
+  rutaArchivo: string;
+  tipoArchivo: string;
+  tamanioBytes: number;
+  fechaCarga: string;
+  reporte: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    entidadNombre: string;
+    periodo: string;
+    estado: string;
+    fechaVencimiento: string;
+  };
+  responsableCarga: {
+    usuarioId: string;
+    nombreCompleto: string;
+    email: string;
+  };
+  urlDescarga?: string;
+}
+
 export interface UsuarioResponse {
   usuarioId: string;
   documentNumber: string;
@@ -458,7 +523,7 @@ export const dashboardService = {
     return response.data;
   },
 
-  async dashboardSupervisor(): Promise<any> {
+  async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
     const response = await api.get('/api/dashboard/supervisor');
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
@@ -699,5 +764,72 @@ export const flujoReportesService = {
   async porEstado(estado: string, page = 0, size = 10): Promise<Page<ReportePeriodo>> {
     const response = await api.get(`/api/flujo-reportes/periodos/estado/${estado}?page=${page}&size=${size}`);
     return response.data.data;
+  },
+
+  // Obtener periodos supervisados con filtros
+  async supervisionConFiltros(
+    page = 0, 
+    size = 10, 
+    estado?: string, 
+    responsableId?: string, 
+    entidadId?: string
+  ): Promise<Page<ReportePeriodo>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (estado) params.append('estado', estado);
+    if (responsableId) params.append('responsableId', responsableId);
+    if (entidadId) params.append('entidadId', entidadId);
+    
+    const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
+    return response.data.data;
+  },
+};
+
+// ==================== EVIDENCIAS SUPERVISOR ====================
+
+export const evidenciasSupervisorService = {
+  // Obtener evidencias bajo supervisión
+  async listar(
+    page = 0, 
+    size = 10, 
+    tipoArchivo?: string, 
+    responsableId?: string, 
+    entidadId?: string, 
+    estado?: string
+  ): Promise<Page<EvidenciaSupervisor>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (tipoArchivo) params.append('tipoArchivo', tipoArchivo);
+    if (responsableId) params.append('responsableId', responsableId);
+    if (entidadId) params.append('entidadId', entidadId);
+    if (estado) params.append('estado', estado);
+    
+    const response = await api.get(`/api/evidencias/supervision?${params}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Descargar evidencia
+  async descargar(id: string): Promise<void> {
+    const response = await api.get(`/api/evidencias/download/${id}`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'],
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const disposition = response.headers['content-disposition'];
+    const match = disposition?.match(/filename="(.+)"/);
+    a.href = url;
+    a.download = match?.[1] || `evidencia-${id}`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   },
 };

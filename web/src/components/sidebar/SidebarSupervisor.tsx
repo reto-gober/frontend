@@ -74,7 +74,12 @@ const menuItems = [
 
 export default function SidebarSupervisor() {
   const [collapsed, setCollapsed] = useState(false);
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const [currentPath, setCurrentPath] = useState('');
+
+  useEffect(() => {
+    // Obtener la ruta actual solo en el cliente
+    setCurrentPath(window.location.pathname);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
