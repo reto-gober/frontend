@@ -838,16 +838,24 @@ export const evidenciasSupervisorService = {
 // ============================================
 
 export interface EventoCalendario {
-  eventoId: string;
-  reporteId: string;
+  eventoId?: string;
+  reporteId?: string;
   titulo: string;
-  startDate: string;
-  endDate: string;
-  fechaVencimiento: string;
-  tipo: 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
-  estado: string;
+  // Tipo de evento determina qué campos usar
+  tipo: 'periodo' | 'vencimiento' | 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
+  
+  // Para eventos tipo "periodo" (barra continua)
+  startDate?: string;
+  endDate?: string;
+  
+  // Para eventos tipo "vencimiento" (marcador puntual)
+  date?: string;
+  fechaVencimiento?: string; // Alias para compatibilidad
+  
+  estado?: string;
   color: string;
-  descripcion: string;
+  descripcion?: string;
+  
   // Campos opcionales según rol
   esMio?: boolean;
   puedoActuar?: boolean;

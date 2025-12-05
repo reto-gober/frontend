@@ -59,14 +59,34 @@ export default function AuditorCalendarioClient() {
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
-      const start = new Date(evento.startDate);
-      const end = new Date(evento.endDate);
-      const vencimiento = new Date(evento.fechaVencimiento);
-      const current = new Date(fechaStr);
+      // Evento tipo "periodo" - verificar si el día está en el rango
+      if (evento.tipo === 'periodo' && evento.startDate && evento.endDate) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const current = new Date(fechaStr);
+        return current >= start && current <= end;
+      }
       
-      return (current >= start && current <= end) || 
-             vencimiento.toISOString().split('T')[0] === fechaStr;
+      // Evento tipo "vencimiento" - verificar si coincide con el día exacto
+      if (evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO') {
+        const eventoDate = evento.date || evento.fechaVencimiento;
+        if (eventoDate) {
+          return eventoDate.split('T')[0] === fechaStr;
+        }
+      }
+      
+      // Compatibilidad con estructura anterior (legacy)
+      if (evento.startDate && evento.endDate && evento.fechaVencimiento) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const vencimiento = new Date(evento.fechaVencimiento);
+        const current = new Date(fechaStr);
+        
+        return (current >= start && current <= end) || 
+               vencimiento.toISOString().split('T')[0] === fechaStr;
+      }
+      
+      return false;
     });
   };
 
@@ -100,8 +120,15 @@ export default function AuditorCalendarioClient() {
     
     const hoy = new Date();
     return calendario.eventos
-      .filter(evento => new Date(evento.fechaVencimiento) >= hoy)
-      .sort((a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime())
+      .filter(evento => {
+        const fechaRef = evento.date || evento.fechaVencimiento || evento.endDate;
+        return fechaRef && new Date(fechaRef) >= hoy;
+      })
+      .sort((a, b) => {
+        const fechaA = a.date || a.fechaVencimiento || a.endDate || '';
+        const fechaB = b.date || b.fechaVencimiento || b.endDate || '';
+        return new Date(fechaA).getTime() - new Date(fechaB).getTime();
+      })
       .slice(0, 8);
   };
 
@@ -264,12 +291,19 @@ export default function AuditorCalendarioClient() {
                 </p>
               ) : (
                 proximosVencimientos.map((evento, idx) => {
-                  const fecha = new Date(evento.fechaVencimiento);
+                  const fechaRef = evento.date || evento.fechaVencimiento || evento.endDate;
+                  const fecha = fechaRef ? new Date(fechaRef) : new Date();
+                  const esPeriodo = evento.tipo === 'periodo';
+                  const esVencimiento = evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO';
                   
                   return (
                     <div key={idx} className="evento-item" style={{ borderLeft: `3px solid ${evento.color}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.25rem' }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{fecha.toLocaleDateString('es', { day: 'numeric', month: 'short' })}</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                          {esVencimiento && '⏰ '}
+                          {esPeriodo && '📊 '}
+                          {fecha.toLocaleDateString('es', { day: 'numeric', month: 'short' })}
+                        </div>
                         <span className="badge-small" style={{ backgroundColor: evento.color, color: 'white', fontSize: '0.7rem' }}>
                           {evento.tipo}
                         </span>
@@ -290,9 +324,11 @@ export default function AuditorCalendarioClient() {
                           {evento.descripcion}
                         </div>
                       )}
-                      <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        <span style={{ color: evento.color, fontWeight: 500 }}>{evento.estado}</span>
-                      </div>
+                      {evento.estado && (
+                        <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                          <span style={{ color: evento.color, fontWeight: 500 }}>{evento.estado}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -416,14 +452,21 @@ export default function AuditorCalendarioClient() {
                     <div className="day-events">
                       {eventosDelDia.slice(0, 3).map((evento, idx) => {
                         const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
-                        const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                        const esVencimiento = evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO' ||
+                                             (evento.fechaVencimiento && evento.fechaVencimiento.split('T')[0] === fechaDia) ||
+                                             (evento.date && evento.date.split('T')[0] === fechaDia);
+                        const esPeriodo = evento.tipo === 'periodo';
                         
                         return (
                           <div
                             key={idx}
                             className="event-dot"
-                            style={{ backgroundColor: evento.color }}
-                            title={`${evento.titulo} - ${evento.entidadNombre || evento.entidad || ''}${esVencimiento ? ' ⏰ VENCIMIENTO' : ''}`}
+                            style={{ 
+                              backgroundColor: evento.color,
+                              opacity: esPeriodo ? 0.7 : 1,
+                              borderRadius: esPeriodo ? '2px' : '50%'
+                            }}
+                            title={`${evento.titulo} - ${evento.entidadNombre || evento.entidad || ''}${esVencimiento ? ' ⏰ VENCIMIENTO' : esPeriodo ? ' 📊 PERIODO' : ''}`}
                           />
                         );
                       })}

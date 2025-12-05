@@ -55,14 +55,34 @@ export default function ResponsableCalendarioClient() {
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
-      const start = new Date(evento.startDate);
-      const end = new Date(evento.endDate);
-      const vencimiento = new Date(evento.fechaVencimiento);
-      const current = new Date(fechaStr);
+      // Evento tipo "periodo" - verificar si el día está en el rango
+      if (evento.tipo === 'periodo' && evento.startDate && evento.endDate) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const current = new Date(fechaStr);
+        return current >= start && current <= end;
+      }
       
-      return (current >= start && current <= end) || 
-             vencimiento.toISOString().split('T')[0] === fechaStr;
+      // Evento tipo "vencimiento" - verificar si coincide con el día exacto
+      if (evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO') {
+        const eventoDate = evento.date || evento.fechaVencimiento;
+        if (eventoDate) {
+          return eventoDate.split('T')[0] === fechaStr;
+        }
+      }
+      
+      // Compatibilidad con estructura anterior (legacy)
+      if (evento.startDate && evento.endDate && evento.fechaVencimiento) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const vencimiento = new Date(evento.fechaVencimiento);
+        const current = new Date(fechaStr);
+        
+        return (current >= start && current <= end) || 
+               vencimiento.toISOString().split('T')[0] === fechaStr;
+      }
+      
+      return false;
     });
   };
 
@@ -81,13 +101,29 @@ export default function ResponsableCalendarioClient() {
     
     const hoy = new Date();
     return calendario.eventos
-      .filter(evento => new Date(evento.fechaVencimiento) >= hoy)
-      .sort((a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime())
+      .filter(evento => {
+        // Para eventos de vencimiento, usar date o fechaVencimiento
+        if (evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO') {
+          const fechaEvento = evento.date || evento.fechaVencimiento;
+          return fechaEvento && new Date(fechaEvento) >= hoy;
+        }
+        // Para eventos de periodo, usar endDate o fechaVencimiento
+        const fechaRef = evento.endDate || evento.fechaVencimiento;
+        return fechaRef && new Date(fechaRef) >= hoy;
+      })
+      .sort((a, b) => {
+        const fechaA = a.date || a.fechaVencimiento || a.endDate || '';
+        const fechaB = b.date || b.fechaVencimiento || b.endDate || '';
+        return new Date(fechaA).getTime() - new Date(fechaB).getTime();
+      })
       .slice(0, 5);
   };
 
-  const getDiasHastaVencimiento = (fechaVencimiento: string): number => {
-    const fechaVenc = new Date(fechaVencimiento);
+  const getDiasHastaVencimiento = (evento: EventoCalendario): number => {
+    const fechaRef = evento.date || evento.fechaVencimiento || evento.endDate;
+    if (!fechaRef) return 999;
+    
+    const fechaVenc = new Date(fechaRef);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     fechaVenc.setHours(0, 0, 0, 0);
@@ -166,10 +202,13 @@ export default function ResponsableCalendarioClient() {
                 </p>
               ) : (
                 proximosEventos.map((evento, idx) => {
-                  const dias = getDiasHastaVencimiento(evento.fechaVencimiento);
-                  const fecha = new Date(evento.fechaVencimiento);
+                  const dias = getDiasHastaVencimiento(evento);
+                  const fechaRef = evento.date || evento.fechaVencimiento || evento.endDate;
+                  const fecha = fechaRef ? new Date(fechaRef) : new Date();
                   const urgente = dias <= 2;
                   const warning = dias > 2 && dias <= 7;
+                  const esPeriodo = evento.tipo === 'periodo';
+                  const esVencimiento = evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO';
                   
                   return (
                     <div key={idx} className={`evento-item ${urgente ? 'urgent' : warning ? 'warning' : ''}`}>
@@ -178,13 +217,19 @@ export default function ResponsableCalendarioClient() {
                         <span className="date-month">{fecha.toLocaleDateString('es', { month: 'short' })}</span>
                       </div>
                       <div className="evento-info">
-                        <h4 className="evento-title">{evento.titulo}</h4>
+                        <h4 className="evento-title">
+                          {esVencimiento && '⏰ '}
+                          {esPeriodo && '📊 '}
+                          {evento.titulo}
+                        </h4>
                         <span className={`evento-badge ${urgente ? 'urgent' : warning ? 'warning' : ''}`}>
                           {dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : `En ${dias} días`}
                         </span>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)', marginTop: '0.25rem' }}>
-                          {evento.tipo} - {evento.estado}
-                        </div>
+                        {evento.estado && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--neutral-600)', marginTop: '0.25rem' }}>
+                            {evento.tipo} - {evento.estado}
+                          </div>
+                        )}
                         {evento.descripcion && (
                           <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
                             {evento.descripcion}
@@ -270,16 +315,23 @@ export default function ResponsableCalendarioClient() {
                       <div className="day-events">
                         {eventosDelDia.slice(0, 2).map((evento, idx) => {
                           const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
-                          const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                          const esVencimiento = evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO' ||
+                                               (evento.fechaVencimiento && evento.fechaVencimiento.split('T')[0] === fechaDia) ||
+                                               (evento.date && evento.date.split('T')[0] === fechaDia);
+                          const esPeriodo = evento.tipo === 'periodo';
                           
                           return (
                             <div
                               key={idx}
-                              className="event-dot"
-                              style={{ backgroundColor: evento.color }}
-                              title={`${evento.titulo}${esVencimiento ? ' ⏰ VENCIMIENTO' : ''}`}
+                              className={`event-dot ${esPeriodo ? 'event-periodo' : 'event-vencimiento'}`}
+                              style={{ 
+                                backgroundColor: evento.color,
+                                opacity: esPeriodo ? 0.7 : 1,
+                                borderRadius: esPeriodo ? '2px' : '50%'
+                              }}
+                              title={`${evento.titulo}${esVencimiento ? ' ⏰ VENCIMIENTO' : esPeriodo ? ' 📊 PERIODO' : ''}`}
                             >
-                              {esVencimiento && <span style={{ fontSize: '0.6rem' }}>⏰</span>}
+                              {esVencimiento && <span style={{ fontSize: '0.6rem', color: 'white' }}>⏰</span>}
                             </div>
                           );
                         })}

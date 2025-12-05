@@ -54,14 +54,34 @@ export default function AdminCalendarioClient() {
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      // Filtrar eventos que incluyan este día en su rango o sea el vencimiento
-      const start = new Date(evento.startDate);
-      const end = new Date(evento.endDate);
-      const vencimiento = new Date(evento.fechaVencimiento);
-      const current = new Date(fechaStr);
+      // Evento tipo "periodo" - verificar si el día está en el rango
+      if (evento.tipo === 'periodo' && evento.startDate && evento.endDate) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const current = new Date(fechaStr);
+        return current >= start && current <= end;
+      }
       
-      return (current >= start && current <= end) || 
-             vencimiento.toISOString().split('T')[0] === fechaStr;
+      // Evento tipo "vencimiento" - verificar si coincide con el día exacto
+      if (evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO') {
+        const eventoDate = evento.date || evento.fechaVencimiento;
+        if (eventoDate) {
+          return eventoDate.split('T')[0] === fechaStr;
+        }
+      }
+      
+      // Compatibilidad con estructura anterior (legacy)
+      if (evento.startDate && evento.endDate && evento.fechaVencimiento) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const vencimiento = new Date(evento.fechaVencimiento);
+        const current = new Date(fechaStr);
+        
+        return (current >= start && current <= end) || 
+               vencimiento.toISOString().split('T')[0] === fechaStr;
+      }
+      
+      return false;
     });
   };
 
@@ -178,20 +198,33 @@ export default function AdminCalendarioClient() {
                 <div className="day-events">
                   {eventosDelDia.slice(0, 3).map((evento, idx) => {
                     const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
-                    const esVencimiento = evento.fechaVencimiento.split('T')[0] === fechaDia;
+                    
+                    // Determinar si es vencimiento
+                    const esVencimiento = evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO' ||
+                                         (evento.fechaVencimiento && evento.fechaVencimiento.split('T')[0] === fechaDia) ||
+                                         (evento.date && evento.date.split('T')[0] === fechaDia);
+                    
+                    // Determinar si es periodo (barra continua)
+                    const esPeriodo = evento.tipo === 'periodo' && evento.startDate && evento.endDate;
                     
                     return (
                       <div
                         key={idx}
-                        className="event-item"
-                        style={{ borderLeftColor: evento.color }}
-                        title={`${evento.titulo}\n${evento.descripcion}\n${esVencimiento ? '⏰ VENCIMIENTO' : 'Periodo activo'}`}
+                        className={`event-item ${esPeriodo ? 'event-periodo' : 'event-vencimiento'}`}
+                        style={{ 
+                          borderLeftColor: evento.color,
+                          backgroundColor: esPeriodo ? `${evento.color}20` : 'transparent'
+                        }}
+                        title={`${evento.titulo}\n${evento.descripcion || ''}\n${esVencimiento ? '⏰ VENCIMIENTO' : esPeriodo ? '📊 PERIODO' : 'Evento'}`}
                       >
                         <div className="event-title">
                           {esVencimiento && '⏰ '}
+                          {esPeriodo && '📊 '}
                           {evento.titulo}
                         </div>
-                        <div className="event-tipo">{evento.tipo} - {evento.estado}</div>
+                        {evento.estado && (
+                          <div className="event-tipo">{evento.tipo} - {evento.estado}</div>
+                        )}
                       </div>
                     );
                   })}
