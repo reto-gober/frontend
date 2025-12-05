@@ -701,3 +701,119 @@ export const flujoReportesService = {
     return response.data.data;
   },
 };
+
+// ============================================
+// INTERFACES Y SERVICIOS DE CALENDARIO
+// ============================================
+
+export interface EventoCalendario {
+  reporteId: string;
+  titulo: string;
+  fecha: string;
+  tipo: 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
+  estado: string;
+  color: string;
+  // Campos opcionales según rol
+  esMio?: boolean;
+  puedoActuar?: boolean;
+  responsableNombre?: string;
+  supervisorNombre?: string;
+  entidadNombre?: string;
+  diasPendiente?: number;
+  diasVencido?: number;
+  requiereAccion?: boolean;
+  fechaLimiteCorreccion?: string;
+  tiempoRespuesta?: string;
+  cumplimiento?: 'OPORTUNO' | 'EXTEMPORANEO' | 'VENCIDO';
+}
+
+export interface CalendarioResponse {
+  eventos: EventoCalendario[];
+  totalEventosMes: number;
+  eventosVencidosMes: number;
+  eventosProximosMes: number;
+  // Campos específicos por rol
+  misReportesPendientes?: number;
+  misReportesEnviados?: number;
+  incidenciasCriticas?: number;
+  validacionesPendientes?: number;
+  reportesVencidosEquipo?: number;
+  equipoTotal?: number;
+  reportesApropadosOportunos?: number;
+  reportesExtemporaneos?: number;
+  reportesRechazados?: number;
+  tasaCumplimientoMes?: number;
+  promedioTiempoRespuesta?: string;
+}
+
+export interface CalendarioFiltros {
+  fechaInicio?: string;
+  fechaFin?: string;
+  tipo?: string;
+  estado?: string;
+  entidadId?: string;
+}
+
+export const calendarioService = {
+  // Calendario Admin (Global)
+  async admin(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
+    const params = new URLSearchParams();
+    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
+    if (filtros?.tipo) params.append('tipo', filtros.tipo);
+    if (filtros?.estado) params.append('estado', filtros.estado);
+    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
+
+    const response = await api.get(`/api/dashboard/admin/calendario?${params.toString()}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Calendario Responsable (Personal)
+  async responsable(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
+    const params = new URLSearchParams();
+    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
+    if (filtros?.tipo) params.append('tipo', filtros.tipo);
+    if (filtros?.estado) params.append('estado', filtros.estado);
+
+    const response = await api.get(`/api/dashboard/responsable/calendario?${params.toString()}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Calendario Supervisor (Incidencias)
+  async supervisor(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
+    const params = new URLSearchParams();
+    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
+    if (filtros?.tipo) params.append('tipo', filtros.tipo);
+    if (filtros?.estado) params.append('estado', filtros.estado);
+
+    const response = await api.get(`/api/dashboard/supervisor/calendario?${params.toString()}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Calendario Auditor (Consulta)
+  async auditor(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
+    const params = new URLSearchParams();
+    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
+    if (filtros?.tipo) params.append('tipo', filtros.tipo);
+    if (filtros?.estado) params.append('estado', filtros.estado);
+    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
+
+    const response = await api.get(`/api/dashboard/auditor/calendario?${params.toString()}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+};

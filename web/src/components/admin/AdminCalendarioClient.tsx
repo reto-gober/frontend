@@ -1,27 +1,39 @@
 import { useState, useEffect } from 'react';
-import { flujoReportesService, type ReportePeriodo } from '../../lib/services';
+import { calendarioService, type EventoCalendario, type CalendarioResponse } from '../../lib/services';
 
 export default function AdminCalendarioClient() {
-  const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
+  const [calendario, setCalendario] = useState<CalendarioResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mesActual, setMesActual] = useState(new Date());
 
   useEffect(() => {
-    cargarPeriodos();
-  }, []);
+    cargarCalendario();
+  }, [mesActual]);
 
-  const cargarPeriodos = async () => {
+  const cargarCalendario = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Cargar periodos de supervisión (admin ve todos)
-      const response = await flujoReportesService.supervision(0, 500);
-      setPeriodos(response.content);
+      // Calcular rango de fechas del mes actual
+      const primerDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), 1);
+      const ultimoDia = new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 0);
+      
+      const fechaInicio = primerDia.toISOString().split('T')[0];
+      const fechaFin = ultimoDia.toISOString().split('T')[0];
+      
+      // Llamar al endpoint de calendario admin
+      const response = await calendarioService.admin({
+        fechaInicio,
+        fechaFin
+      });
+      
+      setCalendario(response);
+      console.log('Calendario cargado:', response);
     } catch (err) {
-      console.error('Error al cargar periodos:', err);
-      setError('Error al cargar el calendario');
+      console.error('Error al cargar calendario:', err);
+      setError('Error al cargar el calendario. Verifica la consola y Network tab.');
     } finally {
       setLoading(false);
     }
@@ -35,13 +47,15 @@ export default function AdminCalendarioClient() {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const getPeriodosDelDia = (dia: number) => {
+  const getPeriodosDelDia = (dia: number): EventoCalendario[] => {
+    if (!calendario) return [];
+    
     const fecha = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia);
     const fechaStr = fecha.toISOString().split('T')[0];
     
-    return periodos.filter(p => {
-      const vencimiento = p.fechaVencimientoCalculada?.split('T')[0];
-      return vencimiento === fechaStr;
+    return calendario.eventos.filter(evento => {
+      const fechaEvento = evento.fecha.split('T')[0];
+      return fechaEvento === fechaStr;
     });
   };
 
@@ -76,9 +90,23 @@ export default function AdminCalendarioClient() {
   if (error) {
     return (
       <div className="calendario-page">
-        <div style={{ textAlign: 'center', padding: '4rem' }}>
-          <p style={{ color: 'var(--error-red-600)' }}>{error}</p>
-          <button onClick={cargarPeriodos} className="btn-primary" style={{ marginTop: '1rem' }}>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '4rem',
+          background: 'white',
+          borderRadius: '12px',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto', color: 'var(--error-red-600)' }}>
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p style={{ color: 'var(--error-red-600)', marginTop: '1rem', fontSize: '1.125rem' }}>{error}</p>
+          <p style={{ color: 'var(--neutral-600)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+            Abre la consola del navegador (F12) y revisa la pestaña Network para más detalles
+          </p>
+          <button onClick={cargarCalendario} className="btn-primary" style={{ marginTop: '1.5rem' }}>
             Reintentar
           </button>
         </div>
@@ -92,9 +120,18 @@ export default function AdminCalendarioClient() {
 
   return (
     <div className="calendario-page">
-      {/* Header */}
+      {/* Header con estadísticas */}
       <div className="calendario-header">
-        <h1 className="page-title">Calendario de Vencimientos</h1>
+        <div>
+          <h1 className="page-title">Calendario de Vencimientos</h1>
+          {calendario && (
+            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--neutral-600)' }}>
+              <span>Total: <strong>{calendario.totalEventosMes}</strong></span>
+              <span>Vencidos: <strong style={{ color: 'var(--error-red-600)' }}>{calendario.eventosVencidosMes}</strong></span>
+              <span>Próximos: <strong style={{ color: 'var(--accent-orange-500)' }}>{calendario.eventosProximosMes}</strong></span>
+            </div>
+          )}
+        </div>
         <div className="calendar-controls">
           <button className="btn-icon" onClick={() => cambiarMes(-1)}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
@@ -125,24 +162,27 @@ export default function AdminCalendarioClient() {
         {/* Días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const dia = i + 1;
-          const periodosDelDia = getPeriodosDelDia(dia);
+          const eventosDelDia = getPeriodosDelDia(dia);
           const esHoy = new Date().toDateString() === new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toDateString();
           
           return (
             <div key={dia} className={`calendar-day ${esHoy ? 'today' : ''}`}>
               <div className="day-number">{dia}</div>
-              {periodosDelDia.length > 0 && (
+              {eventosDelDia.length > 0 && (
                 <div className="day-events">
-                  {periodosDelDia.slice(0, 3).map((periodo, idx) => (
+                  {eventosDelDia.slice(0, 3).map((evento, idx) => (
                     <div
                       key={idx}
-                      className="event-dot"
-                      style={{ backgroundColor: getEstadoColor(periodo.estado) }}
-                      title={`${periodo.reporteNombre} - ${periodo.estado}`}
-                    />
+                      className="event-item"
+                      style={{ borderLeftColor: evento.color }}
+                      title={`${evento.titulo}\n${evento.tipo} - ${evento.estado}`}
+                    >
+                      <div className="event-title">{evento.titulo}</div>
+                      <div className="event-tipo">{evento.tipo}</div>
+                    </div>
                   ))}
-                  {periodosDelDia.length > 3 && (
-                    <span className="more-events">+{periodosDelDia.length - 3}</span>
+                  {eventosDelDia.length > 3 && (
+                    <div className="more-events">+{eventosDelDia.length - 3} más</div>
                   )}
                 </div>
               )}

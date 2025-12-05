@@ -226,4 +226,221 @@ import AdminEntidadesClient from '../../../components/admin/AdminEntidadesClient
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--neutral-200);
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: var(--neutral-500);
+    transition: color 0.2s;
+  }
+
+  .btn-close:hover {
+    color: var(--neutral-900);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  /* Form Styles */
+  .entidad-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+  }
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    padding: 0.75rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    color: var(--neutral-900);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px var(--color-primary-50);
+  }
+
+  .form-group input:disabled,
+  .form-group textarea:disabled,
+  .form-group select:disabled {
+    background: var(--neutral-50);
+    cursor: not-allowed;
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* Details View Styles */
+  .entidad-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .detail-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-row label {
+    font-weight: 600;
+    color: var(--neutral-700);
+    font-size: 0.875rem;
+  }
+
+  .detail-row span {
+    color: var(--neutral-900);
+    font-size: 0.9375rem;
+  }
+
+  .detail-row a {
+    color: var(--color-primary-600);
+    text-decoration: none;
+  }
+
+  .detail-row a:hover {
+    text-decoration: underline;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-badge.active {
+    background: var(--success-green-50);
+    color: var(--success-green-700);
+  }
+
+  .status-badge.inactive {
+    background: var(--neutral-100);
+    color: var(--neutral-600);
+  }
+
+  .btn-secondary {
+    padding: 0.625rem 1.25rem;
+    background: white;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--neutral-700);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--neutral-50);
+    border-color: var(--neutral-400);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-icon.danger:hover {
+    background: var(--error-red-50);
+    color: var(--error-red-600);
+  }
+
+  @media (max-width: 768px) {
+    .detail-row {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+
+    .modal-content {
+      max-width: 100%;
+      max-height: 100vh;
+      border-radius: 0;
+    }
+  }
 </style>

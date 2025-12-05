@@ -74,7 +74,14 @@ const menuItems = [
 
 export default function SidebarAdmin() {
   const [collapsed, setCollapsed] = useState(false);
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const [currentPath, setCurrentPath] = useState('');
+
+  useEffect(() => {
+    // Establecer el path actual solo en el cliente
+    if (typeof window !== 'undefined') {
+      setCurrentPath(window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

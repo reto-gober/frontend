@@ -76,26 +76,32 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   const loginBtn = document.getElementById('loginBtn') as HTMLButtonElement;
 
   // Función para obtener la ruta del dashboard según el rol
-  function getDashboardRoute(roles: string[]): string {
-    if (!roles || roles.length === 0) return '/dashboard';
+  function getDashboardRoute(roles: string[]): string | null {
+    if (!roles || roles.length === 0) return null;
+    
+    // Convertir roles a mayúsculas para comparación case-insensitive
+    const rolesUpper = roles.map(r => r.toUpperCase());
     
     // Prioridad de roles: Admin > Auditor > Supervisor > Responsable
-    if (roles.includes('ROLE_ADMIN') || roles.includes('ADMIN')) {
+    if (rolesUpper.includes('ROLE_ADMIN') || rolesUpper.includes('ADMIN')) {
       return '/roles/admin/dashboard';
-    } else if (roles.includes('ROLE_AUDITOR') || roles.includes('AUDITOR')) {
+    } else if (rolesUpper.includes('ROLE_AUDITOR') || rolesUpper.includes('AUDITOR')) {
       return '/roles/auditor/dashboard';
-    } else if (roles.includes('ROLE_SUPERVISOR') || roles.includes('SUPERVISOR')) {
+    } else if (rolesUpper.includes('ROLE_SUPERVISOR') || rolesUpper.includes('SUPERVISOR')) {
       return '/roles/supervisor/dashboard';
-    } else if (roles.includes('ROLE_RESPONSABLE') || roles.includes('RESPONSABLE')) {
+    } else if (rolesUpper.includes('ROLE_RESPONSABLE') || rolesUpper.includes('RESPONSABLE')) {
       return '/roles/responsable/dashboard';
     }
-    return '/dashboard';
+    return null;
   }
 
   // Redirección si ya está autenticado
   if (authService.isAuthenticated()) {
     const user = authService.getUser();
-    window.location.href = getDashboardRoute(user?.roles || []);
+    const dashboardRoute = getDashboardRoute(user?.roles || []);
+    if (dashboardRoute) {
+      window.location.href = dashboardRoute;
+    }
   }
 
   // Login
@@ -111,7 +117,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         password: data.get("password") as string,
       });
       authService.saveToken(response);
-      window.location.href = getDashboardRoute(response.roles || []);
+      const dashboardRoute = getDashboardRoute(response.roles || []);
+      if (dashboardRoute) {
+        window.location.href = dashboardRoute;
+      } else {
+        if (loginError)
+          loginError.innerHTML = `<div class="alert alert-error">No tienes permisos asignados. Contacta al administrador.</div>`;
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/></svg> Iniciar Sesión';
+      }
     } catch (error: any) {
       const message =
         error.response?.data?.mensaje ||

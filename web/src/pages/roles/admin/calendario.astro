@@ -120,6 +120,30 @@ import AdminCalendarioClient from '../../../components/admin/AdminCalendarioClie
     flex-direction: column;
     gap: 0.25rem;
     flex: 1;
+    overflow-y: auto;
+  }
+
+  .event-item {
+    background: white;
+    padding: 0.25rem;
+    border-radius: 3px;
+    border-left: 3px solid var(--color-primary-500);
+    font-size: 0.7rem;
+    overflow: hidden;
+  }
+
+  .event-title {
+    font-weight: 600;
+    color: var(--neutral-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .event-tipo {
+    font-size: 0.65rem;
+    color: var(--neutral-600);
+    text-transform: uppercase;
   }
 
   .event-dot {
@@ -129,11 +153,14 @@ import AdminCalendarioClient from '../../../components/admin/AdminCalendarioClie
   }
 
   .more-events {
-    font-size: 0.6875rem;
-    color: var(--neutral-500);
+    font-size: 0.65rem;
+    color: var(--color-primary-600);
     font-weight: 600;
     text-align: center;
     margin-top: 0.25rem;
+    background: var(--color-primary-50);
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
   }
 
   .calendar-legend {
