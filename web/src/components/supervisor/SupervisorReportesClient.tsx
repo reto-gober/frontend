@@ -71,14 +71,14 @@ export default function SupervisorReportesClient() {
       });
       setResponsables(Array.from(responsablesUnicos.entries()).map(([id, nombre]) => ({ id, nombre })));
       
-      // Extraer entidades únicas de los reportes
-      const entidadesUnicas = new Map<string, string>();
+      // Extraer entidades únicas de los reportes (usar entidadNombre como clave)
+      const entidadesUnicas = new Set<string>();
       todos.forEach(r => {
-        if (r.entidadId && r.entidadNombre) {
-          entidadesUnicas.set(r.entidadId, r.entidadNombre);
+        if (r.entidadNombre) {
+          entidadesUnicas.add(r.entidadNombre);
         }
       });
-      setEntidades(Array.from(entidadesUnicas.entries()).map(([id, nombre]) => ({ id, nombre })));
+      setEntidades(Array.from(entidadesUnicas).map((nombre) => ({ id: nombre, nombre })));
       
       // Calcular contadores
       setContadores({

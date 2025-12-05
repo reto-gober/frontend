@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { evidenciasSupervisorService, type EvidenciaSupervisor, type Page } from '../../lib/services';
 
 type ViewMode = 'grid' | 'list';
@@ -58,8 +58,8 @@ export default function SupervisorEvidenciasClient() {
       // Extraer responsables únicos de las evidencias
       const responsablesUnicos = new Map<string, string>();
       data.content.forEach(e => {
-        if (e.responsable?.usuarioId && e.responsable?.nombreCompleto) {
-          responsablesUnicos.set(e.responsable.usuarioId, e.responsable.nombreCompleto);
+        if (e.responsableCarga?.usuarioId && e.responsableCarga?.nombreCompleto) {
+          responsablesUnicos.set(e.responsableCarga.usuarioId, e.responsableCarga.nombreCompleto);
         }
       });
       
@@ -110,7 +110,7 @@ export default function SupervisorEvidenciasClient() {
     });
   };
 
-  const getFileIcon = (tipoArchivo: string): { icon: JSX.Element; clase: string } => {
+  const getFileIcon = (tipoArchivo: string): { icon: React.ReactNode; clase: string } => {
     const tipo = tipoArchivo?.toLowerCase() || '';
     
     if (tipo.includes('pdf')) {
@@ -184,7 +184,7 @@ export default function SupervisorEvidenciasClient() {
     return evidencias.filter(e => 
       e.nombreArchivo?.toLowerCase().includes(termino) ||
       e.reporte?.nombre?.toLowerCase().includes(termino) ||
-      e.responsable?.nombreCompleto?.toLowerCase().includes(termino)
+      e.responsableCarga?.nombreCompleto?.toLowerCase().includes(termino)
     );
   };
 
@@ -336,14 +336,14 @@ export default function SupervisorEvidenciasClient() {
                       <h3 className="file-name" title={evidencia.nombreArchivo}>
                         {evidencia.nombreArchivo}
                       </h3>
-                      <p className="file-meta">{formatearTamano(evidencia.tamano)}</p>
+                      <p className="file-meta">{formatearTamano(evidencia.tamanioBytes)}</p>
                       <p className="file-reporte">{evidencia.reporte?.nombre}</p>
                       <p className="file-responsable">
                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                           <circle cx="12" cy="7" r="4"/>
                         </svg>
-                        {evidencia.responsable?.nombreCompleto || 'Sin asignar'}
+                        {evidencia.responsableCarga?.nombreCompleto || 'Sin asignar'}
                       </p>
                     </div>
                     <div className="file-actions">
@@ -388,9 +388,9 @@ export default function SupervisorEvidenciasClient() {
                           </div>
                         </td>
                         <td>{evidencia.reporte?.nombre}</td>
-                        <td>{evidencia.responsable?.nombreCompleto || 'Sin asignar'}</td>
-                        <td>{formatearTamano(evidencia.tamano)}</td>
-                        <td>{formatearFecha(evidencia.fechaSubida)}</td>
+                        <td>{evidencia.responsableCarga?.nombreCompleto || 'Sin asignar'}</td>
+                        <td>{formatearTamano(evidencia.tamanioBytes)}</td>
+                        <td>{formatearFecha(evidencia.fechaCarga)}</td>
                         <td>
                           <button 
                             className="btn-icon"
