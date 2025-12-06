@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { calendarioService, type EventoCalendario, type CalendarioResponse } from '../../lib/services';
+import { calendarioService, reportesService, type EventoCalendario, type CalendarioResponse, type ReportePeriodo } from '../../lib/services';
 
 export default function AdminCalendarioClient() {
   const [calendario, setCalendario] = useState<CalendarioResponse | null>(null);
@@ -100,6 +100,25 @@ export default function AdminCalendarioClient() {
 
   const cambiarMes = (direccion: number) => {
     setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() + direccion, 1));
+  };
+
+  const handleEventoClick = async (evento: EventoCalendario) => {
+    // Si el evento no tiene reporteId, no podemos hacer nada
+    if (!evento.reporteId) {
+      console.warn('Evento sin reporteId:', evento);
+      return;
+    }
+
+    try {
+      // Obtener todos los periodos del reporte (esto podría venir del calendario o necesitar una llamada adicional)
+      // Por ahora, redirigimos directamente al reporte con su periodo más reciente
+      // El componente de resumen se encargará de mostrar el periodo correcto
+      
+      // Redirigir a la vista de resumen del reporte
+      window.location.href = `/roles/admin/reportes/${evento.reporteId}/resumen`;
+    } catch (error) {
+      console.error('Error al navegar al reporte:', error);
+    }
   };
 
   if (loading) {
