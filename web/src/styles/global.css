@@ -1540,6 +1540,7 @@ input, select, textarea {
   border-radius: 12px;
   font-size: 0.6875rem;
   font-weight: 600;
+  text-transform: capitalize;
 }
 
 .status-badge.success {
@@ -1560,6 +1561,22 @@ input, select, textarea {
 .status-badge.info {
   background: var(--color-primary-100);
   color: var(--color-primary-700);
+}
+
+/* Estados específicos de reportes */
+.status-badge.active {
+  background: var(--success-green-100);
+  color: var(--success-green-700);
+}
+
+.status-badge.cancelled {
+  background: var(--error-red-100);
+  color: var(--error-red-700);
+}
+
+.status-badge.suspended {
+  background: var(--warning-yellow-100);
+  color: var(--warning-yellow-800);
 }
 
 /* Role Page Header */

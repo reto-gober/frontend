@@ -73,6 +73,8 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
     if (!reporteId) return;
     try {
       const reporte = await reportesService.obtener(reporteId);
+      console.log('Reporte cargado:', reporte);
+      
       setFormData({
         nombre: reporte.nombre,
         descripcion: reporte.descripcion || '',
@@ -91,12 +93,34 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       });
       
       // Inicializar los arrays de selección para el nuevo formato
-      if (reporte.responsableElaboracionId) {
-        setSelectedResponsables(reporte.responsableElaboracionId);
+      // Convertir responsables de la nueva estructura o legacy
+      const elaboradores: string[] = [];
+      const supervisores: string[] = [];
+      
+      if (reporte.responsables && reporte.responsables.length > 0) {
+        // Usar nueva estructura de responsables
+        reporte.responsables.forEach((resp: any) => {
+          if (resp.tipoResponsabilidadCodigo === 'elaboracion' && resp.activo) {
+            elaboradores.push(resp.usuarioId);
+          } else if (resp.tipoResponsabilidadCodigo === 'supervision' && resp.activo) {
+            supervisores.push(resp.usuarioId);
+          }
+        });
+      } else {
+        // Usar campos legacy si no hay responsables nuevos
+        if (reporte.responsableElaboracionId) {
+          elaboradores.push(reporte.responsableElaboracionId);
+        }
+        if (reporte.responsableSupervisionId) {
+          supervisores.push(reporte.responsableSupervisionId);
+        }
       }
-      if (reporte.responsableSupervisionId) {
-        setSelectedSupervisores(reporte.responsableSupervisionId);
-      }
+      
+      setSelectedResponsables(elaboradores);
+      setSelectedSupervisores(supervisores);
+      
+      console.log('Elaboradores cargados:', elaboradores);
+      console.log('Supervisores cargados:', supervisores);
     } catch (error) {
       console.error('Error loading reporte:', error);
     }
@@ -825,10 +849,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
 
                 <div>
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
-                    Elaboradores ({selectedResponsables.length})
+                    Elaboradores ({Array.isArray(selectedResponsables) ? selectedResponsables.length : 0})
                   </div>
                   <div style={{ color: 'var(--color-primary-900)' }}>
-                    {selectedResponsables.length > 0 ? (
+                    {Array.isArray(selectedResponsables) && selectedResponsables.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                         {selectedResponsables.slice(0, 3).map(id => {
                           const usuario = usuarios.find(u => u.usuarioId === id);
@@ -850,10 +874,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
 
                 <div>
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
-                    Supervisores ({selectedSupervisores.length})
+                    Supervisores ({Array.isArray(selectedSupervisores) ? selectedSupervisores.length : 0})
                   </div>
                   <div style={{ color: 'var(--color-primary-900)' }}>
-                    {selectedSupervisores.length > 0 ? (
+                    {Array.isArray(selectedSupervisores) && selectedSupervisores.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                         {selectedSupervisores.slice(0, 3).map(id => {
                           const usuario = usuarios.find(u => u.usuarioId === id);

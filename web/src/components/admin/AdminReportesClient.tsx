@@ -92,21 +92,23 @@ export default function AdminReportesClient() {
   };
 
   const calcularEstadisticas = () => {
+    // Los reportes tienen estados: activo, cancelado, suspendido
+    // Las estadísticas de cumplimiento deberían venir de los periodos, no de los reportes
     setEstadisticas({
       todos: reportes.length,
-      pendientes: reportes.filter(r => r.estado === 'PENDIENTE').length,
-      enProgreso: reportes.filter(r => r.estado === 'EN_PROGRESO').length,
-      completados: reportes.filter(r => r.estado === 'COMPLETADO').length,
-      vencidos: reportes.filter(r => r.estado === 'VENCIDO').length
+      pendientes: 0, // No aplica a nivel de reporte
+      enProgreso: reportes.filter(r => r.estado?.toLowerCase() === 'activo').length,
+      completados: 0, // No aplica a nivel de reporte
+      vencidos: reportes.filter(r => r.estado?.toLowerCase() === 'cancelado' || r.estado?.toLowerCase() === 'suspendido').length
     });
   };
 
   const getEstadoBadgeClass = (estado: string) => {
-    switch(estado) {
-      case 'PENDIENTE': return 'pending';
-      case 'EN_PROGRESO': return 'progress';
-      case 'COMPLETADO': return 'completed';
-      case 'VENCIDO': return 'overdue';
+    const estadoLower = estado?.toLowerCase() || '';
+    switch(estadoLower) {
+      case 'activo': return 'active';
+      case 'cancelado': return 'cancelled';
+      case 'suspendido': return 'suspended';
       default: return 'default';
     }
   };
@@ -241,19 +243,19 @@ export default function AdminReportesClient() {
         </div>
         <div className="status-card pending">
           <span className="status-count">{estadisticas.pendientes}</span>
-          <span className="status-label">Pendientes</span>
+          <span className="status-label">Sin Configurar</span>
         </div>
         <div className="status-card progress">
           <span className="status-count">{estadisticas.enProgreso}</span>
-          <span className="status-label">En Progreso</span>
+          <span className="status-label">Activos</span>
         </div>
         <div className="status-card sent">
           <span className="status-count">{estadisticas.completados}</span>
-          <span className="status-label">Completados</span>
+          <span className="status-label">Configurados</span>
         </div>
         <div className="status-card overdue">
           <span className="status-count">{estadisticas.vencidos}</span>
-          <span className="status-label">Vencidos</span>
+          <span className="status-label">Inactivos</span>
         </div>
       </div>
 
@@ -288,10 +290,9 @@ export default function AdminReportesClient() {
           </select>
           <select className="filter-select" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
             <option value="">Todos los estados</option>
-            <option value="PENDIENTE">Pendiente</option>
-            <option value="EN_PROGRESO">En Progreso</option>
-            <option value="COMPLETADO">Completado</option>
-            <option value="VENCIDO">Vencido</option>
+            <option value="activo">Activo</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="suspendido">Suspendido</option>
           </select>
         </div>
       </div>
