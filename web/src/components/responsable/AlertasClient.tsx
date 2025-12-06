@@ -41,7 +41,9 @@ export default function AlertasClient() {
 
         const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
         const esEnviado =
-          periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
+          periodo.estado === "enviado_a_tiempo" ||
+          periodo.estado === "enviado_tarde" ||
+          periodo.estado === "aprobado";
 
         // Alertas críticas - Reportes vencidos
         if (fechaVenc < now && !esEnviado) {
@@ -78,7 +80,7 @@ export default function AlertasClient() {
         }
 
         // Alertas de corrección requerida
-        if (periodo.estado === "REQUIERE_CORRECCION") {
+        if (periodo.estado === "requiere_correccion") {
           generatedAlertas.push({
             id: `correccion-${periodo.periodoId}`,
             tipo: "advertencia",
@@ -92,7 +94,7 @@ export default function AlertasClient() {
         }
 
         // Alertas de éxito - Reportes aprobados recientemente
-        if (periodo.estado === "APROBADO") {
+        if (periodo.estado === "aprobado") {
           const updatedDate = new Date(periodo.updatedAt);
           const diasDesdeAprobacion = Math.ceil(
             (now.getTime() - updatedDate.getTime()) / (1000 * 60 * 60 * 24)

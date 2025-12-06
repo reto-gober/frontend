@@ -124,7 +124,9 @@ export default function SidebarResponsable() {
 
           const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
           const esEnviado =
-            periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
+            periodo.estado === "enviado_a_tiempo" ||
+            periodo.estado === "enviado_tarde" ||
+            periodo.estado === "aprobado";
 
           // Contar alertas críticas - Reportes vencidos
           if (fechaVenc < now && !esEnviado) {
@@ -137,7 +139,7 @@ export default function SidebarResponsable() {
           }
 
           // Contar alertas de corrección requerida
-          if (periodo.estado === "REQUIERE_CORRECCION") {
+          if (periodo.estado === "requiere_correccion") {
             alertasCount++;
           }
         });

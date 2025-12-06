@@ -69,20 +69,24 @@ export default function MisReportesClient() {
         todos: allPeriodos.length,
         pendientes: allPeriodos.filter(
           (p) =>
-            p.estado === "NO_INICIADO" ||
-            p.estado === "PENDIENTE_ENVIO" ||
-            p.estado === "REQUIERE_CORRECCION"
+            p.estado === "pendiente" ||
+            p.estado === "en_elaboracion" ||
+            p.estado === "requiere_correccion"
         ).length,
         enviados: allPeriodos.filter(
-          (p) => p.estado === "ENVIADO" || p.estado === "APROBADO"
+          (p) =>
+            p.estado === "enviado_a_tiempo" ||
+            p.estado === "enviado_tarde" ||
+            p.estado === "aprobado"
         ).length,
         vencidos: allPeriodos.filter((p) => {
           if (!p.fechaVencimientoCalculada) return false;
           const vencimiento = new Date(p.fechaVencimientoCalculada);
           return (
             vencimiento < now &&
-            p.estado !== "APROBADO" &&
-            p.estado !== "ENVIADO"
+            p.estado !== "aprobado" &&
+            p.estado !== "enviado_a_tiempo" &&
+            p.estado !== "enviado_tarde"
           );
         }).length,
         porVencer: allPeriodos.filter((p) => {
@@ -91,8 +95,9 @@ export default function MisReportesClient() {
           return (
             vencimiento >= now &&
             vencimiento <= threeDaysFromNow &&
-            p.estado !== "APROBADO" &&
-            p.estado !== "ENVIADO"
+            p.estado !== "aprobado" &&
+            p.estado !== "enviado_a_tiempo" &&
+            p.estado !== "enviado_tarde"
           );
         }).length,
       };
@@ -106,14 +111,17 @@ export default function MisReportesClient() {
         case "pendientes":
           filteredPeriodos = allPeriodos.filter(
             (p) =>
-              p.estado === "NO_INICIADO" ||
-              p.estado === "PENDIENTE_ENVIO" ||
-              p.estado === "REQUIERE_CORRECCION"
+              p.estado === "pendiente" ||
+              p.estado === "en_elaboracion" ||
+              p.estado === "requiere_correccion"
           );
           break;
         case "enviados":
           filteredPeriodos = allPeriodos.filter(
-            (p) => p.estado === "ENVIADO" || p.estado === "APROBADO"
+            (p) =>
+              p.estado === "enviado_a_tiempo" ||
+              p.estado === "enviado_tarde" ||
+              p.estado === "aprobado"
           );
           break;
         case "vencidos":
@@ -122,8 +130,9 @@ export default function MisReportesClient() {
             const vencimiento = new Date(p.fechaVencimientoCalculada);
             return (
               vencimiento < now &&
-              p.estado !== "APROBADO" &&
-              p.estado !== "ENVIADO"
+              p.estado !== "aprobado" &&
+              p.estado !== "enviado_a_tiempo" &&
+              p.estado !== "enviado_tarde"
             );
           });
           break;
@@ -134,8 +143,9 @@ export default function MisReportesClient() {
             return (
               vencimiento >= now &&
               vencimiento <= threeDaysFromNow &&
-              p.estado !== "APROBADO" &&
-              p.estado !== "ENVIADO"
+              p.estado !== "aprobado" &&
+              p.estado !== "enviado_a_tiempo" &&
+              p.estado !== "enviado_tarde"
             );
           });
           break;

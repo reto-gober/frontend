@@ -41,33 +41,44 @@ export default function ResponsableDashboardClient() {
       const ahora = new Date();
       const tresDias = new Date(ahora.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-      // Calcular KPIs
-      const pendientes = reportes.filter(
-        (r) => r.estado === "PENDIENTE" || r.estado === "NO_INICIADO"
+      // Calcular KPIs basados en periodos del flujo de reportes
+      const periodosResponse = await flujoReportesService.misPeriodos(0, 1000);
+      const periodos = periodosResponse.content;
+
+      const pendientes = periodos.filter(
+        (p) =>
+          p.estado === "pendiente" ||
+          p.estado === "en_elaboracion" ||
+          p.estado === "requiere_correccion"
       ).length;
 
-      const enviados = reportes.filter(
-        (r) => r.estado === "COMPLETADO" || r.estado === "ENVIADO"
+      const enviados = periodos.filter(
+        (p) =>
+          p.estado === "enviado_a_tiempo" ||
+          p.estado === "enviado_tarde" ||
+          p.estado === "aprobado"
       ).length;
 
-      const vencidos = reportes.filter((r) => {
+      const vencidos = periodos.filter((p) => {
         if (
-          r.fechaVencimiento &&
-          r.estado !== "COMPLETADO" &&
-          r.estado !== "ENVIADO"
+          p.fechaVencimientoCalculada &&
+          p.estado !== "aprobado" &&
+          p.estado !== "enviado_a_tiempo" &&
+          p.estado !== "enviado_tarde"
         ) {
-          return new Date(r.fechaVencimiento) < ahora;
+          return new Date(p.fechaVencimientoCalculada) < ahora;
         }
         return false;
       }).length;
 
-      const porVencer = reportes.filter((r) => {
+      const porVencer = periodos.filter((p) => {
         if (
-          r.fechaVencimiento &&
-          r.estado !== "COMPLETADO" &&
-          r.estado !== "ENVIADO"
+          p.fechaVencimientoCalculada &&
+          p.estado !== "aprobado" &&
+          p.estado !== "enviado_a_tiempo" &&
+          p.estado !== "enviado_tarde"
         ) {
-          const fechaVenc = new Date(r.fechaVencimiento);
+          const fechaVenc = new Date(p.fechaVencimientoCalculada);
           return fechaVenc >= ahora && fechaVenc <= tresDias;
         }
         return false;
@@ -75,45 +86,46 @@ export default function ResponsableDashboardClient() {
 
       setKpis({ pendientes, enviados, vencidos, porVencer });
 
-      // Estado de reportes para gráfica
-      const enProceso = reportes.filter(
-        (r) => r.estado === "EN_ELABORACION" || r.estado === "EN_REVISION"
+      // Estado de reportes para gráfica basado en periodos
+      const enProceso = periodos.filter(
+        (p) => p.estado === "en_elaboracion" || p.estado === "en_revision"
       ).length;
 
       setEstadoReportes({
         pendientes,
         enProceso,
         enviados,
-        total: reportes.length,
+        total: periodos.length,
       });
 
       // Próximos vencimientos (ordenar por fecha más cercana)
-      const reportesConVencimiento = reportes
+      const periodosConVencimiento = periodos
         .filter(
-          (r) =>
-            r.fechaVencimiento &&
-            r.estado !== "COMPLETADO" &&
-            r.estado !== "ENVIADO"
+          (p) =>
+            p.fechaVencimientoCalculada &&
+            p.estado !== "aprobado" &&
+            p.estado !== "enviado_a_tiempo" &&
+            p.estado !== "enviado_tarde"
         )
-        .map((r) => {
-          const fechaVenc = new Date(r.fechaVencimiento!);
+        .map((p) => {
+          const fechaVenc = new Date(p.fechaVencimientoCalculada);
           const diasRestantes = Math.ceil(
             (fechaVenc.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24)
           );
 
           return {
-            codigo: `REP-${r.reporteId.slice(0, 8)}`,
-            nombre: r.nombre,
-            entidad: r.entidadNombre || r.entidadId,
-            fechaVencimiento: r.fechaVencimiento,
+            codigo: `PER-${p.periodoId.slice(0, 8)}`,
+            nombre: p.reporteNombre,
+            entidad: p.entidadNombre,
+            fechaVencimiento: p.fechaVencimientoCalculada,
             diasRestantes: diasRestantes > 0 ? diasRestantes : 0,
-            progreso: 0, // No hay campo porcentajeAvance en la API
+            progreso: 0,
           };
         })
         .sort((a, b) => a.diasRestantes - b.diasRestantes)
         .slice(0, 5);
 
-      setProximosVencimientos(reportesConVencimiento);
+      setProximosVencimientos(periodosConVencimiento);
     } catch (err) {
       console.error("Error al cargar datos del responsable:", err);
       setError("Error al cargar los datos");

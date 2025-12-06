@@ -51,7 +51,11 @@ export default function CalendarioClient() {
         });
 
         // Evento de envío si el estado indica que fue enviado
-        if (periodo.estado === "ENVIADO" || periodo.estado === "APROBADO") {
+        if (
+          periodo.estado === "enviado_a_tiempo" ||
+          periodo.estado === "enviado_tarde" ||
+          periodo.estado === "aprobado"
+        ) {
           eventosGenerados.push({
             id: `env-${periodo.periodoId}`,
             periodoId: periodo.periodoId,
@@ -64,7 +68,7 @@ export default function CalendarioClient() {
         }
 
         // Evento de aprobación si fue aprobado
-        if (periodo.estado === "APROBADO" && periodo.updatedAt) {
+        if (periodo.estado === "aprobado" && periodo.updatedAt) {
           eventosGenerados.push({
             id: `apr-${periodo.periodoId}`,
             periodoId: periodo.periodoId,
@@ -92,12 +96,17 @@ export default function CalendarioClient() {
     if (filtroEstado === "pendientes") {
       return (
         evento.tipo === "vencimiento" &&
-        (evento.estado === "PENDIENTE" ||
-          evento.estado === "REQUIERE_CORRECCION")
+        (evento.estado === "pendiente" ||
+          evento.estado === "en_elaboracion" ||
+          evento.estado === "requiere_correccion")
       );
     }
     if (filtroEstado === "enviados") {
-      return evento.estado === "ENVIADO" || evento.estado === "APROBADO";
+      return (
+        evento.estado === "enviado_a_tiempo" ||
+        evento.estado === "enviado_tarde" ||
+        evento.estado === "aprobado"
+      );
     }
     return true;
   });
@@ -160,10 +169,15 @@ export default function CalendarioClient() {
     pendientes: eventos.filter(
       (e) =>
         e.tipo === "vencimiento" &&
-        (e.estado === "PENDIENTE" || e.estado === "REQUIERE_CORRECCION")
+        (e.estado === "pendiente" ||
+          e.estado === "en_elaboracion" ||
+          e.estado === "requiere_correccion")
     ).length,
     enviados: eventos.filter(
-      (e) => e.estado === "ENVIADO" || e.estado === "APROBADO"
+      (e) =>
+        e.estado === "enviado_a_tiempo" ||
+        e.estado === "enviado_tarde" ||
+        e.estado === "aprobado"
     ).length,
   };
 
