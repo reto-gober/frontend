@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { flujoReportesService, type ReportePeriodo } from '../../lib/services';
+import { useState, useEffect } from "react";
+import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 
-type FiltroTarea = 'todas' | 'pendientes' | 'completadas' | 'vencidas';
+type FiltroTarea = "todas" | "pendientes" | "completadas" | "vencidas";
 
 export default function MisTareasClient() {
   const [tareas, setTareas] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtroActivo, setFiltroActivo] = useState<FiltroTarea>('todas');
+  const [filtroActivo, setFiltroActivo] = useState<FiltroTarea>("todas");
   const [tareasMarcadas, setTareasMarcadas] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -19,17 +19,20 @@ export default function MisTareasClient() {
       const response = await flujoReportesService.misPeriodos(0, 100);
       setTareas(response.content);
     } catch (err) {
-      console.error('Error al cargar tareas:', err);
+      console.error("Error al cargar tareas:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getPrioridad = (periodo: ReportePeriodo): 'high' | 'medium' | 'low' => {
-    const diasRestantes = getDiasRestantes(new Date(periodo.fechaVencimientoCalculada));
-    if (diasRestantes < 0 || periodo.estado === 'REQUIERE_CORRECCION') return 'high';
-    if (diasRestantes <= 3) return 'medium';
-    return 'low';
+  const getPrioridad = (periodo: ReportePeriodo): "high" | "medium" | "low" => {
+    const diasRestantes = getDiasRestantes(
+      new Date(periodo.fechaVencimientoCalculada)
+    );
+    if (diasRestantes < 0 || periodo.estado === "REQUIERE_CORRECCION")
+      return "high";
+    if (diasRestantes <= 3) return "medium";
+    return "low";
   };
 
   const getDiasRestantes = (fecha: Date): number => {
@@ -39,34 +42,40 @@ export default function MisTareasClient() {
   };
 
   const esVencida = (periodo: ReportePeriodo): boolean => {
-    return getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) < 0 && 
-           periodo.estado !== 'ENVIADO' && 
-           periodo.estado !== 'APROBADO';
+    return (
+      getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) < 0 &&
+      periodo.estado !== "ENVIADO" &&
+      periodo.estado !== "APROBADO"
+    );
   };
 
   const esParaHoy = (periodo: ReportePeriodo): boolean => {
-    return getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) === 0 &&
-           periodo.estado !== 'ENVIADO' && 
-           periodo.estado !== 'APROBADO';
+    return (
+      getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) === 0 &&
+      periodo.estado !== "ENVIADO" &&
+      periodo.estado !== "APROBADO"
+    );
   };
 
   const esPendiente = (periodo: ReportePeriodo): boolean => {
-    return periodo.estado !== 'ENVIADO' && 
-           periodo.estado !== 'APROBADO' && 
-           !esVencida(periodo);
+    return (
+      periodo.estado !== "ENVIADO" &&
+      periodo.estado !== "APROBADO" &&
+      !esVencida(periodo)
+    );
   };
 
   const esCompletada = (periodo: ReportePeriodo): boolean => {
-    return periodo.estado === 'ENVIADO' || periodo.estado === 'APROBADO';
+    return periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
   };
 
-  const tareasFiltradas = tareas.filter(tarea => {
+  const tareasFiltradas = tareas.filter((tarea) => {
     switch (filtroActivo) {
-      case 'pendientes':
+      case "pendientes":
         return esPendiente(tarea);
-      case 'completadas':
+      case "completadas":
         return esCompletada(tarea);
-      case 'vencidas':
+      case "vencidas":
         return esVencida(tarea);
       default:
         return true;
@@ -75,8 +84,8 @@ export default function MisTareasClient() {
 
   const tareasVencidas = tareasFiltradas.filter(esVencida);
   const tareasParaHoy = tareasFiltradas.filter(esParaHoy);
-  const tareasPendientesNormales = tareasFiltradas.filter(t => 
-    !esVencida(t) && !esParaHoy(t) && !esCompletada(t)
+  const tareasPendientesNormales = tareasFiltradas.filter(
+    (t) => !esVencida(t) && !esParaHoy(t) && !esCompletada(t)
   );
   const tareasCompletadas = tareasFiltradas.filter(esCompletada);
 
@@ -89,7 +98,7 @@ export default function MisTareasClient() {
   };
 
   const toggleTareaMarcada = (periodoId: string) => {
-    setTareasMarcadas(prev => {
+    setTareasMarcadas((prev) => {
       const nuevas = new Set(prev);
       if (nuevas.has(periodoId)) {
         nuevas.delete(periodoId);
@@ -101,32 +110,34 @@ export default function MisTareasClient() {
   };
 
   const getTextoFechaVencimiento = (periodo: ReportePeriodo): string => {
-    const diasRestantes = getDiasRestantes(new Date(periodo.fechaVencimientoCalculada));
+    const diasRestantes = getDiasRestantes(
+      new Date(periodo.fechaVencimientoCalculada)
+    );
     if (diasRestantes < 0) {
-      return `Venció hace ${Math.abs(diasRestantes)} día${Math.abs(diasRestantes) !== 1 ? 's' : ''}`;
+      return `Venció hace ${Math.abs(diasRestantes)} día${Math.abs(diasRestantes) !== 1 ? "s" : ""}`;
     } else if (diasRestantes === 0) {
-      return 'Vence hoy';
+      return "Vence hoy";
     } else if (diasRestantes === 1) {
-      return 'Vence mañana';
+      return "Vence mañana";
     } else {
       return `Vence en ${diasRestantes} días`;
     }
   };
 
   const getDescripcionTarea = (periodo: ReportePeriodo): string => {
-    if (periodo.estado === 'REQUIERE_CORRECCION') {
-      return `Requiere corrección${periodo.comentarios ? ': ' + periodo.comentarios : ''}`;
+    if (periodo.estado === "REQUIERE_CORRECCION") {
+      return `Requiere corrección${periodo.comentarios ? ": " + periodo.comentarios : ""}`;
     }
-    if (periodo.estado === 'PENDIENTE') {
+    if (periodo.estado === "PENDIENTE") {
       return `Completar y enviar reporte de ${periodo.periodoTipo}`;
     }
-    if (periodo.estado === 'ENVIADO') {
-      return 'Reporte enviado, en proceso de revisión';
+    if (periodo.estado === "ENVIADO") {
+      return "Reporte enviado, en proceso de revisión";
     }
-    if (periodo.estado === 'APROBADO') {
-      return 'Reporte aprobado';
+    if (periodo.estado === "APROBADO") {
+      return "Reporte aprobado";
     }
-    return periodo.estadoDescripcion || 'Sin descripción';
+    return periodo.estadoDescripcion || "Sin descripción";
   };
 
   const handleIrAReporte = (periodoId: string) => {
@@ -135,21 +146,25 @@ export default function MisTareasClient() {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '400px',
-        color: 'var(--neutral-500)'
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid var(--neutral-200)',
-          borderTop: '4px solid var(--role-accent)',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }} />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+          color: "var(--neutral-500)",
+        }}
+      >
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            border: "4px solid var(--neutral-200)",
+            borderTop: "4px solid var(--role-accent)",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        />
       </div>
     );
   }
@@ -160,7 +175,9 @@ export default function MisTareasClient() {
       <div className="page-header">
         <div className="header-info">
           <h1 className="page-title">Mis Tareas</h1>
-          <p className="page-description">Gestión de tareas y actividades pendientes</p>
+          <p className="page-description">
+            Gestión de tareas y actividades pendientes
+          </p>
         </div>
         <div className="header-stats">
           <div className="stat-badge pending">
@@ -176,43 +193,71 @@ export default function MisTareasClient() {
 
       {/* Quick Filters */}
       <div className="quick-filters">
-        <button 
-          className={`filter-btn ${filtroActivo === 'todas' ? 'active' : ''}`}
-          onClick={() => setFiltroActivo('todas')}
+        <button
+          className={`filter-btn ${filtroActivo === "todas" ? "active" : ""}`}
+          onClick={() => setFiltroActivo("todas")}
         >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
           </svg>
           Todas ({contadores.todas})
         </button>
-        <button 
-          className={`filter-btn ${filtroActivo === 'pendientes' ? 'active' : ''}`}
-          onClick={() => setFiltroActivo('pendientes')}
+        <button
+          className={`filter-btn ${filtroActivo === "pendientes" ? "active" : ""}`}
+          onClick={() => setFiltroActivo("pendientes")}
         >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12,6 12,12 16,14"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12,6 12,12 16,14" />
           </svg>
           Pendientes ({contadores.pendientes})
         </button>
-        <button 
-          className={`filter-btn ${filtroActivo === 'completadas' ? 'active' : ''}`}
-          onClick={() => setFiltroActivo('completadas')}
+        <button
+          className={`filter-btn ${filtroActivo === "completadas" ? "active" : ""}`}
+          onClick={() => setFiltroActivo("completadas")}
         >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
           Completadas ({contadores.completadas})
         </button>
-        <button 
-          className={`filter-btn ${filtroActivo === 'vencidas' ? 'active' : ''}`}
-          onClick={() => setFiltroActivo('vencidas')}
+        <button
+          className={`filter-btn ${filtroActivo === "vencidas" ? "active" : ""}`}
+          onClick={() => setFiltroActivo("vencidas")}
         >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           Vencidas ({contadores.vencidas})
         </button>
@@ -226,8 +271,15 @@ export default function MisTareasClient() {
             <div className="section-header">
               <div className="section-title">
                 <span className="section-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                   </svg>
                 </span>
                 <h2>Vencidas</h2>
@@ -235,11 +287,11 @@ export default function MisTareasClient() {
               </div>
             </div>
             <div className="tareas-list">
-              {tareasVencidas.map(tarea => (
+              {tareasVencidas.map((tarea) => (
                 <div key={tarea.periodoId} className="tarea-item overdue">
                   <div className="tarea-checkbox">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id={`task-${tarea.periodoId}`}
                       checked={tareasMarcadas.has(tarea.periodoId)}
                       onChange={() => toggleTareaMarcada(tarea.periodoId)}
@@ -250,40 +302,79 @@ export default function MisTareasClient() {
                     <div className="tarea-header">
                       <h3 className="tarea-title">{tarea.reporteNombre}</h3>
                       <div className={`tarea-priority ${getPrioridad(tarea)}`}>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="currentColor"
+                        >
+                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                         </svg>
-                        {getPrioridad(tarea) === 'high' ? 'Alta' : getPrioridad(tarea) === 'medium' ? 'Media' : 'Baja'}
+                        {getPrioridad(tarea) === "high"
+                          ? "Alta"
+                          : getPrioridad(tarea) === "medium"
+                            ? "Media"
+                            : "Baja"}
                       </div>
                     </div>
-                    <p className="tarea-description">{getDescripcionTarea(tarea)}</p>
+                    <p className="tarea-description">
+                      {getDescripcionTarea(tarea)}
+                    </p>
                     <div className="tarea-meta">
                       <span className="meta-item danger">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                          <line x1="16" y1="2" x2="16" y2="6"/>
-                          <line x1="8" y1="2" x2="8" y2="6"/>
-                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect
+                            x="3"
+                            y="4"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
                         {getTextoFechaVencimiento(tarea)}
                       </span>
                       <span className="meta-item">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         </svg>
                         {tarea.entidadNombre}
                       </span>
                     </div>
                   </div>
                   <div className="tarea-actions">
-                    <button 
+                    <button
                       className="action-btn primary"
                       onClick={() => handleIrAReporte(tarea.periodoId)}
                       title="Ir al reporte"
                     >
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
                   </div>
@@ -299,9 +390,16 @@ export default function MisTareasClient() {
             <div className="section-header">
               <div className="section-title">
                 <span className="section-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12,6 12,12 16,14"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12,6 12,12 16,14" />
                   </svg>
                 </span>
                 <h2>Para Hoy</h2>
@@ -309,11 +407,11 @@ export default function MisTareasClient() {
               </div>
             </div>
             <div className="tareas-list">
-              {tareasParaHoy.map(tarea => (
+              {tareasParaHoy.map((tarea) => (
                 <div key={tarea.periodoId} className="tarea-item">
                   <div className="tarea-checkbox">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id={`task-${tarea.periodoId}`}
                       checked={tareasMarcadas.has(tarea.periodoId)}
                       onChange={() => toggleTareaMarcada(tarea.periodoId)}
@@ -324,42 +422,87 @@ export default function MisTareasClient() {
                     <div className="tarea-header">
                       <h3 className="tarea-title">{tarea.reporteNombre}</h3>
                       <div className={`tarea-priority ${getPrioridad(tarea)}`}>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          {getPrioridad(tarea) === 'high' && <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>}
-                          {getPrioridad(tarea) === 'medium' && <rect x="4" y="4" width="16" height="16" rx="2"/>}
-                          {getPrioridad(tarea) === 'low' && <circle cx="12" cy="12" r="8"/>}
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="currentColor"
+                        >
+                          {getPrioridad(tarea) === "high" && (
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                          )}
+                          {getPrioridad(tarea) === "medium" && (
+                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                          )}
+                          {getPrioridad(tarea) === "low" && (
+                            <circle cx="12" cy="12" r="8" />
+                          )}
                         </svg>
-                        {getPrioridad(tarea) === 'high' ? 'Alta' : getPrioridad(tarea) === 'medium' ? 'Media' : 'Baja'}
+                        {getPrioridad(tarea) === "high"
+                          ? "Alta"
+                          : getPrioridad(tarea) === "medium"
+                            ? "Media"
+                            : "Baja"}
                       </div>
                     </div>
-                    <p className="tarea-description">{getDescripcionTarea(tarea)}</p>
+                    <p className="tarea-description">
+                      {getDescripcionTarea(tarea)}
+                    </p>
                     <div className="tarea-meta">
                       <span className="meta-item warning">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                          <line x1="16" y1="2" x2="16" y2="6"/>
-                          <line x1="8" y1="2" x2="8" y2="6"/>
-                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect
+                            x="3"
+                            y="4"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
                         {getTextoFechaVencimiento(tarea)}
                       </span>
                       <span className="meta-item">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         </svg>
                         {tarea.entidadNombre}
                       </span>
                     </div>
                   </div>
                   <div className="tarea-actions">
-                    <button 
+                    <button
                       className="action-btn primary"
                       onClick={() => handleIrAReporte(tarea.periodoId)}
                       title="Ir al reporte"
                     >
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
                   </div>
@@ -375,8 +518,15 @@ export default function MisTareasClient() {
             <div className="section-header">
               <div className="section-title">
                 <span className="section-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
                   </svg>
                 </span>
                 <h2>Próximas</h2>
@@ -384,11 +534,11 @@ export default function MisTareasClient() {
               </div>
             </div>
             <div className="tareas-list">
-              {tareasPendientesNormales.map(tarea => (
+              {tareasPendientesNormales.map((tarea) => (
                 <div key={tarea.periodoId} className="tarea-item">
                   <div className="tarea-checkbox">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id={`task-${tarea.periodoId}`}
                       checked={tareasMarcadas.has(tarea.periodoId)}
                       onChange={() => toggleTareaMarcada(tarea.periodoId)}
@@ -399,42 +549,87 @@ export default function MisTareasClient() {
                     <div className="tarea-header">
                       <h3 className="tarea-title">{tarea.reporteNombre}</h3>
                       <div className={`tarea-priority ${getPrioridad(tarea)}`}>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                          {getPrioridad(tarea) === 'high' && <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>}
-                          {getPrioridad(tarea) === 'medium' && <rect x="4" y="4" width="16" height="16" rx="2"/>}
-                          {getPrioridad(tarea) === 'low' && <circle cx="12" cy="12" r="8"/>}
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="currentColor"
+                        >
+                          {getPrioridad(tarea) === "high" && (
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                          )}
+                          {getPrioridad(tarea) === "medium" && (
+                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                          )}
+                          {getPrioridad(tarea) === "low" && (
+                            <circle cx="12" cy="12" r="8" />
+                          )}
                         </svg>
-                        {getPrioridad(tarea) === 'high' ? 'Alta' : getPrioridad(tarea) === 'medium' ? 'Media' : 'Baja'}
+                        {getPrioridad(tarea) === "high"
+                          ? "Alta"
+                          : getPrioridad(tarea) === "medium"
+                            ? "Media"
+                            : "Baja"}
                       </div>
                     </div>
-                    <p className="tarea-description">{getDescripcionTarea(tarea)}</p>
+                    <p className="tarea-description">
+                      {getDescripcionTarea(tarea)}
+                    </p>
                     <div className="tarea-meta">
                       <span className="meta-item">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                          <line x1="16" y1="2" x2="16" y2="6"/>
-                          <line x1="8" y1="2" x2="8" y2="6"/>
-                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect
+                            x="3"
+                            y="4"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
                         {getTextoFechaVencimiento(tarea)}
                       </span>
                       <span className="meta-item">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         </svg>
                         {tarea.entidadNombre}
                       </span>
                     </div>
                   </div>
                   <div className="tarea-actions">
-                    <button 
+                    <button
                       className="action-btn"
                       onClick={() => handleIrAReporte(tarea.periodoId)}
                       title="Ir al reporte"
                     >
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
                   </div>
@@ -450,9 +645,16 @@ export default function MisTareasClient() {
             <div className="section-header">
               <div className="section-title">
                 <span className="section-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </span>
                 <h2>Completadas</h2>
@@ -460,11 +662,11 @@ export default function MisTareasClient() {
               </div>
             </div>
             <div className="tareas-list">
-              {tareasCompletadas.map(tarea => (
+              {tareasCompletadas.map((tarea) => (
                 <div key={tarea.periodoId} className="tarea-item completed">
                   <div className="tarea-checkbox">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id={`task-${tarea.periodoId}`}
                       checked={true}
                       disabled
@@ -475,41 +677,82 @@ export default function MisTareasClient() {
                     <div className="tarea-header">
                       <h3 className="tarea-title">{tarea.reporteNombre}</h3>
                       <div className="tarea-status success">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                          <polyline points="22 4 12 14.01 9 11.01"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          <polyline points="22 4 12 14.01 9 11.01" />
                         </svg>
-                        {tarea.estado === 'APROBADO' ? 'Aprobado' : 'Enviado'}
+                        {tarea.estado === "APROBADO" ? "Aprobado" : "Enviado"}
                       </div>
                     </div>
-                    <p className="tarea-description">{getDescripcionTarea(tarea)}</p>
+                    <p className="tarea-description">
+                      {getDescripcionTarea(tarea)}
+                    </p>
                     <div className="tarea-meta">
                       <span className="meta-item success">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                          <line x1="16" y1="2" x2="16" y2="6"/>
-                          <line x1="8" y1="2" x2="8" y2="6"/>
-                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect
+                            x="3"
+                            y="4"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
-                        {tarea.fechaEnvioReal ? new Date(tarea.fechaEnvioReal).toLocaleDateString('es-CO') : 'Completado'}
+                        {tarea.fechaEnvioReal
+                          ? new Date(tarea.fechaEnvioReal).toLocaleDateString(
+                              "es-CO"
+                            )
+                          : "Completado"}
                       </span>
                       <span className="meta-item">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         </svg>
                         {tarea.entidadNombre}
                       </span>
                     </div>
                   </div>
                   <div className="tarea-actions">
-                    <button 
+                    <button
                       className="action-btn"
                       onClick={() => handleIrAReporte(tarea.periodoId)}
                       title="Ver reporte"
                     >
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
                       </svg>
                     </button>
                   </div>
@@ -521,20 +764,30 @@ export default function MisTareasClient() {
 
         {/* Mensaje cuando no hay tareas */}
         {tareasFiltradas.length === 0 && (
-          <div style={{
-            padding: '4rem 2rem',
-            textAlign: 'center',
-            color: 'var(--neutral-400)'
-          }}>
-            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5, margin: '0 auto 1rem' }}>
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          <div
+            style={{
+              padding: "4rem 2rem",
+              textAlign: "center",
+              color: "var(--neutral-400)",
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="64"
+              height="64"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              style={{ opacity: 0.5, margin: "0 auto 1rem" }}
+            >
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>
-            <p style={{ fontSize: '0.875rem' }}>
-              {filtroActivo === 'todas' && 'No tienes tareas asignadas'}
-              {filtroActivo === 'pendientes' && 'No tienes tareas pendientes'}
-              {filtroActivo === 'completadas' && 'No tienes tareas completadas'}
-              {filtroActivo === 'vencidas' && 'No tienes tareas vencidas'}
+            <p style={{ fontSize: "0.875rem" }}>
+              {filtroActivo === "todas" && "No tienes tareas asignadas"}
+              {filtroActivo === "pendientes" && "No tienes tareas pendientes"}
+              {filtroActivo === "completadas" && "No tienes tareas completadas"}
+              {filtroActivo === "vencidas" && "No tienes tareas vencidas"}
             </p>
           </div>
         )}

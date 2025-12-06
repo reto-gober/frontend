@@ -132,45 +132,46 @@ export default function AlertasClient() {
       setAlertas((prev) =>
         prev.map((a) => (a.id === alertaId ? { ...a, leida: true } : a))
       );
-      
+
       // Aquí se enviaría al backend si hubiera un endpoint para ello
       // await api.post('/api/alertas/marcar-leida', { alertaId });
     } catch (err) {
-      console.error('Error al marcar alerta como leída:', err);
+      console.error("Error al marcar alerta como leída:", err);
     }
   };
 
   const marcarTodasComoLeidas = async () => {
-    const alertasNoLeidas = alertas.filter(a => !a.leida);
-    
+    const alertasNoLeidas = alertas.filter((a) => !a.leida);
+
     if (alertasNoLeidas.length === 0) {
-      alert('No hay alertas pendientes por marcar como leídas');
+      alert("No hay alertas pendientes por marcar como leídas");
       return;
     }
 
     try {
       // Actualizar localmente
       setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
-      
+
       // Aquí se enviaría al backend si hubiera un endpoint para ello
       // await api.post('/api/alertas/marcar-todas-leidas');
-      
+
       // Feedback al usuario
-      const mensaje = alertasNoLeidas.length === 1 
-        ? 'Se marcó 1 alerta como leída'
-        : `Se marcaron ${alertasNoLeidas.length} alertas como leídas`;
-      
+      const mensaje =
+        alertasNoLeidas.length === 1
+          ? "Se marcó 1 alerta como leída"
+          : `Se marcaron ${alertasNoLeidas.length} alertas como leídas`;
+
       // Mostrar mensaje temporal
-      showToast(mensaje, 'success');
+      showToast(mensaje, "success");
     } catch (err) {
-      console.error('Error al marcar todas como leídas:', err);
-      showToast('Error al marcar alertas como leídas', 'error');
+      console.error("Error al marcar todas como leídas:", err);
+      showToast("Error al marcar alertas como leídas", "error");
     }
   };
 
-  const showToast = (mensaje: string, tipo: 'success' | 'error') => {
+  const showToast = (mensaje: string, tipo: "success" | "error") => {
     // Crear elemento de toast
-    const toast = document.createElement('div');
+    const toast = document.createElement("div");
     toast.className = `toast toast-${tipo}`;
     toast.textContent = mensaje;
     toast.style.cssText = `
@@ -178,19 +179,19 @@ export default function AlertasClient() {
       top: 20px;
       right: 20px;
       padding: 1rem 1.5rem;
-      background: ${tipo === 'success' ? 'var(--success-green-500)' : 'var(--error-red-500)'};
+      background: ${tipo === "success" ? "var(--success-green-500)" : "var(--error-red-500)"};
       color: white;
       border-radius: 8px;
       box-shadow: var(--shadow-card);
       z-index: 9999;
       animation: slideIn 0.3s ease-out;
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // Eliminar después de 3 segundos
     setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease-in';
+      toast.style.animation = "slideOut 0.3s ease-in";
       setTimeout(() => document.body.removeChild(toast), 300);
     }, 3000);
   };
@@ -278,7 +279,7 @@ export default function AlertasClient() {
   }
 
   const grupos = agruparPorFecha();
-  const hayAlertasNoLeidas = alertas.some(a => !a.leida);
+  const hayAlertasNoLeidas = alertas.some((a) => !a.leida);
 
   return (
     <div className="alertas-page">
@@ -291,11 +292,15 @@ export default function AlertasClient() {
           </p>
         </div>
         <div className="header-actions">
-          <button 
-            className="btn-mark-all" 
+          <button
+            className="btn-mark-all"
             onClick={marcarTodasComoLeidas}
             disabled={!hayAlertasNoLeidas}
-            title={!hayAlertasNoLeidas ? 'No hay alertas pendientes' : 'Marcar todas como leídas'}
+            title={
+              !hayAlertasNoLeidas
+                ? "No hay alertas pendientes"
+                : "Marcar todas como leídas"
+            }
           >
             <svg
               viewBox="0 0 24 24"
