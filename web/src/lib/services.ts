@@ -45,6 +45,8 @@ export interface ResponsableReporte {
   usuarioId: string;
   tipoResponsabilidad: 'elaboracion' | 'supervision' | 'revision';
   esPrincipal: boolean;
+  activo: boolean;
+  orden: number;
   fechaInicio: string;
   fechaFin?: string;
   observaciones?: string;
@@ -54,22 +56,22 @@ export interface ReporteRequest {
   nombre: string;
   descripcion?: string;
   entidadId: string;
-  frecuencia: "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL";
-  formatoRequerido: "PDF" | "EXCEL" | "WORD" | "OTRO";
+  frecuencia: string; // "mensual" | "trimestral" | "semestral" | "anual"
+  formatoRequerido: string; // "Excel" | "PDF" | "Word" | "Otro"
   baseLegal?: string;
   fechaInicioVigencia?: string;
-  fechaFinVigencia?: string;
+  fechaFinVigencia?: string | null;
   fechaVencimiento?: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
+  // Configuración de periodos
+  durationMonths?: number;
   // Nuevo formato con array de responsables
   responsables?: ResponsableReporte[];
-  // Formato legacy (aún funciona)
-  responsableElaboracionId?: string[];
-  responsableSupervisionId?: string[];
+  // Correos y teléfono
   correosNotificacion?: string[];
   telefonoResponsable?: string;
-  estado?: "PENDIENTE" | "EN_PROGRESO" | "ENVIADO";
+  estado?: string; // "activo" | "inactivo" | "pendiente"
 }
 
 export interface ReporteResponse {
@@ -130,6 +132,71 @@ export interface DashboardResponse {
   reportesEnviados: number;
   reportesVencidos: number;
   tasaCumplimiento: number;
+}
+
+// ==================== DASHBOARD SUPERVISOR ====================
+
+export interface KpisSupervisor {
+  reportesEnRevision: number;
+  reportesRequierenCorreccion: number;
+  reportesPendientes: number;
+  reportesAtrasados: number;
+}
+
+export interface CargaResponsable {
+  responsableId: string;
+  nombreCompleto: string;
+  email: string;
+  totalReportes: number;
+  pendientes: number;
+  enRevision: number;
+  aprobados: number;
+  atrasados: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface DistribucionEntidad {
+  entidadId: string;
+  nombreEntidad: string;
+  sigla: string;
+  totalReportes: number;
+  pendientes: number;
+  aprobados: number;
+  atrasados: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface DashboardSupervisorResponse {
+  kpis: KpisSupervisor;
+  estadoGeneral: Record<string, number>;
+  cargaPorResponsable: CargaResponsable[];
+  distribucionPorEntidad: DistribucionEntidad[];
+}
+
+// ==================== EVIDENCIAS SUPERVISOR ====================
+
+export interface EvidenciaSupervisor {
+  id: string;
+  nombreArchivo: string;
+  rutaArchivo: string;
+  tipoArchivo: string;
+  tamanioBytes: number;
+  fechaCarga: string;
+  reporte: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    entidadNombre: string;
+    periodo: string;
+    estado: string;
+    fechaVencimiento: string;
+  };
+  responsableCarga: {
+    usuarioId: string;
+    nombreCompleto: string;
+    email: string;
+  };
+  urlDescarga?: string;
 }
 
 export interface UsuarioResponse {
@@ -322,7 +389,7 @@ export const reportesService = {
 };
 
 export const entidadesService = {
-  async listar(page = 0, size = 100, sort = 'nombre,asc'): Promise<Page<EntidadResponse>> {
+  async listar(page = 0, size = 100, sort = ['nombre,asc']): Promise<Page<EntidadResponse>> {
     const response = await api.get('/api/entidades', { params: { page, size, sort } });
     // Verificar si la respuesta tiene el formato { success, data }
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
@@ -331,8 +398,8 @@ export const entidadesService = {
     return response.data;
   },
 
-  async activas(page = 0, size = 100): Promise<Page<EntidadResponse>> {
-    const response = await api.get('/api/entidades/activas', { params: { page, size } });
+  async activas(page = 0, size = 100, sort = ['nombre,asc']): Promise<Page<EntidadResponse>> {
+    const response = await api.get('/api/entidades', { params: { page, size, sort } });
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }
@@ -458,7 +525,7 @@ export const dashboardService = {
     return response.data;
   },
 
-  async dashboardSupervisor(): Promise<any> {
+  async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
     const response = await api.get('/api/dashboard/supervisor');
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
@@ -700,25 +767,106 @@ export const flujoReportesService = {
     const response = await api.get(`/api/flujo-reportes/periodos/estado/${estado}?page=${page}&size=${size}`);
     return response.data.data;
   },
+
+  // Obtener periodos supervisados con filtros
+  async supervisionConFiltros(
+    page = 0, 
+    size = 10, 
+    estado?: string, 
+    responsableId?: string, 
+    entidadId?: string
+  ): Promise<Page<ReportePeriodo>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (estado) params.append('estado', estado);
+    if (responsableId) params.append('responsableId', responsableId);
+    if (entidadId) params.append('entidadId', entidadId);
+    
+    const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
+    return response.data.data;
+  },
 };
 
+// ==================== EVIDENCIAS SUPERVISOR ====================
+
+export const evidenciasSupervisorService = {
+  // Obtener evidencias bajo supervisión
+  async listar(
+    page = 0, 
+    size = 10, 
+    tipoArchivo?: string, 
+    responsableId?: string, 
+    entidadId?: string, 
+    estado?: string
+  ): Promise<Page<EvidenciaSupervisor>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (tipoArchivo) params.append('tipoArchivo', tipoArchivo);
+    if (responsableId) params.append('responsableId', responsableId);
+    if (entidadId) params.append('entidadId', entidadId);
+    if (estado) params.append('estado', estado);
+    
+    const response = await api.get(`/api/evidencias/supervision?${params}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Descargar evidencia
+  async descargar(id: string): Promise<void> {
+    const response = await api.get(`/api/evidencias/download/${id}`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'],
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const disposition = response.headers['content-disposition'];
+    const match = disposition?.match(/filename="(.+)"/);
+    a.href = url;
+    a.download = match?.[1] || `evidencia-${id}`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+};
 // ============================================
 // INTERFACES Y SERVICIOS DE CALENDARIO
 // ============================================
 
 export interface EventoCalendario {
-  reporteId: string;
+  eventoId?: string;
+  reporteId?: string;
   titulo: string;
-  fecha: string;
-  tipo: 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
-  estado: string;
+  // Tipo de evento determina qué campos usar
+  tipo: 'periodo' | 'vencimiento' | 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
+  
+  // Para eventos tipo "periodo" (barra continua)
+  startDate?: string;
+  endDate?: string;
+  
+  // Para eventos tipo "vencimiento" (marcador puntual)
+  date?: string;
+  fechaVencimiento?: string; // Alias para compatibilidad
+  
+  estado?: string;
   color: string;
+  descripcion?: string;
+  
   // Campos opcionales según rol
   esMio?: boolean;
   puedoActuar?: boolean;
   responsableNombre?: string;
+  responsable?: string; // Para supervisor
   supervisorNombre?: string;
   entidadNombre?: string;
+  entidad?: string; // Para auditor
+  tipoIncidencia?: string; // Para supervisor
   diasPendiente?: number;
   diasVencido?: number;
   requiereAccion?: boolean;

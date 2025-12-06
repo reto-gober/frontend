@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { calendarioService, type EventoCalendario, type CalendarioResponse } from '../../lib/services';
+import { calendarioService, reportesService, type EventoCalendario, type CalendarioResponse, type ReportePeriodo } from '../../lib/services';
 
 export default function AdminCalendarioClient() {
   const [calendario, setCalendario] = useState<CalendarioResponse | null>(null);
@@ -47,15 +47,41 @@ export default function AdminCalendarioClient() {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const getPeriodosDelDia = (dia: number): EventoCalendario[] => {
+  const getEventosDelDia = (dia: number): EventoCalendario[] => {
     if (!calendario) return [];
     
     const fecha = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia);
     const fechaStr = fecha.toISOString().split('T')[0];
     
     return calendario.eventos.filter(evento => {
-      const fechaEvento = evento.fecha.split('T')[0];
-      return fechaEvento === fechaStr;
+      // Evento tipo "periodo" - verificar si el día está en el rango
+      if (evento.tipo === 'periodo' && evento.startDate && evento.endDate) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const current = new Date(fechaStr);
+        return current >= start && current <= end;
+      }
+      
+      // Evento tipo "vencimiento" - verificar si coincide con el día exacto
+      if (evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO') {
+        const eventoDate = evento.date || evento.fechaVencimiento;
+        if (eventoDate) {
+          return eventoDate.split('T')[0] === fechaStr;
+        }
+      }
+      
+      // Compatibilidad con estructura anterior (legacy)
+      if (evento.startDate && evento.endDate && evento.fechaVencimiento) {
+        const start = new Date(evento.startDate);
+        const end = new Date(evento.endDate);
+        const vencimiento = new Date(evento.fechaVencimiento);
+        const current = new Date(fechaStr);
+        
+        return (current >= start && current <= end) || 
+               vencimiento.toISOString().split('T')[0] === fechaStr;
+      }
+      
+      return false;
     });
   };
 
@@ -74,6 +100,25 @@ export default function AdminCalendarioClient() {
 
   const cambiarMes = (direccion: number) => {
     setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() + direccion, 1));
+  };
+
+  const handleEventoClick = async (evento: EventoCalendario) => {
+    // Si el evento no tiene reporteId, no podemos hacer nada
+    if (!evento.reporteId) {
+      console.warn('Evento sin reporteId:', evento);
+      return;
+    }
+
+    try {
+      // Obtener todos los periodos del reporte (esto podría venir del calendario o necesitar una llamada adicional)
+      // Por ahora, redirigimos directamente al reporte con su periodo más reciente
+      // El componente de resumen se encargará de mostrar el periodo correcto
+      
+      // Redirigir a la vista de resumen del reporte
+      window.location.href = `/roles/admin/reportes/${evento.reporteId}/resumen`;
+    } catch (error) {
+      console.error('Error al navegar al reporte:', error);
+    }
   };
 
   if (loading) {
@@ -162,7 +207,7 @@ export default function AdminCalendarioClient() {
         {/* Días del mes */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const dia = i + 1;
-          const eventosDelDia = getPeriodosDelDia(dia);
+          const eventosDelDia = getEventosDelDia(dia);
           const esHoy = new Date().toDateString() === new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toDateString();
           
           return (
@@ -170,17 +215,38 @@ export default function AdminCalendarioClient() {
               <div className="day-number">{dia}</div>
               {eventosDelDia.length > 0 && (
                 <div className="day-events">
-                  {eventosDelDia.slice(0, 3).map((evento, idx) => (
-                    <div
-                      key={idx}
-                      className="event-item"
-                      style={{ borderLeftColor: evento.color }}
-                      title={`${evento.titulo}\n${evento.tipo} - ${evento.estado}`}
-                    >
-                      <div className="event-title">{evento.titulo}</div>
-                      <div className="event-tipo">{evento.tipo}</div>
-                    </div>
-                  ))}
+                  {eventosDelDia.slice(0, 3).map((evento, idx) => {
+                    const fechaDia = new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toISOString().split('T')[0];
+                    
+                    // Determinar si es vencimiento
+                    const esVencimiento = evento.tipo === 'vencimiento' || evento.tipo === 'VENCIMIENTO' ||
+                                         (evento.fechaVencimiento && evento.fechaVencimiento.split('T')[0] === fechaDia) ||
+                                         (evento.date && evento.date.split('T')[0] === fechaDia);
+                    
+                    // Determinar si es periodo (barra continua)
+                    const esPeriodo = evento.tipo === 'periodo' && evento.startDate && evento.endDate;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`event-item ${esPeriodo ? 'event-periodo' : 'event-vencimiento'}`}
+                        style={{ 
+                          borderLeftColor: evento.color,
+                          backgroundColor: esPeriodo ? `${evento.color}20` : 'transparent'
+                        }}
+                        title={`${evento.titulo}\n${evento.descripcion || ''}\n${esVencimiento ? '⏰ VENCIMIENTO' : esPeriodo ? '📊 PERIODO' : 'Evento'}`}
+                      >
+                        <div className="event-title">
+                          {esVencimiento && '⏰ '}
+                          {esPeriodo && '📊 '}
+                          {evento.titulo}
+                        </div>
+                        {evento.estado && (
+                          <div className="event-tipo">{evento.tipo} - {evento.estado}</div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {eventosDelDia.length > 3 && (
                     <div className="more-events">+{eventosDelDia.length - 3} más</div>
                   )}

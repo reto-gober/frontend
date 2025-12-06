@@ -1,24 +1,26 @@
 import { useState, useEffect } from 'react';
 import { reportesService, entidadesService, usuariosService, type ReporteRequest, type ResponsableReporte, type EntidadResponse, type UsuarioResponse } from '../lib/services';
 import { useToast, ToastContainer } from './Toast';
+import ResponsablesList from './ReporteForm/ResponsablesList';
+import ResponsableSelector from './ReporteForm/ResponsableSelector';
+import MultiUserSelector from './ReporteForm/MultiUserSelector';
 
 interface Props {
   reporteId?: string;
   useNewFormat?: boolean; // Flag para usar el nuevo formato
+  onClose?: () => void; // Callback para cerrar modal (usado en admin)
 }
 
 interface ResponsableFormData extends ResponsableReporte {
   nombre?: string; // Para mostrar en UI
 }
 
-export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
+export default function ReporteForm({ reporteId, useNewFormat = true, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioResponse[]>([]);
-  const [searchElaboracion, setSearchElaboracion] = useState('');
-  const [searchSupervision, setSearchSupervision] = useState('');
-  const [showElaboracionList, setShowElaboracionList] = useState(false);
-  const [showSupervisionList, setShowSupervisionList] = useState(false);
+  const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
+  const [selectedSupervisores, setSelectedSupervisores] = useState<string[]>([]);
   const { toasts, removeToast, success, error } = useToast();
   
   // Estado para responsables en nuevo formato
@@ -28,19 +30,17 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
     nombre: '',
     descripcion: '',
     entidadId: '',
-    frecuencia: 'MENSUAL',
-    formatoRequerido: 'PDF',
+    frecuencia: 'mensual',
+    formatoRequerido: 'Excel',
     baseLegal: '',
     fechaInicioVigencia: '',
-    fechaFinVigencia: '',
+    fechaFinVigencia: null,
     fechaVencimiento: '',
     plazoAdicionalDias: undefined,
     linkInstrucciones: '',
-    responsableElaboracionId: [],
-    responsableSupervisionId: [],
     correosNotificacion: [],
     telefonoResponsable: '',
-    estado: 'PENDIENTE',
+    estado: 'activo',
   });
 
   useEffect(() => {
@@ -56,10 +56,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
         entidadesService.activas(),
         usuariosService.listar(),
       ]);
-      setEntidades(entidadesData.content);
-      setUsuarios(usuariosData.content);
-    } catch (error) {
-      console.error('Error loading selects:', error);
+      console.log('Entidades cargadas:', entidadesData);
+      console.log('Usuarios cargados:', usuariosData);
+      setEntidades(entidadesData.content || entidadesData || []);
+      setUsuarios(usuariosData.content || usuariosData || []);
+    } catch (err) {
+      console.error('Error loading selects:', err);
+      error('Error al cargar entidades y usuarios');
     }
   };
 
@@ -71,20 +74,26 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
         nombre: reporte.nombre,
         descripcion: reporte.descripcion || '',
         entidadId: reporte.entidadId,
-        frecuencia: reporte.frecuencia as any,
-        formatoRequerido: reporte.formatoRequerido as any,
+        frecuencia: reporte.frecuencia,
+        formatoRequerido: reporte.formatoRequerido,
         baseLegal: reporte.baseLegal || '',
         fechaInicioVigencia: reporte.fechaInicioVigencia || '',
-        fechaFinVigencia: reporte.fechaFinVigencia || '',
+        fechaFinVigencia: reporte.fechaFinVigencia || null,
         fechaVencimiento: reporte.fechaVencimiento,
         plazoAdicionalDias: reporte.plazoAdicionalDias,
         linkInstrucciones: reporte.linkInstrucciones || '',
-        responsableElaboracionId: reporte.responsableElaboracionId || [],
-        responsableSupervisionId: reporte.responsableSupervisionId || [],
         correosNotificacion: reporte.correosNotificacion || [],
         telefonoResponsable: reporte.telefonoResponsable || '',
-        estado: reporte.estado as any,
+        estado: reporte.estado,
       });
+      
+      // Inicializar los arrays de selección para el nuevo formato
+      if (reporte.responsableElaboracionId) {
+        setSelectedResponsables(reporte.responsableElaboracionId);
+      }
+      if (reporte.responsableSupervisionId) {
+        setSelectedSupervisores(reporte.responsableSupervisionId);
+      }
     } catch (error) {
       console.error('Error loading reporte:', error);
     }
@@ -95,27 +104,61 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
     setLoading(true);
 
     try {
+      // Calcular duración en meses a partir de las fechas de vigencia
+      let durationMonths = 0;
+      if (formData.fechaInicioVigencia && formData.fechaFinVigencia) {
+        const inicio = new Date(formData.fechaInicioVigencia);
+        const fin = new Date(formData.fechaFinVigencia);
+        const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        durationMonths = Math.ceil(diffDays / 30); // Aproximación de meses
+      }
+      
+      // Validar
+      if (durationMonths < 1) {
+        error('Debe especificar fechas de inicio y fin de vigencia válidas');
+        setLoading(false);
+        return;
+      }
+      
       let payload: ReporteRequest;
       
-      if (useNewFormat && responsables.length > 0) {
+      if (useNewFormat && (selectedResponsables.length > 0 || selectedSupervisores.length > 0)) {
         // Usar nuevo formato con array de responsables
+        const fechaActual = new Date().toISOString().split('T')[0];
+        
         payload = {
           ...formData,
-          responsables: responsables.map(r => ({
-            usuarioId: r.usuarioId,
-            tipoResponsabilidad: r.tipoResponsabilidad,
-            esPrincipal: r.esPrincipal,
-            fechaInicio: r.fechaInicio || new Date().toISOString().split('T')[0],
-            fechaFin: r.fechaFin,
-            observaciones: r.observaciones,
-          })),
-          // Remover campos legacy si se usa nuevo formato
-          responsableElaboracionId: undefined,
-          responsableSupervisionId: undefined,
+          estado: reporteId ? formData.estado : 'activo',
+          fechaFinVigencia: formData.fechaFinVigencia || null,
+          durationMonths,
+          responsables: [
+            ...selectedResponsables.map((userId, index) => ({
+              usuarioId: userId,
+              tipoResponsabilidad: 'elaboracion' as const,
+              esPrincipal: index === 0,
+              activo: true,
+              orden: index + 1,
+              fechaInicio: fechaActual,
+            })),
+            ...selectedSupervisores.map((userId, index) => ({
+              usuarioId: userId,
+              tipoResponsabilidad: 'supervision' as const,
+              esPrincipal: index === 0,
+              activo: true,
+              orden: index + 1,
+              fechaInicio: fechaActual,
+            })),
+          ],
         };
       } else {
         // Usar formato legacy
-        payload = formData;
+        payload = {
+          ...formData,
+          estado: reporteId ? formData.estado : 'activo',
+          fechaFinVigencia: formData.fechaFinVigencia || null,
+          durationMonths,
+        };
       }
       
       if (reporteId) {
@@ -125,8 +168,14 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
         await reportesService.crear(payload);
         success('Reporte creado exitosamente');
       }
+      
+      // Si hay callback onClose (modal), usarlo; si no, redirigir
       setTimeout(() => {
-        window.location.href = '/reportes';
+        if (onClose) {
+          onClose();
+        } else {
+          window.location.href = '/reportes';
+        }
       }, 1000);
     } catch (err: any) {
       error(err.response?.data?.mensaje || 'Error al guardar el reporte');
@@ -165,8 +214,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
       usuarioId,
       tipoResponsabilidad: tipo,
       esPrincipal,
+      activo: true,
+      orden: responsables.length + 1,
       fechaInicio: new Date().toISOString().split('T')[0],
-      nombre: `${usuario.firstName} ${usuario.firstLastname}`,
+      nombre: usuario ? `${usuario.firstName} ${usuario.firstLastname}` : '',
     };
 
     setResponsables(prev => [...prev, nuevoResponsable]);
@@ -200,129 +251,6 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
     );
   };
 
-  // ===== FUNCIONES PARA FORMATO LEGACY =====
-  const toggleResponsable = (type: 'elaboracion' | 'supervision', usuarioId: string) => {
-    const field = type === 'elaboracion' ? 'responsableElaboracionId' : 'responsableSupervisionId';
-    setFormData(prev => {
-      const current = prev[field] || [];
-      const updated = current.includes(usuarioId)
-        ? current.filter(id => id !== usuarioId)
-        : [...current, usuarioId];
-      
-      // Actualizar teléfono si es elaboración y hay al menos un responsable
-      if (type === 'elaboracion') {
-        const firstResponsable = usuarios.find(u => updated[0] === u.usuarioId);
-        return {
-          ...prev,
-          [field]: updated,
-          telefonoResponsable: firstResponsable?.telefono || '',
-        };
-      }
-      
-      return {
-        ...prev,
-        [field]: updated,
-      };
-    });
-  };
-
-  const addResponsable = (type: 'elaboracion' | 'supervision', usuarioId: string) => {
-    if (!usuarioId) return;
-    
-    const field = type === 'elaboracion' ? 'responsableElaboracionId' : 'responsableSupervisionId';
-    setFormData(prev => {
-      const current = prev[field] || [];
-      if (current.includes(usuarioId)) return prev;
-      
-      const updated = [...current, usuarioId];
-      const usuario = usuarios.find(u => u.usuarioId === usuarioId);
-      
-      // Recopilar emails de todos los responsables
-      const allResponsables = [
-        ...(formData.responsableElaboracionId || []),
-        ...(formData.responsableSupervisionId || [])
-      ];
-      if (!allResponsables.includes(usuarioId)) {
-        allResponsables.push(usuarioId);
-      }
-      const emails = allResponsables
-        .map(id => usuarios.find(u => u.usuarioId === id)?.email)
-        .filter((email): email is string => !!email);
-      
-      // Actualizar teléfono si es elaboración y es el primer responsable
-      if (type === 'elaboracion' && current.length === 0) {
-        return {
-          ...prev,
-          [field]: updated,
-          telefonoResponsable: usuario?.telefono || '',
-          correosNotificacion: emails,
-        };
-      }
-      
-      return {
-        ...prev,
-        [field]: updated,
-        correosNotificacion: emails,
-      };
-    });
-    
-    // Limpiar búsqueda y ocultar lista
-    if (type === 'elaboracion') {
-      setSearchElaboracion('');
-      setShowElaboracionList(false);
-    } else {
-      setSearchSupervision('');
-      setShowSupervisionList(false);
-    }
-  };
-
-  const removeResponsable = (type: 'elaboracion' | 'supervision', usuarioId: string) => {
-    const field = type === 'elaboracion' ? 'responsableElaboracionId' : 'responsableSupervisionId';
-    setFormData(prev => {
-      const updated = (prev[field] || []).filter(id => id !== usuarioId);
-      
-      // Actualizar correos eliminando el del usuario removido
-      const allResponsables = [
-        ...(type === 'elaboracion' ? updated : (prev.responsableElaboracionId || [])),
-        ...(type === 'supervision' ? updated : (prev.responsableSupervisionId || []))
-      ];
-      const emails = allResponsables
-        .map(id => usuarios.find(u => u.usuarioId === id)?.email)
-        .filter((email): email is string => !!email);
-      
-      // Actualizar teléfono si es elaboración
-      if (type === 'elaboracion') {
-        const firstResponsable = usuarios.find(u => updated[0] === u.usuarioId);
-        return {
-          ...prev,
-          [field]: updated,
-          telefonoResponsable: firstResponsable?.telefono || '',
-          correosNotificacion: emails,
-        };
-      }
-      
-      return {
-        ...prev,
-        [field]: updated,
-        correosNotificacion: emails,
-      };
-    });
-  };
-
-  const getFilteredUsuarios = (type: 'elaboracion' | 'supervision', search: string) => {
-    const field = type === 'elaboracion' ? 'responsableElaboracionId' : 'responsableSupervisionId';
-    const selected = formData[field] || [];
-    
-    return usuarios
-      .filter(u => !selected.includes(u.usuarioId))
-      .filter(u => {
-        if (!search) return true;
-        const fullName = `${u.firstName} ${u.firstLastname}`.toLowerCase();
-        return fullName.includes(search.toLowerCase());
-      })
-      .slice(0, 5); // Limitar a 5 resultados
-  };
-
   return (
     <div className="reporte-form-container">
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -337,9 +265,15 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
           </svg>
           <h2 className="form-title">{reporteId ? 'Editar Reporte' : 'Nuevo Reporte'}</h2>
         </div>
-        <a href="/reportes" className="btn btn-secondary">
-          Volver
-        </a>
+        {onClose ? (
+          <button type="button" onClick={onClose} className="btn btn-secondary">
+            Volver
+          </button>
+        ) : (
+          <a href="/reportes" className="btn btn-secondary">
+            Volver
+          </a>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -380,10 +314,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
 
                 <div style={{ minHeight: '92px' }}>
                   <label htmlFor="entidadId" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
-                    Entidad <span style={{ color: 'var(--color-danger)' }}>*</span>
+                    Entidad a entregar el reporte <span style={{ color: 'var(--color-danger)' }}>*</span>
                   </label>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.5rem' }}>
-                    Organización responsable
+                    Organización destinataria
                   </div>
                   <select
                     id="entidadId"
@@ -399,27 +333,6 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                         {entidad.nombre}
                       </option>
                     ))}
-                  </select>
-                </div>
-
-                <div style={{ minHeight: '92px' }}>
-                  <label htmlFor="estado" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
-                    Estado <span style={{ color: 'var(--color-danger)' }}>*</span>
-                  </label>
-                  <div style={{ fontSize: '0.75rem', color: 'transparent', marginBottom: '0.5rem' }}>
-                    -
-                  </div>
-                  <select
-                    id="estado"
-                    name="estado"
-                    className="form-select"
-                    value={formData.estado}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="PENDIENTE">Pendiente</option>
-                    <option value="EN_PROGRESO">En Progreso</option>
-                    <option value="ENVIADO">Enviado</option>
                   </select>
                 </div>
               </div>
@@ -455,24 +368,22 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                   </h3>
                 </div>
                 
-                {/* Toggle formato nuevo/legacy */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>
-                    {useNewFormat ? 'Formato Avanzado' : 'Formato Simple'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Confirmar cambio si hay datos
-                      if ((useNewFormat && responsables.length > 0) || 
-                          (!useNewFormat && (formData.responsableElaboracionId?.length || formData.responsableSupervisionId?.length))) {
+                {/* Toggle formato nuevo/legacy - Solo mostrar si NO está en modal */}
+                {!onClose && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>
+                      {useNewFormat ? 'Formato Avanzado' : 'Formato Simple'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Confirmar cambio si hay datos
+                        if ((useNewFormat && responsables.length > 0) || 
+                            (!useNewFormat && (selectedResponsables.length > 0 || selectedSupervisores.length > 0))) {
                         if (!confirm('¿Cambiar formato? Se perderán los responsables actuales.')) return;
                         setResponsables([]);
-                        setFormData(prev => ({
-                          ...prev,
-                          responsableElaboracionId: [],
-                          responsableSupervisionId: [],
-                        }));
+                        setSelectedResponsables([]);
+                        setSelectedSupervisores([]);
                       }
                       // Toggle
                       if (useNewFormat) {
@@ -506,438 +417,35 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                     }} />
                   </button>
                 </div>
+                )}
               </div>
 
-              {useNewFormat ? (
-                // ===== FORMATO NUEVO =====
+              {useNewFormat && (
                 <>
-                  <div style={{ 
-                    backgroundColor: 'var(--color-info-50)', 
-                    border: '1px solid var(--color-info-200)',
-                    borderRadius: '6px',
-                    padding: '0.875rem',
-                    marginBottom: '1.5rem',
-                    display: 'flex',
-                    gap: '0.75rem'
-                  }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--color-info-600)', flexShrink: 0, marginTop: '2px' }}>
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="12" y1="16" x2="12" y2="12"></line>
-                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-info-900)' }}>
-                      <strong>Formato Avanzado:</strong> Asigna múltiples responsables con roles específicos (Elaboración, Supervisión, Revisión) y marca responsables principales.
-                    </div>
-                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <MultiUserSelector
+                      usuarios={usuarios}
+                      selectedIds={selectedResponsables}
+                      onSelectionChange={setSelectedResponsables}
+                      roleFilter="RESPONSABLE"
+                      label="Responsables de Elaboración"
+                      placeholder="Buscar responsables..."
+                    />
 
-                  {/* Lista de responsables actuales */}
-                  {responsables.length > 0 && (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.75rem' }}>
-                        Responsables asignados ({responsables.length})
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {responsables.map((resp) => {
-                          const usuario = usuarios.find(u => u.usuarioId === resp.usuarioId);
-                          return (
-                            <div key={resp.usuarioId} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '1rem',
-                              padding: '0.875rem',
-                              backgroundColor: 'var(--color-gray-50)',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: '6px',
-                            }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                  <span style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--color-text)' }}>
-                                    {usuario?.firstName} {usuario?.firstLastname}
-                                  </span>
-                                  {resp.esPrincipal && (
-                                    <span style={{
-                                      fontSize: '0.6875rem',
-                                      fontWeight: 600,
-                                      padding: '0.125rem 0.5rem',
-                                      backgroundColor: 'var(--color-warning-100)',
-                                      color: 'var(--color-warning-800)',
-                                      borderRadius: '10px',
-                                    }}>
-                                      PRINCIPAL
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--color-text-light)' }}>
-                                  <span style={{
-                                    padding: '0.125rem 0.5rem',
-                                    backgroundColor: resp.tipoResponsabilidad === 'elaboracion' 
-                                      ? 'var(--color-primary-100)' 
-                                      : resp.tipoResponsabilidad === 'supervision'
-                                      ? 'var(--color-success-100)'
-                                      : 'var(--color-info-100)',
-                                    color: resp.tipoResponsabilidad === 'elaboracion' 
-                                      ? 'var(--color-primary-700)' 
-                                      : resp.tipoResponsabilidad === 'supervision'
-                                      ? 'var(--color-success-700)'
-                                      : 'var(--color-info-700)',
-                                    borderRadius: '4px',
-                                    fontWeight: 500,
-                                  }}>
-                                    {resp.tipoResponsabilidad.charAt(0).toUpperCase() + resp.tipoResponsabilidad.slice(1)}
-                                  </span>
-                                  <span>Desde: {resp.fechaInicio}</span>
-                                </div>
-                              </div>
-                              
-                              <button
-                                type="button"
-                                onClick={() => togglePrincipalNuevoFormato(resp.usuarioId, resp.tipoResponsabilidad)}
-                                style={{
-                                  padding: '0.375rem 0.75rem',
-                                  fontSize: '0.75rem',
-                                  border: '1px solid var(--color-border)',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'white',
-                                  cursor: 'pointer',
-                                  fontWeight: 500,
-                                }}
-                                title={resp.esPrincipal ? 'Desmarcar como principal' : 'Marcar como principal'}
-                              >
-                                ⭐
-                              </button>
-                              
-                              <button
-                                type="button"
-                                onClick={() => removeResponsableNuevoFormato(resp.usuarioId)}
-                                style={{
-                                  padding: '0.375rem 0.75rem',
-                                  fontSize: '0.875rem',
-                                  border: '1px solid var(--color-danger-300)',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'white',
-                                  color: 'var(--color-danger-600)',
-                                  cursor: 'pointer',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                Quitar
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Selector para agregar nuevo responsable */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 140px', gap: '0.75rem', alignItems: 'end' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-                        Usuario
-                      </label>
-                      <select
-                        className="form-select"
-                        value=""
-                        onChange={(e) => {
-                          const usuarioId = e.target.value;
-                          if (usuarioId && !responsables.find(r => r.usuarioId === usuarioId)) {
-                            addResponsableNuevoFormato(usuarioId, 'elaboracion', false);
-                          }
-                          e.target.value = '';
-                        }}
-                      >
-                        <option value="">Seleccionar usuario...</option>
-                        {usuarios
-                          .filter(u => !responsables.find(r => r.usuarioId === u.usuarioId))
-                          .map(usuario => (
-                            <option key={usuario.usuarioId} value={usuario.usuarioId}>
-                              {usuario.firstName} {usuario.firstLastname} {usuario.cargo ? `- ${usuario.cargo}` : ''}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-                        Tipo
-                      </label>
-                      <select className="form-select" disabled>
-                        <option>Elaboración</option>
-                      </select>
-                    </div>
-                    
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', paddingBottom: '0.625rem' }}>
-                      Seleccione arriba
-                    </div>
+                    <MultiUserSelector
+                      usuarios={usuarios}
+                      selectedIds={selectedSupervisores}
+                      onSelectionChange={setSelectedSupervisores}
+                      roleFilter="SUPERVISOR"
+                      label="Supervisores"
+                      placeholder="Buscar supervisores..."
+                    />
                   </div>
                 </>
-              ) : (
-                // ===== FORMATO LEGACY =====
-                <>
-              {/* Responsables de Elaboración */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
-                  Elaboración <span style={{ color: 'var(--color-danger)' }}>*</span>
-                </label>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.625rem' }}>
-                  Personas encargadas de elaborar el reporte
-                </div>
-                
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Buscar persona..."
-                      value={searchElaboracion}
-                      onChange={(e) => {
-                        setSearchElaboracion(e.target.value);
-                        setShowElaboracionList(true);
-                      }}
-                      onFocus={() => setShowElaboracionList(true)}
-                      onBlur={() => setTimeout(() => setShowElaboracionList(false), 200)}
-                      style={{ paddingLeft: '2.5rem' }}
-                    />
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }}>
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                  </div>
-                  
-                  {showElaboracionList && getFilteredUsuarios('elaboracion', searchElaboracion).length > 0 && (
-                    <div style={{ 
-                      position: 'absolute', 
-                      top: '100%', 
-                      left: 0, 
-                      right: 0, 
-                      backgroundColor: 'white', 
-                      border: '1px solid var(--color-border)', 
-                      borderRadius: '6px', 
-                      marginTop: '0.25rem', 
-                      maxHeight: '220px', 
-                      overflowY: 'auto', 
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
-                      zIndex: 10 
-                    }}>
-                      {getFilteredUsuarios('elaboracion', searchElaboracion).map(usuario => (
-                        <button
-                          key={usuario.usuarioId}
-                          type="button"
-                          onClick={() => addResponsable('elaboracion', usuario.usuarioId)}
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.75rem', 
-                            border: 'none', 
-                            background: 'none', 
-                            textAlign: 'left', 
-                            cursor: 'pointer',
-                            transition: 'background-color 0.15s',
-                            borderBottom: '1px solid var(--color-gray-100)'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-50)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--color-text)' }}>
-                            {usuario.firstName} {usuario.firstLastname}
-                          </div>
-                          {usuario.cargo && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '0.125rem' }}>
-                              {usuario.cargo}
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {(formData.responsableElaboracionId?.length || 0) > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem', marginTop: '0.875rem' }}>
-                    {formData.responsableElaboracionId?.map(id => {
-                      const usuario = usuarios.find(u => u.usuarioId === id);
-                      return usuario ? (
-                        <div key={id} style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'space-between',
-                          padding: '0.75rem', 
-                          backgroundColor: 'var(--color-primary-50)', 
-                          border: '1px solid var(--color-primary-200)',
-                          borderRadius: '6px',
-                        }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--color-primary-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {usuario.firstName} {usuario.firstLastname}
-                            </div>
-                            {usuario.cargo && (
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-primary-700)', marginTop: '0.125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {usuario.cargo}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeResponsable('elaboracion', id)}
-                            style={{ 
-                              background: 'none', 
-                              border: 'none', 
-                              color: 'var(--color-primary-600)', 
-                              cursor: 'pointer', 
-                              padding: '0.25rem',
-                              fontSize: '1.25rem', 
-                              lineHeight: 1,
-                              borderRadius: '4px',
-                              marginLeft: '0.5rem',
-                              flexShrink: 0,
-                              transition: 'background-color 0.15s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-100)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            title="Quitar"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Responsables de Supervisión */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
-                  Supervisión
-                </label>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.625rem' }}>
-                  Personas que supervisan y validan el reporte
-                </div>
-                
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Buscar supervisor..."
-                      value={searchSupervision}
-                      onChange={(e) => {
-                        setSearchSupervision(e.target.value);
-                        setShowSupervisionList(true);
-                      }}
-                      onFocus={() => setShowSupervisionList(true)}
-                      onBlur={() => setTimeout(() => setShowSupervisionList(false), 200)}
-                      style={{ paddingLeft: '2.5rem' }}
-                    />
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }}>
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                  </div>
-                  
-                  {showSupervisionList && getFilteredUsuarios('supervision', searchSupervision).length > 0 && (
-                    <div style={{ 
-                      position: 'absolute', 
-                      top: '100%', 
-                      left: 0, 
-                      right: 0, 
-                      backgroundColor: 'white', 
-                      border: '1px solid var(--color-border)', 
-                      borderRadius: '6px', 
-                      marginTop: '0.25rem', 
-                      maxHeight: '220px', 
-                      overflowY: 'auto', 
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
-                      zIndex: 10 
-                    }}>
-                      {getFilteredUsuarios('supervision', searchSupervision).map(usuario => (
-                        <button
-                          key={usuario.usuarioId}
-                          type="button"
-                          onClick={() => addResponsable('supervision', usuario.usuarioId)}
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.75rem', 
-                            border: 'none', 
-                            background: 'none', 
-                            textAlign: 'left', 
-                            cursor: 'pointer',
-                            transition: 'background-color 0.15s',
-                            borderBottom: '1px solid var(--color-gray-100)'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-50)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--color-text)' }}>
-                            {usuario.firstName} {usuario.firstLastname}
-                          </div>
-                          {usuario.cargo && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '0.125rem' }}>
-                              {usuario.cargo}
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {(formData.responsableSupervisionId || []).length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem', marginTop: '0.875rem' }}>
-                    {(formData.responsableSupervisionId || []).map(id => {
-                      const usuario = usuarios.find(u => u.usuarioId === id);
-                      return usuario ? (
-                        <div key={id} style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'space-between',
-                          padding: '0.75rem', 
-                          backgroundColor: 'var(--color-green-50)', 
-                          border: '1px solid var(--color-green-200)',
-                          borderRadius: '6px',
-                        }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--color-green-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {usuario.firstName} {usuario.firstLastname}
-                            </div>
-                            {usuario.cargo && (
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-green-700)', marginTop: '0.125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {usuario.cargo}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeResponsable('supervision', id)}
-                            style={{ 
-                              background: 'none', 
-                              border: 'none', 
-                              color: 'var(--color-green-600)', 
-                              cursor: 'pointer', 
-                              padding: '0.25rem',
-                              fontSize: '1.25rem', 
-                              lineHeight: 1,
-                              borderRadius: '4px',
-                              marginLeft: '0.5rem',
-                              flexShrink: 0,
-                              transition: 'background-color 0.15s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-green-100)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            title="Quitar"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
-              </>
               )}
             </div>
 
-            {/* Frecuencia y Plazos */}
+            {/* Plazos y Vigencia */}
             <div className="card" style={{ padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', paddingBottom: '0.875rem', borderBottom: '2px solid var(--color-primary-100)' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--color-primary-600)' }}>
@@ -947,30 +455,11 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                   <line x1="3" y1="10" x2="21" y2="10"></line>
                 </svg>
                 <h3 style={{ margin: 0, fontSize: '1.0625rem', fontWeight: 600, color: 'var(--color-primary-900)' }}>
-                  Frecuencia y Plazos
+                  Plazos y Vigencia
                 </h3>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label htmlFor="frecuencia" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-                    Frecuencia <span style={{ color: 'var(--color-danger)' }}>*</span>
-                  </label>
-                  <select
-                    id="frecuencia"
-                    name="frecuencia"
-                    className="form-select"
-                    value={formData.frecuencia}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="MENSUAL">Mensual</option>
-                    <option value="TRIMESTRAL">Trimestral</option>
-                    <option value="SEMESTRAL">Semestral</option>
-                    <option value="ANUAL">Anual</option>
-                  </select>
-                </div>
-
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label htmlFor="fechaVencimiento" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
                     Fecha Vencimiento <span style={{ color: 'var(--color-danger)' }}>*</span>
@@ -1027,7 +516,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                     id="fechaFinVigencia"
                     name="fechaFinVigencia"
                     className="form-input"
-                    value={formData.fechaFinVigencia}
+                    value={formData.fechaFinVigencia || ''}
                     onChange={handleChange}
                   />
                 </div>
@@ -1049,26 +538,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                 </h3>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label htmlFor="formatoRequerido" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-                    Formato Requerido <span style={{ color: 'var(--color-danger)' }}>*</span>
-                  </label>
-                  <select
-                    id="formatoRequerido"
-                    name="formatoRequerido"
-                    className="form-select"
-                    value={formData.formatoRequerido}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="PDF">PDF</option>
-                    <option value="EXCEL">Excel</option>
-                    <option value="WORD">Word</option>
-                    <option value="OTRO">Otro</option>
-                  </select>
-                </div>
-
+              {/* Campo oculto para formato */}
+              <input type="hidden" name="formato" value="otro" />
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label htmlFor="baseLegal" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
                     Base Legal
@@ -1117,25 +590,6 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                   />
                 </div>
               </div>
-
-              <div>
-                <label htmlFor="correosNotificacion" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
-                  Correos de Notificación
-                </label>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.5rem' }}>
-                  Automático: emails de todos los responsables
-                </div>
-                <input
-                  type="text"
-                  id="correosNotificacion"
-                  name="correosNotificacion"
-                  className="form-input"
-                  value={formData.correosNotificacion?.join(', ') || ''}
-                  disabled
-                  placeholder="Se agregarán automáticamente"
-                  style={{ backgroundColor: 'var(--color-gray-50)', cursor: 'not-allowed' }}
-                />
-              </div>
             </div>
 
             {/* Botones de acción */}
@@ -1149,9 +603,15 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                   </svg>
                   {loading ? 'Guardando...' : (reporteId ? 'Actualizar Reporte' : 'Crear Reporte')}
                 </button>
-                <a href="/reportes" className="btn btn-secondary">
-                  Cancelar
-                </a>
+                {onClose ? (
+                  <button type="button" onClick={onClose} className="btn btn-secondary">
+                    Cancelar
+                  </button>
+                ) : (
+                  <a href="/reportes" className="btn btn-secondary">
+                    Cancelar
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -1189,29 +649,12 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
 
                 <div>
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
-                    Estado
-                  </div>
-                  <div>
-                    <span className={
-                      formData.estado === 'PENDIENTE' ? 'badge badge-warning' :
-                      formData.estado === 'EN_PROGRESO' ? 'badge badge-info' :
-                      'badge badge-aprobado'
-                    } style={{ fontSize: '0.75rem', padding: '0.25rem 0.625rem' }}>
-                      {formData.estado === 'PENDIENTE' ? 'Pendiente' :
-                       formData.estado === 'EN_PROGRESO' ? 'En Progreso' :
-                       'Enviado'}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
-                    Elaboradores ({formData.responsableElaboracionId?.length || 0})
+                    Elaboradores ({selectedResponsables.length})
                   </div>
                   <div style={{ color: 'var(--color-primary-900)' }}>
-                    {(formData.responsableElaboracionId?.length || 0) > 0 ? (
+                    {selectedResponsables.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                        {formData.responsableElaboracionId?.slice(0, 3).map(id => {
+                        {selectedResponsables.slice(0, 3).map(id => {
                           const usuario = usuarios.find(u => u.usuarioId === id);
                           return usuario ? (
                             <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4 }}>
@@ -1219,9 +662,9 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                             </div>
                           ) : null;
                         })}
-                        {(formData.responsableElaboracionId?.length || 0) > 3 && (
+                        {selectedResponsables.length > 3 && (
                           <div style={{ fontSize: '0.8125rem', color: 'var(--color-primary-600)', fontWeight: 500 }}>
-                            +{(formData.responsableElaboracionId?.length || 0) - 3} más
+                            +{selectedResponsables.length - 3} más
                           </div>
                         )}
                       </div>
@@ -1231,12 +674,12 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
 
                 <div>
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
-                    Supervisores ({(formData.responsableSupervisionId || []).length})
+                    Supervisores ({selectedSupervisores.length})
                   </div>
                   <div style={{ color: 'var(--color-primary-900)' }}>
-                    {(formData.responsableSupervisionId || []).length > 0 ? (
+                    {selectedSupervisores.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                        {(formData.responsableSupervisionId || []).slice(0, 3).map(id => {
+                        {selectedSupervisores.slice(0, 3).map(id => {
                           const usuario = usuarios.find(u => u.usuarioId === id);
                           return usuario ? (
                             <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4 }}>
@@ -1244,9 +687,9 @@ export default function ReporteForm({ reporteId, useNewFormat = true }: Props) {
                             </div>
                           ) : null;
                         })}
-                        {(formData.responsableSupervisionId || []).length > 3 && (
+                        {selectedSupervisores.length > 3 && (
                           <div style={{ fontSize: '0.8125rem', color: 'var(--color-primary-600)', fontWeight: 500 }}>
-                            +{(formData.responsableSupervisionId || []).length - 3} más
+                            +{selectedSupervisores.length - 3} más
                           </div>
                         )}
                       </div>

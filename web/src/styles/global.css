@@ -75,12 +75,16 @@
   --shadow-hover: 0 8px 24px rgba(0,0,0,0.08);
 
   --color-bg: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
   --color-text: #1f314c;
   --color-text-light: #475569;
   --color-border: #e2e8f0;
+  --color-primary: #3d85d1;
+  --color-primary-light: #e0eff9;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
+  --color-danger: #ef4444;
   --color-info: #3b82f6;
 }
 
