@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
-import { calendarioService, reportesService, type EventoCalendario, type CalendarioResponse, type ReportePeriodo } from '../../lib/services';
+import { calendarioService, reportesService, type EventoCalendario, type CalendarioResponse, type ReportePeriodo, type ReporteResponse } from '../../lib/services';
+import notifications from '../../lib/notifications';
 
 export default function AdminCalendarioClient() {
   const [calendario, setCalendario] = useState<CalendarioResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mesActual, setMesActual] = useState(new Date());
+  
+  // Modal de resumen
+  const [showModal, setShowModal] = useState(false);
+  const [reporteSeleccionado, setReporteSeleccionado] = useState<ReporteResponse | null>(null);
+  const [loadingReporte, setLoadingReporte] = useState(false);
 
   useEffect(() => {
     cargarCalendario();
@@ -110,15 +116,24 @@ export default function AdminCalendarioClient() {
     }
 
     try {
-      // Obtener todos los periodos del reporte (esto podría venir del calendario o necesitar una llamada adicional)
-      // Por ahora, redirigimos directamente al reporte con su periodo más reciente
-      // El componente de resumen se encargará de mostrar el periodo correcto
+      setLoadingReporte(true);
+      setShowModal(true);
       
-      // Redirigir a la vista de resumen del reporte
-      window.location.href = `/roles/admin/reportes/${evento.reporteId}/resumen`;
+      // Obtener los datos completos del reporte
+      const reporte = await reportesService.obtener(evento.reporteId);
+      setReporteSeleccionado(reporte);
     } catch (error) {
-      console.error('Error al navegar al reporte:', error);
+      console.error('Error al cargar el reporte:', error);
+      notifications.error('No se pudo cargar la información del reporte');
+      setShowModal(false);
+    } finally {
+      setLoadingReporte(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setReporteSeleccionado(null);
   };
 
   if (loading) {
@@ -282,6 +297,157 @@ export default function AdminCalendarioClient() {
           <span>Vencido</span>
         </div>
       </div>
+
+      {/* Modal de Resumen del Reporte */}
+      {showModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }}>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                Resumen del Reporte
+              </h2>
+              <button className="modal-close" onClick={handleCloseModal}>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {loadingReporte ? (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                  <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
+                  <p style={{ marginTop: '1rem', color: 'var(--neutral-600)' }}>Cargando información...</p>
+                </div>
+              ) : reporteSeleccionado ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* Información básica */}
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-primary-900)', marginBottom: '1rem' }}>
+                      {reporteSeleccionado.nombre}
+                    </h3>
+                    {reporteSeleccionado.descripcion && (
+                      <p style={{ color: 'var(--neutral-600)', lineHeight: 1.6, fontSize: '0.9375rem' }}>
+                        {reporteSeleccionado.descripcion}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Detalles en grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1.5rem', background: 'var(--neutral-50)', borderRadius: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--neutral-500)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>
+                        Frecuencia
+                      </label>
+                      <p style={{ fontSize: '0.9375rem', color: 'var(--neutral-900)', fontWeight: 500 }}>
+                        {reporteSeleccionado.frecuencia}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--neutral-500)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>
+                        Formato
+                      </label>
+                      <p style={{ fontSize: '0.9375rem', color: 'var(--neutral-900)', fontWeight: 500 }}>
+                        {reporteSeleccionado.formatoRequerido}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--neutral-500)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>
+                        Vencimiento
+                      </label>
+                      <p style={{ fontSize: '0.9375rem', color: 'var(--neutral-900)', fontWeight: 500 }}>
+                        {new Date(reporteSeleccionado.fechaVencimiento + 'T00:00:00').toLocaleDateString('es-CO', { 
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--neutral-500)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>
+                        Estado
+                      </label>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        backgroundColor: reporteSeleccionado.estado === 'activo' ? 'var(--success-green-50)' : 'var(--neutral-100)',
+                        color: reporteSeleccionado.estado === 'activo' ? 'var(--success-green-700)' : 'var(--neutral-600)'
+                      }}>
+                        {reporteSeleccionado.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Base Legal */}
+                  {reporteSeleccionado.baseLegal && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--neutral-700)', marginBottom: '0.5rem' }}>
+                        Base Legal
+                      </label>
+                      <p style={{ color: 'var(--neutral-600)', lineHeight: 1.6, fontSize: '0.875rem' }}>
+                        {reporteSeleccionado.baseLegal}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Instrucciones */}
+                  {reporteSeleccionado.linkInstrucciones && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--neutral-700)', marginBottom: '0.5rem' }}>
+                        Instrucciones
+                      </label>
+                      <a 
+                        href={reporteSeleccionado.linkInstrucciones} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--color-primary-600)', textDecoration: 'none', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                      >
+                        Ver documento
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                          <polyline points="15 3 21 3 21 9"/>
+                          <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                  <p style={{ color: 'var(--neutral-500)' }}>No se pudo cargar la información</p>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={handleCloseModal}>
+                Cerrar
+              </button>
+              {reporteSeleccionado && (
+                <a 
+                  href={`/roles/admin/reportes/${reporteSeleccionado.reporteId}`} 
+                  className="btn btn-primary"
+                >
+                  Ver Detalles Completos
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

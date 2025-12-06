@@ -216,6 +216,7 @@ export interface UsuarioResponse {
   roles: string[];
   createdAt?: string;
   updatedAt?: string;
+  invitationId?: string; // ID de invitación si el usuario está invitado
 }
 
 export interface UsuarioRequest {
@@ -656,28 +657,9 @@ export const usuariosService = {
     return this.actualizar(documentNumber, dataActualizada);
   },
 
-  // Desactivar usuario (usando PUT con workaround)
+  // Desactivar usuario (usando nuevo endpoint PATCH)
   async desactivar(documentNumber: string): Promise<UsuarioResponse> {
-    // Primero obtenemos los datos actuales del usuario
-    const usuarioActual = await this.obtener(documentNumber);
-    
-    // Actualizamos el estado a inactivo
-    const dataActualizada: UsuarioRequest = {
-      documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || 'CC',
-      email: usuarioActual.email,
-      firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || '',
-      firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || '',
-      roles: usuarioActual.roles
-    };
-
-    // El campo 'activo' debe ir en el request (agregar si no existe)
-    const response = await api.put(`/api/usuarios/${documentNumber}`, {
-      ...dataActualizada,
-      activo: false
-    });
+    const response = await api.patch(`/api/usuarios/${documentNumber}/desactivar`);
 
     if (
       response.data &&
@@ -689,28 +671,9 @@ export const usuariosService = {
     return response.data;
   },
 
-  // Activar usuario (usando PUT con workaround)
+  // Activar usuario (usando nuevo endpoint PATCH)
   async activar(documentNumber: string): Promise<UsuarioResponse> {
-    // Primero obtenemos los datos actuales del usuario
-    const usuarioActual = await this.obtener(documentNumber);
-    
-    // Actualizamos el estado a activo
-    const dataActualizada: UsuarioRequest = {
-      documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || 'CC',
-      email: usuarioActual.email,
-      firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || '',
-      firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || '',
-      roles: usuarioActual.roles
-    };
-
-    // El campo 'activo' debe ir en el request
-    const response = await api.put(`/api/usuarios/${documentNumber}`, {
-      ...dataActualizada,
-      activo: true
-    });
+    const response = await api.patch(`/api/usuarios/${documentNumber}/activar`);
 
     if (
       response.data &&
@@ -719,6 +682,40 @@ export const usuariosService = {
     ) {
       return response.data.data;
     }
+    return response.data;
+  },
+
+  // Invitar usuario
+  async invitar(email: string, role: string): Promise<{ success: boolean; message: string; data?: any }> {
+    const response = await api.post('/api/users/invite', { email, role });
+    return response.data;
+  },
+
+  // Cancelar invitación
+  async cancelarInvitacion(invitationId: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.delete(`/api/users/invite/${invitationId}`);
+    return response.data;
+  },
+
+  // Validar token de invitación
+  async validarTokenInvitacion(token: string): Promise<{ success: boolean; data: boolean; message: string }> {
+    const response = await api.get(`/api/users/validate-invitation?token=${token}`);
+    return response.data;
+  },
+
+  // Completar registro con invitación
+  async completarRegistroInvitacion(data: {
+    token: string;
+    firstName: string;
+    secondName?: string;
+    firstLastname: string;
+    secondLastname?: string;
+    documentType: string;
+    documentNumber: string;
+    password: string;
+    telefono?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await api.post('/api/users/complete-invitation', data);
     return response.data;
   },
 };

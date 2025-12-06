@@ -10,6 +10,41 @@ const { title } = Astro.props;
 ---
 
 <BaseLayout title={title}>
+  <!-- Guardia de roles -->
+  <script>
+    import { routeGuard, getPrimaryRole } from '../../lib/roleGuard';
+    
+    function checkRoleAccess() {
+      const usuarioData = localStorage.getItem('usuario');
+      if (!usuarioData) {
+        window.location.href = '/login';
+        return;
+      }
+      
+      const usuario = JSON.parse(usuarioData);
+      const primaryRole = getPrimaryRole(usuario.roles || []);
+      const currentPath = window.location.pathname;
+      
+      const guardResult = routeGuard(currentPath, primaryRole);
+      
+      if (!guardResult.allowed) {
+        console.warn('[ResponsableLayout] Acceso denegado:', guardResult.reason);
+        if (window.notifications?.warning) {
+          window.notifications.warning('Acceso Denegado', guardResult.reason || 'Sin permisos');
+        }
+        setTimeout(() => {
+          window.location.href = guardResult.redirectTo || '/login';
+        }, 1000);
+      }
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkRoleAccess);
+    } else {
+      checkRoleAccess();
+    }
+  </script>
+
   <div class="role-container role-responsable sidebar-expanded">
     <SidebarResponsable client:load />
     <div class="role-content">

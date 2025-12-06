@@ -222,15 +222,33 @@ input, select, textarea {
 }
 
 .btn-danger {
-  background-color: var(--error-red-100);
-  color: var(--error-red-700);
-  border: 1px solid var(--error-red-200);
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+  border: 2px solid #b91c1c !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3) !important;
 }
 
 .btn-danger:hover {
-  background-color: var(--error-red-500);
-  color: white;
-  border-color: var(--error-red-500);
+  background-color: #b91c1c !important;
+  color: #ffffff !important;
+  border-color: #991b1b !important;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4) !important;
+}
+
+.btn-success {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+  border: 2px solid #15803d !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3) !important;
+}
+
+.btn-success:hover {
+  background-color: #15803d !important;
+  color: #ffffff !important;
+  border-color: #166534 !important;
+  box-shadow: 0 4px 8px rgba(22, 163, 74, 0.4) !important;
 }
 
 .btn-sm {
@@ -1563,20 +1581,9 @@ input, select, textarea {
   color: var(--color-primary-700);
 }
 
-/* Estados específicos de reportes */
-.status-badge.active {
-  background: var(--success-green-100);
-  color: var(--success-green-700);
-}
-
-.status-badge.cancelled {
-  background: var(--error-red-100);
-  color: var(--error-red-700);
-}
-
-.status-badge.suspended {
-  background: var(--warning-yellow-100);
-  color: var(--warning-yellow-800);
+.status-badge.invited {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 /* Role Page Header */
@@ -1728,6 +1735,48 @@ input, select, textarea {
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+}
+
+.modal-description {
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+.info-box {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  border-radius: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.info-box svg {
+  flex-shrink: 0;
+  color: var(--color-primary-600);
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--neutral-700);
+  line-height: 1.5;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .modal-footer {
