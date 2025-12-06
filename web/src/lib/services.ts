@@ -45,6 +45,8 @@ export interface ResponsableReporte {
   usuarioId: string;
   tipoResponsabilidad: 'elaboracion' | 'supervision' | 'revision';
   esPrincipal: boolean;
+  activo: boolean;
+  orden: number;
   fechaInicio: string;
   fechaFin?: string;
   observaciones?: string;
@@ -54,22 +56,22 @@ export interface ReporteRequest {
   nombre: string;
   descripcion?: string;
   entidadId: string;
-  frecuencia: "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL";
-  formatoRequerido: "PDF" | "EXCEL" | "WORD" | "OTRO";
+  frecuencia: string; // "mensual" | "trimestral" | "semestral" | "anual"
+  formatoRequerido: string; // "Excel" | "PDF" | "Word" | "Otro"
   baseLegal?: string;
   fechaInicioVigencia?: string;
-  fechaFinVigencia?: string;
+  fechaFinVigencia?: string | null;
   fechaVencimiento?: string;
   plazoAdicionalDias?: number;
   linkInstrucciones?: string;
+  // Configuración de periodos
+  durationMonths?: number;
   // Nuevo formato con array de responsables
   responsables?: ResponsableReporte[];
-  // Formato legacy (aún funciona)
-  responsableElaboracionId?: string[];
-  responsableSupervisionId?: string[];
+  // Correos y teléfono
   correosNotificacion?: string[];
   telefonoResponsable?: string;
-  estado?: "PENDIENTE" | "EN_PROGRESO" | "ENVIADO";
+  estado?: string; // "activo" | "inactivo" | "pendiente"
 }
 
 export interface ReporteResponse {
@@ -387,7 +389,7 @@ export const reportesService = {
 };
 
 export const entidadesService = {
-  async listar(page = 0, size = 100, sort = 'nombre,asc'): Promise<Page<EntidadResponse>> {
+  async listar(page = 0, size = 100, sort = ['nombre,asc']): Promise<Page<EntidadResponse>> {
     const response = await api.get('/api/entidades', { params: { page, size, sort } });
     // Verificar si la respuesta tiene el formato { success, data }
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
@@ -396,8 +398,8 @@ export const entidadesService = {
     return response.data;
   },
 
-  async activas(page = 0, size = 100): Promise<Page<EntidadResponse>> {
-    const response = await api.get('/api/entidades/activas', { params: { page, size } });
+  async activas(page = 0, size = 100, sort = ['nombre,asc']): Promise<Page<EntidadResponse>> {
+    const response = await api.get('/api/entidades', { params: { page, size, sort } });
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }

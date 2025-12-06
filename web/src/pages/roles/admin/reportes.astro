@@ -452,6 +452,88 @@ import AdminReportesClient from '../../../components/admin/AdminReportesClient';
     to { transform: rotate(360deg); }
   }
 
+  /* Modal Fullscreen Styles */
+  .modal-overlay-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 2rem;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content-large {
+    background: white;
+    border-radius: 16px;
+    width: 95%;
+    max-width: 1400px;
+    height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    position: relative;
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .btn-close-floating {
+    position: sticky;
+    top: 1rem;
+    right: 1rem;
+    float: right;
+    z-index: 10;
+    background: white;
+    border: 2px solid var(--neutral-200);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 1rem 1rem 0 0;
+  }
+
+  .btn-close-floating:hover {
+    background: var(--color-danger-50);
+    border-color: var(--color-danger-400);
+    color: var(--color-danger-600);
+    transform: rotate(90deg) scale(1.1);
+  }
+
+  .modal-form-wrapper {
+    padding: 0 2rem 2rem 2rem;
+    clear: both;
+  }
+
+  /* Ocultar el header del ReporteForm dentro del modal */
+  .modal-form-wrapper .form-header {
+    display: none;
+  }
+
+  /* Ajustar el contenedor del formulario para que no tenga margen auto */
+  .modal-form-wrapper .reporte-form-container {
+    max-width: 100%;
+    margin: 0;
+  }
+
   @media (max-width: 1024px) {
     .status-stats {
       grid-template-columns: repeat(3, 1fr);
@@ -467,6 +549,20 @@ import AdminReportesClient from '../../../components/admin/AdminReportesClient';
 
     .filter-select {
       flex: 1;
+    }
+
+    .modal-overlay-fullscreen {
+      padding: 1rem;
+    }
+
+    .modal-content-large {
+      width: 100%;
+      height: 95vh;
+      border-radius: 12px;
+    }
+
+    .modal-form-wrapper {
+      padding: 0 1rem 1rem 1rem;
     }
   }
 </style>
