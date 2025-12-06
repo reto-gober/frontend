@@ -232,8 +232,10 @@ export default function AdminCalendarioClient() {
                         className={`event-item ${esPeriodo ? 'event-periodo' : 'event-vencimiento'}`}
                         style={{ 
                           borderLeftColor: evento.color,
-                          backgroundColor: esPeriodo ? `${evento.color}20` : 'transparent'
+                          backgroundColor: esPeriodo ? `${evento.color}20` : 'transparent',
+                          cursor: 'pointer'
                         }}
+                        onClick={() => handleEventoClick(evento)}
                         title={`${evento.titulo}\n${evento.descripcion || ''}\n${esVencimiento ? '⏰ VENCIMIENTO' : esPeriodo ? '📊 PERIODO' : 'Evento'}`}
                       >
                         <div className="event-title">
