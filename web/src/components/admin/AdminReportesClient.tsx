@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { reportesService, entidadesService, usuariosService, type ReporteResponse, type EntidadResponse } from '../../lib/services';
 import ReporteForm from '../ReporteForm';
+import notifications from '../../lib/notifications';
 
 export default function AdminReportesClient() {
   const [reportes, setReportes] = useState<ReporteResponse[]>([]);
@@ -138,14 +139,21 @@ export default function AdminReportesClient() {
   };
 
   const handleDeleteReporte = async (reporteId: string) => {
-    if (!confirm('¿Está seguro de eliminar este reporte?')) return;
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar reporte?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
 
     try {
       await reportesService.eliminar(reporteId);
       await cargarDatos();
+      notifications.success('Reporte eliminado correctamente');
     } catch (err) {
       console.error('Error al eliminar reporte:', err);
-      alert('Error al eliminar el reporte');
+      notifications.error('Error al eliminar el reporte');
     }
   };
 

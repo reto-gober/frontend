@@ -7,6 +7,7 @@ import {
 } from "../lib/services";
 import { Building2, Edit, Trash2, Plus } from "lucide-react";
 import { useToast, ToastContainer } from "./Toast";
+import notifications from '../lib/notifications';
 
 export default function EntidadesList() {
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
@@ -81,7 +82,13 @@ export default function EntidadesList() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de eliminar esta entidad?")) return;
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar entidad?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
 
     try {
       await entidadesService.eliminar(id);

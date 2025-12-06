@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
+import notifications from '../../lib/notifications';
 
 interface Alerta {
   id: string;
@@ -146,7 +147,7 @@ export default function AlertasClient() {
     const alertasNoLeidas = alertas.filter((a) => !a.leida);
 
     if (alertasNoLeidas.length === 0) {
-      alert("No hay alertas pendientes por marcar como leídas");
+      notifications.info("No hay alertas pendientes por marcar como leídas");
       return;
     }
 

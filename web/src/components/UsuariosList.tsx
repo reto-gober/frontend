@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usuariosService, type UsuarioResponse, type UsuarioRequest, type Page } from '../lib/services';
 import { Users, Edit, Trash2, Plus, Shield } from 'lucide-react';
 import { useToast, ToastContainer } from './Toast';
+import notifications from '../lib/notifications';
 
 export default function UsuariosList() {
   const [usuarios, setUsuarios] = useState<UsuarioResponse[]>([]);
@@ -77,7 +78,13 @@ export default function UsuariosList() {
   };
 
   const handleDelete = async (documentNumber: string) => {
-    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar usuario?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
     
     try {
       await usuariosService.eliminar(documentNumber);

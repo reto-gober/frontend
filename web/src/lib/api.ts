@@ -1,4 +1,5 @@
 import axios from 'axios';
+import notifications from './notifications';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -58,7 +59,10 @@ api.interceptors.response.use(
         
         // Show session expired message
         if (currentPath !== '/login' && currentPath !== '/registro') {
-          alert('Tu sesión ha expirado o el token es inválido. Por favor, inicia sesión nuevamente.');
+          notifications.warning(
+            'Por favor, inicia sesión nuevamente',
+            'Sesión expirada'
+          );
         }
         
         // Redirect to login

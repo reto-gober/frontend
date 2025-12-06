@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { entidadesService, reportesService, type EntidadResponse, type ReporteResponse } from '../../lib/services';
+import notifications from '../../lib/notifications';
 
 interface EntidadWithStats extends EntidadResponse {
   cantidadReportes: number;
@@ -116,23 +117,33 @@ export default function AdminEntidadesClient() {
       await cargarEntidades();
       setShowModal(false);
       setSelectedEntidad(null);
+      notifications.success(
+        modalMode === 'create' ? 'Entidad creada correctamente' : 'Entidad actualizada correctamente'
+      );
     } catch (err) {
       console.error('Error al guardar entidad:', err);
-      alert('Error al guardar la entidad');
+      notifications.error('Error al guardar la entidad');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteEntidad = async (entidadId: string) => {
-    if (!confirm('¿Está seguro de eliminar esta entidad? Esta acción no se puede deshacer.')) return;
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar entidad?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
 
     try {
       await entidadesService.eliminar(entidadId);
       await cargarEntidades();
+      notifications.success('Entidad eliminada correctamente');
     } catch (err) {
       console.error('Error al eliminar entidad:', err);
-      alert('Error al eliminar la entidad');
+      notifications.error('Error al eliminar la entidad');
     }
   };
 

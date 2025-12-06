@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { evidenciasService, type EvidenciaResponse } from '../lib/services';
 import { Upload, Download, Trash2, FileText } from 'lucide-react';
+import notifications from '../lib/notifications';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -37,8 +38,9 @@ export default function EvidenciasList({ reporteId }: Props) {
       await evidenciasService.subir(reporteId, file);
       loadEvidencias();
       e.target.value = '';
+      notifications.success('Archivo subido correctamente');
     } catch (error: any) {
-      alert(error.response?.data?.mensaje || 'Error al subir el archivo');
+      notifications.error(error.response?.data?.mensaje || 'Error al subir el archivo');
     } finally {
       setUploading(false);
     }
@@ -47,19 +49,27 @@ export default function EvidenciasList({ reporteId }: Props) {
   const handleDownload = async (id: string) => {
     try {
       await evidenciasService.descargar(id);
+      notifications.toast('Descargando archivo...', 'info');
     } catch (error: any) {
-      alert('Error al descargar el archivo');
+      notifications.error('Error al descargar el archivo');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar esta evidencia?')) return;
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar evidencia?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
 
     try {
       await evidenciasService.eliminar(id);
       loadEvidencias();
+      notifications.success('Evidencia eliminada correctamente');
     } catch (error: any) {
-      alert(error.response?.data?.mensaje || 'Error al eliminar la evidencia');
+      notifications.error(error.response?.data?.mensaje || 'Error al eliminar la evidencia');
     }
   };
 

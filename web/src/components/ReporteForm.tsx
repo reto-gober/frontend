@@ -4,6 +4,7 @@ import { useToast, ToastContainer } from './Toast';
 import ResponsablesList from './ReporteForm/ResponsablesList';
 import ResponsableSelector from './ReporteForm/ResponsableSelector';
 import MultiUserSelector from './ReporteForm/MultiUserSelector';
+import notifications from '../lib/notifications';
 
 interface Props {
   reporteId?: string;
@@ -26,6 +27,8 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
   // Estado para responsables en nuevo formato
   const [responsables, setResponsables] = useState<ResponsableFormData[]>([]);
   
+  const [diasPersonalizados, setDiasPersonalizados] = useState<number | ''>('');
+
   const [formData, setFormData] = useState<ReporteRequest>({
     nombre: '',
     descripcion: '',
@@ -104,6 +107,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
     setLoading(true);
 
     try {
+      // Validar frecuencia personalizada
+      if (formData.frecuencia === 'personalizada' && !diasPersonalizados) {
+        error('Debe especificar los días para la frecuencia personalizada');
+        setLoading(false);
+        return;
+      }
+
       // Calcular duración en meses a partir de las fechas de vigencia
       let durationMonths = 0;
       if (formData.fechaInicioVigencia && formData.fechaFinVigencia) {
@@ -120,6 +130,11 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
         setLoading(false);
         return;
       }
+
+      // Determinar la frecuencia final como string
+      const frecuenciaFinal = formData.frecuencia === 'personalizada' 
+        ? `${diasPersonalizados}` 
+        : formData.frecuencia;
       
       let payload: ReporteRequest;
       
@@ -129,6 +144,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
         
         payload = {
           ...formData,
+          frecuencia: frecuenciaFinal,
           estado: reporteId ? formData.estado : 'activo',
           fechaFinVigencia: formData.fechaFinVigencia || null,
           durationMonths,
@@ -155,6 +171,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
         // Usar formato legacy
         payload = {
           ...formData,
+          frecuencia: frecuenciaFinal,
           estado: reporteId ? formData.estado : 'activo',
           fechaFinVigencia: formData.fechaFinVigencia || null,
           durationMonths,
@@ -376,11 +393,17 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     </span>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         // Confirmar cambio si hay datos
                         if ((useNewFormat && responsables.length > 0) || 
                             (!useNewFormat && (selectedResponsables.length > 0 || selectedSupervisores.length > 0))) {
-                        if (!confirm('¿Cambiar formato? Se perderán los responsables actuales.')) return;
+                        const confirmed = await notifications.confirm(
+                          'Se perderán los responsables actuales',
+                          '¿Cambiar formato?',
+                          'Sí, cambiar',
+                          'Cancelar'
+                        );
+                        if (!confirmed) return;
                         setResponsables([]);
                         setSelectedResponsables([]);
                         setSelectedSupervisores([]);
@@ -459,6 +482,159 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 </h3>
               </div>
               
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.75rem' }}>
+                  Frecuencia de Reporte <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                  {[
+                    { 
+                      value: 'diaria', 
+                      label: 'Diaria', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/></svg>,
+                      dias: 1 
+                    },
+                    { 
+                      value: 'semanal', 
+                      label: 'Semanal', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>,
+                      dias: 7 
+                    },
+                    { 
+                      value: 'quincenal', 
+                      label: 'Quincenal', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="18"/><line x1="16" y1="14" x2="16" y2="18"/></svg>,
+                      dias: 15 
+                    },
+                    { 
+                      value: 'mensual', 
+                      label: 'Mensual', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+                      dias: 30 
+                    },
+                    { 
+                      value: 'bimestral', 
+                      label: 'Bimestral', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="4" x2="10" y2="22"/><line x1="14" y1="4" x2="14" y2="22"/></svg>,
+                      dias: 60 
+                    },
+                    { 
+                      value: 'trimestral', 
+                      label: 'Trimestral', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="4" x2="8" y2="22"/><line x1="12" y1="4" x2="12" y2="22"/><line x1="16" y1="4" x2="16" y2="22"/></svg>,
+                      dias: 90 
+                    },
+                    { 
+                      value: 'semestral', 
+                      label: 'Semestral', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="4" x2="12" y2="22"/></svg>,
+                      dias: 180 
+                    },
+                    { 
+                      value: 'anual', 
+                      label: 'Anual', 
+                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="3"/></svg>,
+                      dias: 365 
+                    },
+                  ].map(({ value, label, icon, dias }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, frecuencia: value }));
+                        setDiasPersonalizados('');
+                      }}
+                      style={{
+                        padding: '0.75rem',
+                        border: formData.frecuencia === value ? '2px solid var(--color-primary-500)' : '1px solid var(--neutral-300)',
+                        borderRadius: '8px',
+                        backgroundColor: formData.frecuencia === value ? 'var(--color-primary-50)' : 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                      }}
+                    >
+                      <div style={{ color: formData.frecuencia === value ? 'var(--color-primary-600)' : 'var(--neutral-600)' }}>
+                        {icon}
+                      </div>
+                      <span style={{ 
+                        fontSize: '0.8125rem', 
+                        fontWeight: formData.frecuencia === value ? 600 : 500,
+                        color: formData.frecuencia === value ? 'var(--color-primary-700)' : 'var(--color-text)'
+                      }}>
+                        {label}
+                      </span>
+                      <span style={{ fontSize: '0.6875rem', color: 'var(--neutral-500)' }}>
+                        {dias} día{dias !== 1 ? 's' : ''}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Opción Personalizada */}
+                <div style={{ marginTop: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, frecuencia: 'personalizada' }));
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: formData.frecuencia === 'personalizada' ? '2px solid var(--color-primary-500)' : '1px solid var(--neutral-300)',
+                      borderRadius: '8px',
+                      backgroundColor: formData.frecuencia === 'personalizada' ? 'var(--color-primary-50)' : 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: formData.frecuencia === 'personalizada' ? 'var(--color-primary-600)' : 'var(--neutral-600)' }}>
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m13.2 5.2l-4.2-4.2m0-6l-4.2-4.2"/>
+                    </svg>
+                    <span style={{ 
+                      fontSize: '0.875rem', 
+                      fontWeight: formData.frecuencia === 'personalizada' ? 600 : 500,
+                      color: formData.frecuencia === 'personalizada' ? 'var(--color-primary-700)' : 'var(--color-text)'
+                    }}>
+                      Frecuencia Personalizada
+                    </span>
+                  </button>
+
+                  {formData.frecuencia === 'personalizada' && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <label htmlFor="diasPersonalizados" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
+                        Cada cuántos días se reporta <span style={{ color: 'var(--color-danger)' }}>*</span>
+                      </label>
+                      <input
+                        type="number"
+                        id="diasPersonalizados"
+                        className="form-input"
+                        value={diasPersonalizados}
+                        onChange={(e) => setDiasPersonalizados(e.target.value ? parseInt(e.target.value) : '')}
+                        min="1"
+                        max="999"
+                        placeholder="Ej: 45 días"
+                        required={formData.frecuencia === 'personalizada'}
+                        style={{ maxWidth: '200px' }}
+                      />
+                      {diasPersonalizados && (
+                        <p style={{ fontSize: '0.75rem', color: 'var(--neutral-600)', marginTop: '0.375rem' }}>
+                          El reporte se generará cada {diasPersonalizados} día{diasPersonalizados !== 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label htmlFor="fechaVencimiento" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
