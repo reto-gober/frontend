@@ -350,5 +350,436 @@ import AdminUsuariosClient from '../../../components/admin/AdminUsuariosClient';
       min-width: 800px;
     }
   }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--neutral-200);
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--neutral-500);
+    transition: all 0.2s;
+    border-radius: 6px;
+  }
+
+  .modal-close:hover {
+    background: var(--neutral-100);
+    color: var(--neutral-900);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  /* User Info Section */
+  .user-info-section {
+    background: var(--neutral-50);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .user-info-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .user-avatar-large {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: white;
+  }
+
+  .user-full-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin: 0 0 0.25rem 0;
+  }
+
+  .user-email {
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+    margin: 0 0 0.25rem 0;
+  }
+
+  .user-document {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin: 0;
+  }
+
+  /* Form Section */
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+  }
+
+  .form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--neutral-900);
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .form-select:hover {
+    border-color: var(--color-primary-500);
+  }
+
+  .form-select:focus {
+    outline: none;
+    border-color: var(--color-primary-600);
+    box-shadow: 0 0 0 3px rgba(53, 160, 222, 0.1);
+  }
+
+  .form-select:disabled {
+    background: var(--neutral-100);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Status Info */
+  .status-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-badge-large {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .status-badge-large.active {
+    background: var(--success-green-50);
+    color: var(--success-green-700);
+  }
+
+  .status-badge-large.inactive {
+    background: var(--neutral-100);
+    color: var(--neutral-600);
+  }
+
+  /* Info Section */
+  .info-section {
+    background: var(--neutral-50);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .info-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-700);
+    margin: 0 0 0.75rem 0;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .info-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    font-weight: 500;
+  }
+
+  .info-value {
+    font-size: 0.875rem;
+    color: var(--neutral-900);
+    font-weight: 500;
+  }
+
+  /* Button Styles */
+  .btn-secondary {
+    padding: 0.625rem 1.25rem;
+    background: white;
+    border: 1px solid var(--neutral-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--neutral-50);
+    border-color: var(--neutral-400);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-success {
+    padding: 0.625rem 1.25rem;
+    background: var(--success-green-600);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-success:hover:not(:disabled) {
+    background: var(--success-green-700);
+  }
+
+  .btn-success:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-danger {
+    padding: 0.625rem 1.25rem;
+    background: var(--error-red-600);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--error-red-700);
+  }
+
+  .btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  /* Last Access Styles */
+  .last-access-cell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .access-time {
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: help;
+    transition: all 0.2s;
+  }
+
+  .access-time.recent {
+    color: var(--success-green-700);
+    background: var(--success-green-50);
+  }
+
+  .access-time.today {
+    color: var(--color-primary-700);
+    background: var(--color-primary-50);
+  }
+
+  .access-time.week {
+    color: var(--warning-yellow-700);
+    background: var(--warning-yellow-50);
+  }
+
+  .access-time.old {
+    color: var(--neutral-600);
+    background: var(--neutral-100);
+  }
+
+  .access-time.never {
+    color: var(--neutral-500);
+    background: var(--neutral-50);
+  }
+
+  .loading-text {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    font-style: italic;
+  }
+
+  /* Tooltip Styles */
+  .access-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .last-access-cell:hover .access-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .tooltip-content {
+    background: var(--neutral-900);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    min-width: 200px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .tooltip-content::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--neutral-900);
+  }
+
+  .tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tooltip-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .tooltip-row svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .tooltip-row.error {
+    color: var(--error-red-300);
+  }
+
+  .tooltip-row.error svg {
+    stroke: var(--error-red-400);
+  }
+
+  @media (max-width: 640px) {
+    .modal-content {
+      max-height: 100vh;
+      border-radius: 0;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .tooltip-content {
+      white-space: normal;
+      max-width: 250px;
+    }
+  }
 </style>
 

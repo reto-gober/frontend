@@ -1,0 +1,200 @@
+/* 
+ * Estilos personalizados para SweetAlert2
+ * Tema minimalista y profesional
+ */
+
+/* Popup principal */
+.swal-popup-custom {
+  border-radius: 8px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Título */
+.swal-title-custom {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  margin-bottom: 12px !important;
+}
+
+/* Texto del mensaje */
+.swal-text-custom {
+  font-size: 14px !important;
+  color: #4b5563 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 20px !important;
+}
+
+/* Iconos */
+.swal-icon-custom {
+  border-width: 3px !important;
+  margin: 0 auto 16px !important;
+}
+
+/* Botón de confirmación */
+.swal-confirm-btn {
+  background-color: #2563eb !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 10px 24px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  margin: 0 4px !important;
+}
+
+.swal-confirm-btn:hover {
+  background-color: #1d4ed8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
+}
+
+.swal-confirm-btn:active {
+  transform: translateY(0);
+}
+
+.swal-confirm-btn:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Botón de cancelación */
+.swal-cancel-btn {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  padding: 10px 24px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  margin: 0 4px !important;
+}
+
+.swal-cancel-btn:hover {
+  background-color: #e5e7eb !important;
+  border-color: #9ca3af !important;
+  transform: translateY(-1px);
+}
+
+.swal-cancel-btn:active {
+  transform: translateY(0);
+}
+
+.swal-cancel-btn:focus {
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.3) !important;
+}
+
+/* Animaciones suaves */
+.swal-show {
+  animation: swalSlideIn 0.2s ease-out !important;
+}
+
+.swal-hide {
+  animation: swalSlideOut 0.2s ease-in !important;
+}
+
+@keyframes swalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes swalSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+/* Toast notifications */
+.swal-toast-custom {
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  font-size: 14px !important;
+}
+
+.swal-toast-custom .swal2-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  margin: 0 !important;
+}
+
+/* Progress bar */
+.swal2-timer-progress-bar {
+  background: rgba(37, 99, 235, 0.6) !important;
+}
+
+/* Backdrop con opacidad suave */
+.swal2-container {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 640px) {
+  .swal-popup-custom {
+    width: 90% !important;
+    padding: 20px !important;
+  }
+
+  .swal-title-custom {
+    font-size: 18px !important;
+  }
+
+  .swal-text-custom {
+    font-size: 13px !important;
+  }
+
+  .swal-confirm-btn,
+  .swal-cancel-btn {
+    padding: 8px 20px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Estados de iconos - colores específicos */
+.swal2-icon.swal2-success {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+.swal2-icon.swal2-question {
+  border-color: #8b5cf6 !important;
+  color: #8b5cf6 !important;
+}
+
+/* Loading spinner */
+.swal2-loader {
+  border-color: #2563eb transparent #2563eb transparent !important;
+}
