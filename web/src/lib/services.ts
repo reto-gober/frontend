@@ -230,6 +230,32 @@ export interface UsuarioRequest {
   roles: string[];
 }
 
+// ==================== AUDITORÍA Y LOGS DE ACCESO ====================
+
+export interface UserSessionLogResponse {
+  sessionLogId: string;
+  usuarioId?: string;
+  usuarioNombre?: string;
+  email: string;
+  evento: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'TOKEN_REFRESH' | 'PASSWORD_CHANGE' | 'SESSION_EXPIRED';
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: string;
+  datosAdicionales?: Record<string, any>;
+}
+
+export interface AccesosEstadisticasDTO {
+  totalAccesos: number;
+  loginsExitosos: number;
+  loginsFallidos: number;
+  usuariosUnicos: number;
+  accesosUltimas24Horas: number;
+  accesosUltimaSemana: number;
+  accesosUltimoMes: number;
+  accesosPorEvento: Record<string, number>;
+  intentosFallidosRecientes: number;
+}
+
 export const reportesService = {
   async listar(
     page = 0,
@@ -609,6 +635,92 @@ export const usuariosService = {
     }
     return response.data;
   },
+
+  // Cambiar rol de usuario (usando PUT con workaround)
+  async cambiarRol(documentNumber: string, nuevoRol: string): Promise<UsuarioResponse> {
+    // Primero obtenemos los datos actuales del usuario
+    const usuarioActual = await this.obtener(documentNumber);
+    
+    // Actualizamos solo el rol, manteniendo los demás campos
+    const dataActualizada: UsuarioRequest = {
+      documentNumber: usuarioActual.documentNumber,
+      documentType: usuarioActual.documentType || 'CC',
+      email: usuarioActual.email,
+      firstName: usuarioActual.firstName,
+      secondName: usuarioActual.secondName || '',
+      firstLastname: usuarioActual.firstLastname,
+      secondLastname: usuarioActual.secondLastname || '',
+      roles: [nuevoRol]
+    };
+
+    return this.actualizar(documentNumber, dataActualizada);
+  },
+
+  // Desactivar usuario (usando PUT con workaround)
+  async desactivar(documentNumber: string): Promise<UsuarioResponse> {
+    // Primero obtenemos los datos actuales del usuario
+    const usuarioActual = await this.obtener(documentNumber);
+    
+    // Actualizamos el estado a inactivo
+    const dataActualizada: UsuarioRequest = {
+      documentNumber: usuarioActual.documentNumber,
+      documentType: usuarioActual.documentType || 'CC',
+      email: usuarioActual.email,
+      firstName: usuarioActual.firstName,
+      secondName: usuarioActual.secondName || '',
+      firstLastname: usuarioActual.firstLastname,
+      secondLastname: usuarioActual.secondLastname || '',
+      roles: usuarioActual.roles
+    };
+
+    // El campo 'activo' debe ir en el request (agregar si no existe)
+    const response = await api.put(`/api/usuarios/${documentNumber}`, {
+      ...dataActualizada,
+      activo: false
+    });
+
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Activar usuario (usando PUT con workaround)
+  async activar(documentNumber: string): Promise<UsuarioResponse> {
+    // Primero obtenemos los datos actuales del usuario
+    const usuarioActual = await this.obtener(documentNumber);
+    
+    // Actualizamos el estado a activo
+    const dataActualizada: UsuarioRequest = {
+      documentNumber: usuarioActual.documentNumber,
+      documentType: usuarioActual.documentType || 'CC',
+      email: usuarioActual.email,
+      firstName: usuarioActual.firstName,
+      secondName: usuarioActual.secondName || '',
+      firstLastname: usuarioActual.firstLastname,
+      secondLastname: usuarioActual.secondLastname || '',
+      roles: usuarioActual.roles
+    };
+
+    // El campo 'activo' debe ir en el request
+    const response = await api.put(`/api/usuarios/${documentNumber}`, {
+      ...dataActualizada,
+      activo: true
+    });
+
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
 };
 
 // ==================== FLUJO DE REPORTES ====================
@@ -965,3 +1077,94 @@ export const calendarioService = {
     return response.data;
   },
 };
+
+// ==================== AUDITORÍA SERVICE ====================
+
+export const auditoriaService = {
+  // Obtener todos los logs (Admin)
+  async obtenerLogs(
+    page = 0,
+    size = 20,
+    usuarioId?: string,
+    evento?: string,
+    fechaDesde?: string,
+    fechaHasta?: string
+  ): Promise<Page<UserSessionLogResponse>> {
+    const params: any = { page, size };
+    if (usuarioId) params.usuarioId = usuarioId;
+    if (evento) params.evento = evento;
+    if (fechaDesde) params.fechaDesde = fechaDesde;
+    if (fechaHasta) params.fechaHasta = fechaHasta;
+
+    const response = await api.get('/api/auditoria/accesos', { params });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Obtener estadísticas (Admin)
+  async obtenerEstadisticas(): Promise<AccesosEstadisticasDTO> {
+    const response = await api.get('/api/auditoria/accesos/estadisticas');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Obtener accesos de un usuario específico (Admin)
+  async obtenerAccesosUsuario(
+    usuarioId: string,
+    page = 0,
+    size = 20
+  ): Promise<Page<UserSessionLogResponse>> {
+    const response = await api.get(`/api/auditoria/accesos/usuario/${usuarioId}`, {
+      params: { page, size }
+    });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Obtener último acceso de un usuario (Admin)
+  async obtenerUltimoAccesoUsuario(usuarioId: string): Promise<UserSessionLogResponse> {
+    const response = await api.get(`/api/auditoria/accesos/usuario/${usuarioId}/ultimo`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Obtener mis propios accesos (Usuario autenticado)
+  async obtenerMisAccesos(page = 0, size = 20): Promise<Page<UserSessionLogResponse>> {
+    const response = await api.get('/api/auditoria/mis-accesos', {
+      params: { page, size }
+    });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Obtener mi último acceso (Usuario autenticado)
+  async obtenerMiUltimoAcceso(): Promise<UserSessionLogResponse> {
+    const response = await api.get('/api/auditoria/mi-ultimo-acceso');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  // Limpiar logs antiguos (Admin)
+  async limpiarLogsAntiguos(diasRetencion = 90): Promise<void> {
+    const response = await api.delete('/api/auditoria/accesos/limpiar', {
+      params: { diasRetencion }
+    });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+};
+

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { evidenciasSupervisorService, type EvidenciaSupervisor, type Page } from '../../lib/services';
+import notifications from '../../lib/notifications';
 
 type ViewMode = 'grid' | 'list';
 
@@ -89,8 +90,9 @@ export default function SupervisorEvidenciasClient() {
   const handleDescargar = async (id: string) => {
     try {
       await evidenciasSupervisorService.descargar(id);
+      notifications.toast('Descargando archivo...', 'info');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al descargar el archivo');
+      notifications.error(err.response?.data?.message || 'Error al descargar el archivo');
     }
   };
 

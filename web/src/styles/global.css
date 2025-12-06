@@ -1,3 +1,6 @@
+/* Importar estilos de notificaciones */
+@import './notifications.css';
+
 :root {
   /* Tracely Brand Colors */
   --color-primary-50: #f1f8fd;

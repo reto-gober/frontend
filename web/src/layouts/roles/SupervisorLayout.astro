@@ -234,6 +234,7 @@ const { title } = Astro.props;
 
 <script>
   import { authService } from '../../lib/auth';
+  import notifications from '../../lib/notifications';
 
   // Mostrar nombre del usuario
   if (typeof window !== 'undefined') {
@@ -248,8 +249,14 @@ const { title } = Astro.props;
     // Manejar logout
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
-      btnLogout.addEventListener('click', () => {
-        if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+      btnLogout.addEventListener('click', async () => {
+        const confirmed = await notifications.confirm(
+          'Tu sesión actual se cerrará',
+          '¿Cerrar sesión?',
+          'Sí, cerrar sesión',
+          'Cancelar'
+        );
+        if (confirmed) {
           authService.logout();
         }
       });
