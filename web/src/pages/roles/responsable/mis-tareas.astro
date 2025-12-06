@@ -1,9 +1,11 @@
 ---
 import ResponsableLayout from '../../../layouts/roles/ResponsableLayout.astro';
+import MisTareasClient from '../../../components/responsable/MisTareasClient';
 ---
 
 <ResponsableLayout title="Mis Tareas">
-  <div class="mis-tareas-page">
+  <MisTareasClient client:load />
+</ResponsableLayout>
     <!-- Header -->
     <div class="page-header">
       <div class="header-info">

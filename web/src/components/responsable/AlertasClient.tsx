@@ -126,14 +126,73 @@ export default function AlertasClient() {
     }
   };
 
-  const marcarComoLeida = (alertaId: string) => {
-    setAlertas((prev) =>
-      prev.map((a) => (a.id === alertaId ? { ...a, leida: true } : a))
-    );
+  const marcarComoLeida = async (alertaId: string) => {
+    try {
+      // Actualizar localmente primero para feedback inmediato
+      setAlertas((prev) =>
+        prev.map((a) => (a.id === alertaId ? { ...a, leida: true } : a))
+      );
+      
+      // Aquí se enviaría al backend si hubiera un endpoint para ello
+      // await api.post('/api/alertas/marcar-leida', { alertaId });
+    } catch (err) {
+      console.error('Error al marcar alerta como leída:', err);
+    }
   };
 
-  const marcarTodasComoLeidas = () => {
-    setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
+  const marcarTodasComoLeidas = async () => {
+    const alertasNoLeidas = alertas.filter(a => !a.leida);
+    
+    if (alertasNoLeidas.length === 0) {
+      alert('No hay alertas pendientes por marcar como leídas');
+      return;
+    }
+
+    try {
+      // Actualizar localmente
+      setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
+      
+      // Aquí se enviaría al backend si hubiera un endpoint para ello
+      // await api.post('/api/alertas/marcar-todas-leidas');
+      
+      // Feedback al usuario
+      const mensaje = alertasNoLeidas.length === 1 
+        ? 'Se marcó 1 alerta como leída'
+        : `Se marcaron ${alertasNoLeidas.length} alertas como leídas`;
+      
+      // Mostrar mensaje temporal
+      showToast(mensaje, 'success');
+    } catch (err) {
+      console.error('Error al marcar todas como leídas:', err);
+      showToast('Error al marcar alertas como leídas', 'error');
+    }
+  };
+
+  const showToast = (mensaje: string, tipo: 'success' | 'error') => {
+    // Crear elemento de toast
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${tipo}`;
+    toast.textContent = mensaje;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem 1.5rem;
+      background: ${tipo === 'success' ? 'var(--success-green-500)' : 'var(--error-red-500)'};
+      color: white;
+      border-radius: 8px;
+      box-shadow: var(--shadow-card);
+      z-index: 9999;
+      animation: slideIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Eliminar después de 3 segundos
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.3s ease-in';
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
   };
 
   const alertasFiltradas = alertas.filter((a) => {
@@ -219,6 +278,7 @@ export default function AlertasClient() {
   }
 
   const grupos = agruparPorFecha();
+  const hayAlertasNoLeidas = alertas.some(a => !a.leida);
 
   return (
     <div className="alertas-page">
@@ -231,7 +291,12 @@ export default function AlertasClient() {
           </p>
         </div>
         <div className="header-actions">
-          <button className="btn-mark-all" onClick={marcarTodasComoLeidas}>
+          <button 
+            className="btn-mark-all" 
+            onClick={marcarTodasComoLeidas}
+            disabled={!hayAlertasNoLeidas}
+            title={!hayAlertasNoLeidas ? 'No hay alertas pendientes' : 'Marcar todas como leídas'}
+          >
             <svg
               viewBox="0 0 24 24"
               width="18"
@@ -473,6 +538,16 @@ export default function AlertasClient() {
 
         .btn-mark-all:hover {
           background: var(--neutral-100);
+        }
+
+        .btn-mark-all:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: var(--neutral-50);
+        }
+
+        .btn-mark-all:disabled:hover {
+          background: var(--neutral-50);
         }
 
         .alertas-summary {
@@ -723,6 +798,28 @@ export default function AlertasClient() {
           .alerta-header {
             flex-direction: column;
             gap: 0.25rem;
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(400px);
+            opacity: 0;
           }
         }
       `}</style>

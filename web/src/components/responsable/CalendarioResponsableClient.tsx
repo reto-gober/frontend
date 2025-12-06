@@ -1017,19 +1017,16 @@ export default function CalendarioResponsableClient() {
           color: var(--neutral-400);
         }
 
-        .calendar-day.today {
-          background: var(--role-accent-light);
-        }
-
         .calendar-day.today .day-number {
           background: var(--role-accent);
-          color: var(--neutral-900);
+          color: white;
           border-radius: 50%;
           width: 28px;
           height: 28px;
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
+          font-weight: 600;
         }
 
         .calendar-day.selected {
@@ -1095,6 +1092,7 @@ export default function CalendarioResponsableClient() {
         .detail-badge {
           padding: 0.25rem 0.75rem;
           background: var(--role-accent);
+          color: white;
           border-radius: 20px;
           font-size: 0.75rem;
           font-weight: 600;
@@ -1242,10 +1240,6 @@ export default function CalendarioResponsableClient() {
           background: var(--neutral-50);
         }
 
-        .week-day.today {
-          background: var(--role-accent-light);
-        }
-
         .week-day.selected {
           background: var(--role-accent-light);
           border: 2px solid var(--role-accent);
@@ -1284,8 +1278,9 @@ export default function CalendarioResponsableClient() {
 
         .week-day-number.today {
           background: var(--role-accent);
-          color: var(--neutral-900);
+          color: white;
           border-radius: 50%;
+          font-weight: 700;
         }
 
         .week-day-events {
