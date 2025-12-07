@@ -752,7 +752,9 @@ export const usuariosService = {
 
   // Desactivar usuario (usando nuevo endpoint PATCH)
   async desactivar(documentNumber: string): Promise<UsuarioResponse> {
-    const response = await api.patch(`/api/usuarios/${documentNumber}/desactivar`);
+    const response = await api.patch(
+      `/api/usuarios/${documentNumber}/desactivar`
+    );
 
     if (
       response.data &&
@@ -798,20 +800,29 @@ export const usuariosService = {
   },
 
   // Invitar usuario
-  async invitar(email: string, role: string): Promise<{ success: boolean; message: string; data?: any }> {
-    const response = await api.post('/api/users/invite', { email, role });
+  async invitar(
+    email: string,
+    role: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    const response = await api.post("/api/users/invite", { email, role });
     return response.data;
   },
 
   // Cancelar invitación
-  async cancelarInvitacion(invitationId: string): Promise<{ success: boolean; message: string }> {
+  async cancelarInvitacion(
+    invitationId: string
+  ): Promise<{ success: boolean; message: string }> {
     const response = await api.delete(`/api/users/invite/${invitationId}`);
     return response.data;
   },
 
   // Validar token de invitación
-  async validarTokenInvitacion(token: string): Promise<{ success: boolean; data: boolean; message: string }> {
-    const response = await api.get(`/api/users/validate-invitation?token=${token}`);
+  async validarTokenInvitacion(
+    token: string
+  ): Promise<{ success: boolean; data: boolean; message: string }> {
+    const response = await api.get(
+      `/api/users/validate-invitation?token=${token}`
+    );
     return response.data;
   },
 
@@ -827,7 +838,7 @@ export const usuariosService = {
     password: string;
     telefono?: string;
   }): Promise<{ success: boolean; message: string }> {
-    const response = await api.post('/api/users/complete-invitation', data);
+    const response = await api.post("/api/users/complete-invitation", data);
     return response.data;
   },
 };
@@ -917,16 +928,59 @@ export const flujoReportesService = {
     if (sort) params.append("sort", sort);
 
     const url = `/api/flujo-reportes/mis-periodos?${params}`;
-    console.log("🌐 [API] Llamando a:", url);
-    console.log("🌐 [API] Headers:", api.defaults.headers);
+    console.log("🌐 [flujoReportesService] Llamando a:", url);
 
-    const response = await api.get(url);
+    try {
+      const response = await api.get(url);
 
-    console.log("🌐 [API] Respuesta status:", response.status);
-    console.log("🌐 [API] Respuesta data completa:", response.data);
-    console.log("🌐 [API] Respuesta data.data:", response.data.data);
+      console.log(
+        "✅ [flujoReportesService] Respuesta status:",
+        response.status
+      );
+      console.log("📊 [flujoReportesService] Estructura de respuesta:", {
+        hasData: !!response.data,
+        hasDataProperty: response.data && "data" in response.data,
+        dataType: typeof response.data,
+        keys: response.data ? Object.keys(response.data) : [],
+      });
 
-    return response.data.data;
+      if (!response.data) {
+        throw new Error("Respuesta vacía del servidor");
+      }
+
+      // Manejar ambos formatos de respuesta
+      if (response.data.data) {
+        console.log("📦 [flujoReportesService] Usando response.data.data");
+        console.log(
+          "📋 [flujoReportesService] Cantidad de periodos:",
+          response.data.data?.content?.length || 0
+        );
+        return response.data.data;
+      } else if (response.data.content) {
+        console.log(
+          "📦 [flujoReportesService] Usando response.data directamente"
+        );
+        console.log(
+          "📋 [flujoReportesService] Cantidad de periodos:",
+          response.data.content.length
+        );
+        return response.data;
+      } else {
+        console.error(
+          "❌ [flujoReportesService] Formato de respuesta inesperado:",
+          response.data
+        );
+        throw new Error("Formato de respuesta del servidor no reconocido");
+      }
+    } catch (error: any) {
+      console.error("❌ [flujoReportesService] Error en la petición:", error);
+      console.error("❌ [flujoReportesService] URL:", url);
+      console.error(
+        "❌ [flujoReportesService] Response:",
+        error.response?.data
+      );
+      throw error;
+    }
   },
 
   // Obtener periodos pendientes
@@ -1232,17 +1286,51 @@ export const calendarioService = {
     if (filtros?.tipo) params.append("tipo", filtros.tipo);
     if (filtros?.estado) params.append("estado", filtros.estado);
 
-    const response = await api.get(
-      `/api/dashboard/responsable/calendario?${params.toString()}`
-    );
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
-      return response.data.data;
+    const url = `/api/dashboard/responsable/calendario?${params.toString()}`;
+    console.log("🌐 [calendarioService] Llamando a:", url);
+
+    try {
+      const response = await api.get(url);
+
+      console.log("✅ [calendarioService] Respuesta status:", response.status);
+      console.log("📊 [calendarioService] Estructura de respuesta:", {
+        hasData: !!response.data,
+        hasDataProperty: response.data && "data" in response.data,
+        dataType: typeof response.data,
+      });
+
+      if (!response.data) {
+        throw new Error("Respuesta vacía del servidor");
+      }
+
+      // Manejar ambos formatos de respuesta
+      if (response.data.data) {
+        console.log("📦 [calendarioService] Usando response.data.data");
+        console.log(
+          "📋 [calendarioService] Eventos:",
+          response.data.data?.eventos?.length || 0
+        );
+        return response.data.data;
+      } else if (response.data.eventos) {
+        console.log("📦 [calendarioService] Usando response.data directamente");
+        console.log(
+          "📋 [calendarioService] Eventos:",
+          response.data.eventos.length
+        );
+        return response.data;
+      } else {
+        console.error(
+          "❌ [calendarioService] Formato de respuesta inesperado:",
+          response.data
+        );
+        throw new Error("Formato de respuesta del servidor no reconocido");
+      }
+    } catch (error: any) {
+      console.error("❌ [calendarioService] Error en la petición:", error);
+      console.error("❌ [calendarioService] URL:", url);
+      console.error("❌ [calendarioService] Response:", error.response?.data);
+      throw error;
     }
-    return response.data;
   },
 
   // Calendario Supervisor (Incidencias)

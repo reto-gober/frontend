@@ -55,11 +55,42 @@ export default function MisReportesClient() {
   const loadPeriodos = async () => {
     try {
       setLoading(true);
-      let response;
+
+      console.log(
+        "🔄 [MisReportes] Cargando periodos, filtro activo:",
+        activeFilter
+      );
 
       // Cargar todos los periodos primero para obtener contadores
       const allResponse = await flujoReportesService.misPeriodos(0, 1000);
+
+      console.log("✅ [MisReportes] Respuesta recibida:", allResponse);
+
+      if (!allResponse || !allResponse.content) {
+        throw new Error(
+          "La respuesta del servidor no tiene el formato esperado"
+        );
+      }
+
       const allPeriodos = allResponse.content;
+      console.log("📊 [MisReportes] Total de periodos:", allPeriodos.length);
+
+      // Si no hay periodos, mostrar estado vacío
+      if (allPeriodos.length === 0) {
+        console.warn("⚠️ [MisReportes] No hay periodos asignados al usuario");
+        setPeriodos([]);
+        setCounts({
+          todos: 0,
+          pendientes: 0,
+          enviados: 0,
+          vencidos: 0,
+          porVencer: 0,
+        });
+        setTotalElements(0);
+        setTotalPages(0);
+        setLoading(false);
+        return;
+      }
 
       // Calcular contadores
       const now = new Date();
@@ -132,9 +163,26 @@ export default function MisReportesClient() {
       setPeriodos(paginatedPeriodos);
       setTotalElements(filteredPeriodos.length);
       setTotalPages(Math.ceil(filteredPeriodos.length / 10));
+
+      console.log("✅ [MisReportes] Datos cargados exitosamente");
+      console.log("📈 [MisReportes] Contadores:", newCounts);
+      console.log(
+        "📋 [MisReportes] Periodos filtrados:",
+        filteredPeriodos.length
+      );
     } catch (err: any) {
-      error(err.response?.data?.message || "Error al cargar reportes");
-      console.error("Error cargando periodos:", err);
+      console.error("❌ [MisReportes] Error cargando periodos:", err);
+      console.error(
+        "❌ [MisReportes] Respuesta del error:",
+        err.response?.data
+      );
+      console.error("❌ [MisReportes] Status del error:", err.response?.status);
+
+      const mensajeError =
+        err.response?.data?.message ||
+        err.message ||
+        "Error al cargar reportes";
+      error(mensajeError);
     } finally {
       setLoading(false);
     }
