@@ -505,7 +505,6 @@ export default function AdminUsuariosClient() {
               <th>Usuario</th>
               <th>Email</th>
               <th>Rol</th>
-              <th>Proceso</th>
               <th>Estado</th>
               <th>Último acceso</th>
               <th>Acciones</th>
@@ -514,7 +513,7 @@ export default function AdminUsuariosClient() {
           <tbody>
             {filteredUsuarios.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-500)' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-500)' }}>
                   No se encontraron usuarios
                 </td>
               </tr>
@@ -541,7 +540,6 @@ export default function AdminUsuariosClient() {
                       ))}
                     </div>
                   </td>
-                  <td>{usuario.proceso || '-'}</td>
                   <td>
                     <span className={`status-badge ${
                       usuario.estado === 'invited' ? 'invited' : 
@@ -677,7 +675,7 @@ export default function AdminUsuariosClient() {
               {/* Información del usuario */}
               <div className="user-info-section">
                 <div className="user-info-header">
-                  <div className={`user-avatar-large ${getAvatarColor(0)}`}>
+                  <div className={`user-avatar-large ${getAvatarColor(usuarios.findIndex(u => u.usuarioId === editingUsuario.usuarioId))}`}>
                     {getInitials(editingUsuario)}
                   </div>
                   <div>

@@ -237,15 +237,25 @@ export default function MultiUserSelector({
                     }}>
                       {usuario.firstName} {usuario.firstLastname}
                     </div>
-                    {usuario.cargo && (
-                      <div style={{ 
-                        fontSize: '0.8125rem', 
-                        color: 'var(--color-text-light)',
-                        marginTop: '0.125rem'
-                      }}>
-                        {usuario.cargo}
-                      </div>
-                    )}
+                    <div style={{ 
+                      fontSize: '0.8125rem', 
+                      color: 'var(--color-text-light)',
+                      marginTop: '0.125rem'
+                    }}>
+                      {usuario.roles && usuario.roles.length > 0 ? (
+                        <span style={{ 
+                          textTransform: 'capitalize',
+                          fontWeight: 500
+                        }}>
+                          {usuario.roles.join(', ')}
+                        </span>
+                      ) : (
+                        <span style={{ fontStyle: 'italic' }}>Sin rol asignado</span>
+                      )}
+                      {usuario.cargo && (
+                        <span> • {usuario.cargo}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

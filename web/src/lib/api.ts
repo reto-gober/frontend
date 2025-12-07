@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor to handle authentication errors (401/403)
+// Response interceptor to handle authentication errors (401/403/500)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -28,99 +28,104 @@ api.interceptors.response.use(
       const currentPath = window.location.pathname;
       const isLoginRequest = error.config?.url?.includes('/api/auth/login');
       const isRegisterRequest = error.config?.url?.includes('/api/auth/registro');
-      const isErrorPage = currentPath === '/error';
+      const isPublicEndpoint = error.config?.url?.includes('/api/auth/') || 
+                               error.config?.url?.includes('/api/users/validate-invitation') ||
+                               error.config?.url?.includes('/api/users/complete-invitation');
       
-      // Mensajes que indican problemas de autenticación (token inválido, expirado, faltante)
-      const authenticationErrors = [
-        'Autenticación requerida',
-        'Token JWT con firma inválida',
-        'Token expirado',
-        'Token JWT expirado',
-        'proporcione un token válido',
-        'Autenticación rechazada',
-        'JWT expired',
-        'invalid signature',
-        'malformed',
-      ];
-      
-      // Verificar si el mensaje indica un problema real de autenticación
-      const isAuthenticationError = authenticationErrors.some(errMsg => 
-        message.toLowerCase().includes(errMsg.toLowerCase())
-      );
-      
-      // Handle 401 (Unauthorized) ONLY if it's an authentication issue (not permission issue)
-      // BUT: Don't redirect if we're attempting to login/register (let the form handle it)
-      if (status === 401 && isAuthenticationError && !isLoginRequest && !isRegisterRequest) {
-        // Clear stored auth data
+      // ========================================
+      // 401: SESIÓN INVÁLIDA O EXPIRADA
+      // ========================================
+      // Cerrar sesión SOLO si es un problema de autenticación real
+      if (status === 401 && !isPublicEndpoint) {
+        console.warn('[API] 401 - Sesión inválida o expirada. Cerrando sesión...');
+        
+        // Limpiar datos de autenticación
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
-        
-        // Remove cookie if exists
         document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         
-        // Show session expired message
+        // Mostrar notificación SOLO si no estamos en login
         if (currentPath !== '/login' && currentPath !== '/registro') {
           notifications.warning(
-            'Por favor, inicia sesión nuevamente',
-            'Sesión expirada'
+            'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+            'Sesión Expirada'
           );
         }
         
-        // Redirect to login
-        window.location.href = '/login';
+        // Redirigir a login
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+        
         return Promise.reject(error);
       }
 
-      // Handle 403 (Forbidden) - Permission denied
-      if (status === 403 && !isErrorPage && !isLoginRequest && !isRegisterRequest) {
-        console.warn('[API Interceptor] Acceso denegado (403) - Redirigiendo al dashboard por rol');
+      // ========================================
+      // 403: ACCESO DENEGADO (sin cerrar sesión)
+      // ========================================
+      // El usuario está autenticado pero no tiene permiso para este recurso
+      if (status === 403 && !isPublicEndpoint) {
+        console.warn('[API] 403 - Acceso denegado. Redirigiendo al dashboard del usuario...');
         
-        // Obtener rol del usuario y redirigir a su dashboard
+        // NO borrar token ni cerrar sesión
+        // Obtener rol y redirigir a su dashboard
         const usuarioData = localStorage.getItem('usuario');
         if (usuarioData) {
-          const usuario = JSON.parse(usuarioData);
-          
-          // Importar dinámicamente roleGuard
-          import('./roleGuard').then(({ getPrimaryRole, getDashboardForRole }) => {
-            const primaryRole = getPrimaryRole(usuario.roles || []);
-            const dashboard = getDashboardForRole(primaryRole);
+          try {
+            const usuario = JSON.parse(usuarioData);
             
-            notifications.warning(
-              'Acceso Denegado',
-              'No tienes permiso para acceder a este recurso'
-            );
-            
-            setTimeout(() => {
-              window.location.href = dashboard;
-            }, 1000);
-          }).catch((e) => {
-            console.error('[API Interceptor] Error al cargar roleGuard:', e);
+            // Calcular dashboard según rol
+            import('./auth').then(({ authService }) => {
+              const dashboard = authService.getDashboardByRole();
+              
+              notifications.error(
+                'No tienes permisos suficientes para acceder a este recurso',
+                'Acceso Denegado'
+              );
+              
+              setTimeout(() => {
+                window.location.href = dashboard;
+              }, 1500);
+            });
+          } catch (e) {
+            console.error('[API] Error al parsear usuario:', e);
             window.location.href = '/login';
-          });
+          }
         } else {
+          // No hay usuario → ir a login
           window.location.href = '/login';
         }
+        
         return Promise.reject(error);
       }
 
-      // Handle other critical errors (500, 503, network errors)
-      if (!isErrorPage && !isLoginRequest && !isRegisterRequest) {
-        // Errores del servidor (500, 503)
-        if (status === 500 || status === 503) {
-          const errorMessage = encodeURIComponent(message);
-          window.location.href = `/error?code=${status}&message=${errorMessage}`;
-          return Promise.reject(error);
-        }
+      // ========================================
+      // 500/503: ERROR DEL SERVIDOR
+      // ========================================
+      // NO cerrar sesión, solo mostrar página de error
+      if ((status === 500 || status === 503) && !isPublicEndpoint && currentPath !== '/error') {
+        console.error('[API] Error del servidor:', status, message);
+        
+        // NO borrar token
+        const errorMessage = encodeURIComponent(message);
+        window.location.href = `/error?code=${status}&message=${errorMessage}`;
+        
+        return Promise.reject(error);
+      }
 
-        // Errores de red (sin respuesta del servidor)
-        if (!error.response && error.message === 'Network Error') {
-          const errorMessage = encodeURIComponent('No se pudo conectar con el servidor');
-          window.location.href = `/error?code=503&message=${errorMessage}`;
-          return Promise.reject(error);
-        }
+      // ========================================
+      // NETWORK ERROR (sin respuesta)
+      // ========================================
+      if (!error.response && error.message === 'Network Error' && currentPath !== '/error') {
+        console.error('[API] Error de red - servidor no disponible');
+        
+        const errorMessage = encodeURIComponent('No se pudo conectar con el servidor. Verifica tu conexión.');
+        window.location.href = `/error?code=503&message=${errorMessage}`;
+        
+        return Promise.reject(error);
       }
       
-      // For other errors, let the application handle them
+      // Para otros errores (400, 404, etc.), dejar que la aplicación los maneje
     }
     return Promise.reject(error);
   }

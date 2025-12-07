@@ -318,13 +318,13 @@ const error = errorDetails[errorCode as keyof typeof errorDetails] || errorDetai
           </svg>
           Volver Atrás
         </a>
-        <a href="/dashboard" class="btn btn-primary">
+        <button id="btnDashboard" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
           Ir al Dashboard
-        </a>
+        </button>
       </div>
     </div>
 
@@ -338,6 +338,52 @@ const error = errorDetails[errorCode as keyof typeof errorDetails] || errorDetai
     console.error('Error Page:', {
       code: new URLSearchParams(window.location.search).get('code') || '500',
       message: new URLSearchParams(window.location.search).get('message') || 'Unknown error'
+    });
+
+    // Manejar redirección al dashboard correcto según rol del usuario
+    document.getElementById('btnDashboard')?.addEventListener('click', function() {
+      try {
+        const usuarioData = localStorage.getItem('usuario');
+        
+        if (!usuarioData) {
+          // No hay sesión → ir a login
+          window.location.href = '/login';
+          return;
+        }
+        
+        const usuario = JSON.parse(usuarioData);
+        const roles = usuario.roles || [];
+        
+        // Normalizar roles
+        const normalizedRoles = roles.map((r: string) => 
+          r.toLowerCase().replace('role_', '')
+        );
+        
+        // Jerarquía de roles
+        const hierarchy = ['admin', 'supervisor', 'responsable', 'auditor'];
+        
+        // Encontrar el rol principal
+        let dashboardUrl = '/login';
+        for (const role of hierarchy) {
+          if (normalizedRoles.includes(role)) {
+            const dashboards: Record<string, string> = {
+              admin: '/roles/admin/dashboard',
+              supervisor: '/roles/supervisor/dashboard',
+              responsable: '/roles/responsable/dashboard',
+              auditor: '/roles/auditor/dashboard',
+            };
+            dashboardUrl = dashboards[role] || '/login';
+            break;
+          }
+        }
+        
+        console.log('[ErrorPage] Redirigiendo a:', dashboardUrl);
+        window.location.href = dashboardUrl;
+        
+      } catch (error) {
+        console.error('[ErrorPage] Error al obtener dashboard:', error);
+        window.location.href = '/login';
+      }
     });
   </script>
 </body>
