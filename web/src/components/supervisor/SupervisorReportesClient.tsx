@@ -37,6 +37,10 @@ export default function SupervisorReportesClient() {
     open: false,
     periodo: null
   });
+  const [detalle, setDetalle] = useState<{open: boolean; periodo: ReportePeriodo | null}>({
+    open: false,
+    periodo: null
+  });
   const [toastMessage, setToastMessage] = useState<{type: 'success' | 'error'; message: string} | null>(null);
 
   // Contadores por tab
@@ -59,7 +63,7 @@ export default function SupervisorReportesClient() {
   const cargarDatosIniciales = async () => {
     try {
       // Cargar todos los reportes para extraer filtros y contadores
-      const todosData = await flujoReportesService.supervision(0, 1000);
+      const todosData = await flujoReportesService.supervisionSupervisor(0, 200);
       const todos = todosData.content;
       
       // Extraer responsables únicos de los reportes
@@ -101,13 +105,13 @@ export default function SupervisorReportesClient() {
       let data: Page<ReportePeriodo>;
       
       if (activeTab === 'all') {
-        data = await flujoReportesService.supervisionConFiltros(
+        data = await flujoReportesService.supervisionSupervisor(
           page, size, undefined, 
           filtroResponsable || undefined, 
           filtroEntidad || undefined
         );
       } else {
-        data = await flujoReportesService.supervisionConFiltros(
+        data = await flujoReportesService.supervisionSupervisor(
           page, size, activeTab,
           filtroResponsable || undefined,
           filtroEntidad || undefined
@@ -381,7 +385,7 @@ export default function SupervisorReportesClient() {
                       )}
                     </div>
                     <div className="card-footer">
-                      <button className="btn-secondary">
+                      <button className="btn-secondary" onClick={() => setDetalle({ open: true, periodo: reporte })}>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -404,6 +408,50 @@ export default function SupervisorReportesClient() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Modal Detalle */}
+          {detalle.open && detalle.periodo && (
+            <div className="modal-overlay-fullscreen" onClick={() => setDetalle({ open: false, periodo: null })}>
+              <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
+                <button className="btn-close-floating" onClick={() => setDetalle({ open: false, periodo: null })} title="Cerrar">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+                <div style={{ padding: '1.5rem' }}>
+                  <h2 style={{ marginBottom: '0.5rem' }}>{detalle.periodo.reporteNombre || 'Reporte'}</h2>
+                  <p style={{ color: 'var(--neutral-600)', marginBottom: '1rem' }}>
+                    Entidad: {detalle.periodo.entidadNombre || 'N/A'} · Estado: {detalle.periodo.estado || 'N/A'}
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                    <div className="card" style={{ padding: '1rem' }}>
+                      <h4 style={{ marginTop: 0 }}>Fechas</h4>
+                      <p><strong>Inicio:</strong> {detalle.periodo.periodoInicio || '-'}</p>
+                      <p><strong>Fin:</strong> {detalle.periodo.periodoFin || '-'}</p>
+                      <p><strong>Vencimiento:</strong> {detalle.periodo.fechaVencimientoCalculada || '-'}</p>
+                      {detalle.periodo.fechaEnvioReal && <p><strong>Enviado:</strong> {detalle.periodo.fechaEnvioReal}</p>}
+                    </div>
+                    <div className="card" style={{ padding: '1rem' }}>
+                      <h4 style={{ marginTop: 0 }}>Responsables</h4>
+                      <p><strong>Elabora:</strong> {detalle.periodo.responsableElaboracion?.nombreCompleto || 'Sin asignar'}</p>
+                      <p><strong>Supervisa:</strong> {detalle.periodo.responsableSupervision?.nombreCompleto || 'Sin asignar'}</p>
+                    </div>
+                    <div className="card" style={{ padding: '1rem' }}>
+                      <h4 style={{ marginTop: 0 }}>Evidencias</h4>
+                      <p>{detalle.periodo.cantidadArchivos || 0} archivos adjuntos</p>
+                    </div>
+                  </div>
+                  {detalle.periodo.comentarios && (
+                    <div className="card" style={{ padding: '1rem', marginTop: '1rem' }}>
+                      <h4 style={{ marginTop: 0 }}>Comentarios</h4>
+                      <p style={{ whiteSpace: 'pre-wrap' }}>{detalle.periodo.comentarios}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

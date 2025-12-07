@@ -17,7 +17,9 @@ interface ResponsableFormData extends ResponsableReporte {
 }
 
 export default function ReporteForm({ reporteId, useNewFormat = true, onClose }: Props) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(!!reporteId);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioResponse[]>([]);
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
@@ -47,10 +49,32 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
   });
 
   useEffect(() => {
-    loadSelects();
-    if (reporteId) {
-      loadReporte();
-    }
+    let mounted = true;
+
+    const init = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        await loadSelects();
+        if (reporteId) {
+          await loadReporte();
+        }
+      } catch (err) {
+        console.error('Error inicializando formulario de reporte:', err);
+        if (mounted) {
+          setLoadError('No se pudo cargar la información del reporte');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    init();
+    return () => {
+      mounted = false;
+    };
   }, [reporteId]);
 
   const loadSelects = async () => {
@@ -66,6 +90,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
     } catch (err) {
       console.error('Error loading selects:', err);
       error('Error al cargar entidades y usuarios');
+      throw err;
     }
   };
 
@@ -123,18 +148,20 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       console.log('Supervisores cargados:', supervisores);
     } catch (error) {
       console.error('Error loading reporte:', error);
+      setLoadError('No se pudo cargar la información del reporte seleccionado');
+      throw error;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
 
     try {
       // Validar frecuencia personalizada
       if (formData.frecuencia === 'personalizada' && !diasPersonalizados) {
         error('Debe especificar los días para la frecuencia personalizada');
-        setLoading(false);
+        setSaving(false);
         return;
       }
 
@@ -151,7 +178,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       // Validar
       if (durationMonths < 1) {
         error('Debe especificar fechas de inicio y fin de vigencia válidas');
-        setLoading(false);
+        setSaving(false);
         return;
       }
 
@@ -219,8 +246,9 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
         }
       }, 1000);
     } catch (err: any) {
-      error(err.response?.data?.mensaje || 'Error al guardar el reporte');
-      setLoading(false);
+      error(err.response?.data?.message || err.response?.data?.mensaje || 'Error al guardar el reporte');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -291,6 +319,38 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       })
     );
   };
+
+  if (loading) {
+    return (
+      <div className="reporte-form-container" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
+        <p style={{ marginTop: '1rem', color: 'var(--neutral-600)' }}>
+          Cargando información del reporte...
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="reporte-form-container" style={{ padding: '2rem', textAlign: 'center' }}>
+        <p style={{ color: 'var(--error-red-600)', marginBottom: '1rem' }}>{loadError}</p>
+        <button
+          className="btn btn-secondary"
+          onClick={() => {
+            setLoadError(null);
+            setLoading(true);
+            loadSelects()
+              .then(() => (reporteId ? loadReporte() : Promise.resolve()))
+              .catch(() => setLoadError('No se pudo recargar el formulario'))
+              .finally(() => setLoading(false));
+          }}
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="reporte-form-container">
@@ -795,13 +855,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
             {/* Botones de acción */}
             <div className="card" style={{ padding: '1rem 1.5rem' }}>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-start' }}>
-                <button type="submit" className="btn btn-purple btn-with-icon" disabled={loading}>
+                <button type="submit" className="btn btn-purple btn-with-icon" disabled={loading || saving}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                     <polyline points="17 21 17 13 7 13 7 21"/>
                     <polyline points="7 3 7 8 15 8"/>
                   </svg>
-                  {loading ? 'Guardando...' : (reporteId ? 'Actualizar Reporte' : 'Crear Reporte')}
+                  {saving ? 'Guardando...' : (reporteId ? 'Actualizar Reporte' : 'Crear Reporte')}
                 </button>
                 {onClose ? (
                   <button type="button" onClick={onClose} className="btn btn-secondary">

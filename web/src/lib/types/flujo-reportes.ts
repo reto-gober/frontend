@@ -23,9 +23,12 @@ export interface ReportePeriodo {
   reporteId: string;
   reporteNombre: string;
   entidadNombre: string;
+  frecuencia?: string;
   periodoTipo: string;
   periodoInicio: string;
   periodoFin: string;
+  periodo?: string;
+  fechaVencimiento?: string;
   fechaVencimientoCalculada: string;
   estado: EstadoPeriodo;
   estadoDescripcion: string;

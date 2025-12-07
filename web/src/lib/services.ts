@@ -553,7 +553,7 @@ export const dashboardService = {
   },
 
   async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
-    const response = await api.get('/api/dashboard/supervisor');
+    const response = await api.get('/api/supervisor/dashboard');
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }
@@ -727,9 +727,12 @@ export interface ReportePeriodo {
   reporteId: string;
   reporteNombre: string;
   entidadNombre: string;
+  frecuencia?: string;
   periodoTipo: string;
   periodoInicio: string;
   periodoFin: string;
+  periodo?: string;
+  fechaVencimiento?: string;
   fechaVencimientoCalculada: string;
   estado: string;
   estadoDescripcion: string;
@@ -895,6 +898,29 @@ export const flujoReportesService = {
     
     const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
     return response.data.data;
+  },
+
+  // Supervisor v2 - periodos bajo supervisión del usuario autenticado (deduplicados en backend)
+  async supervisionSupervisor(
+    page = 0,
+    size = 12,
+    estado?: string,
+    responsableId?: string,
+    entidadId?: string
+  ): Promise<Page<ReportePeriodo>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (estado) params.append('estado', estado);
+    if (responsableId) params.append('responsableId', responsableId);
+    if (entidadId) params.append('entidadId', entidadId);
+
+    const response = await api.get(`/api/supervisor/reportes`, { params });
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
   },
 };
 

@@ -66,9 +66,9 @@ export default function SupervisorCumplimientoClient() {
       setLoading(true);
       setError(null);
 
-      // Cargar todos los periodos supervisados
-      const periodosData = await flujoReportesService.supervision(0, 1000);
-      const todosPeriodos = periodosData.content;
+      // Cargar todos los periodos supervisados (deduplicados en backend)
+      const periodosData = await flujoReportesService.supervisionSupervisor(0, 300);
+      const todosPeriodos = periodosData.content || [];
       setPeriodos(todosPeriodos);
 
       // Calcular estadísticas

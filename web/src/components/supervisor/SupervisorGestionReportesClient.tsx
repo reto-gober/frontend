@@ -82,8 +82,9 @@ export default function SupervisorGestionReportesClient() {
         }
 
         // Vencidos: fecha pasada y no completado
-        if (p.fechaVencimiento) {
-          const vencimiento = new Date(p.fechaVencimiento);
+        const fechaVenc = p.fechaVencimiento || p.fechaVencimientoCalculada;
+        if (fechaVenc) {
+          const vencimiento = new Date(fechaVenc);
           const noCompletado = !estado.includes('aprobado') && !estado.includes('enviado');
           if (vencimiento < ahora && noCompletado) {
             stats.vencido++;
@@ -114,8 +115,9 @@ export default function SupervisorGestionReportesClient() {
       if (activeTab !== 'all') {
         if (activeTab === 'vencido') {
           filtrados = filtrados.filter(p => {
-            if (!p.fechaVencimiento) return false;
-            const vencimiento = new Date(p.fechaVencimiento);
+            const fechaVenc = p.fechaVencimiento || p.fechaVencimientoCalculada;
+            if (!fechaVenc) return false;
+            const vencimiento = new Date(fechaVenc);
             const estado = (p.estado || '').toLowerCase();
             const noCompletado = !estado.includes('aprobado') && !estado.includes('enviado');
             return vencimiento < ahora && noCompletado;
@@ -151,9 +153,15 @@ export default function SupervisorGestionReportesClient() {
         filtrados = filtrados.filter(p => p.entidadNombre === filtroEntidad);
       }
       
-      // Filtro de frecuencia
+      // Filtro de frecuencia (normalizado para evitar diferencias de mayúsculas/espacios)
       if (filtroFrecuencia) {
-        filtrados = filtrados.filter(p => p.frecuencia?.toLowerCase() === filtroFrecuencia.toLowerCase());
+        const normalize = (v: string | undefined) => (v || '').trim().toLowerCase();
+        filtrados = filtrados.filter(p => {
+          const target = normalize(filtroFrecuencia);
+          const freq = normalize(p.frecuencia || p.periodoTipo);
+          if (!freq) return true; // si no hay dato, no eliminar
+          return freq === target || freq.includes(target);
+        });
       }
       
       setPeriodos(filtrados);
@@ -339,8 +347,9 @@ export default function SupervisorGestionReportesClient() {
               </tr>
             ) : (
               periodos.map(periodo => {
-                const { dias, urgencia } = periodo.fechaVencimiento 
-                  ? calcularDiasRestantes(periodo.fechaVencimiento)
+                const fechaVenc = periodo.fechaVencimiento || periodo.fechaVencimientoCalculada;
+                const { dias, urgencia } = fechaVenc 
+                  ? calcularDiasRestantes(fechaVenc)
                   : { dias: 0, urgencia: 'normal' };
                 return (
                   <tr key={periodo.periodoId}>
@@ -357,9 +366,9 @@ export default function SupervisorGestionReportesClient() {
                     </td>
                     <td>{periodo.frecuencia || '—'}</td>
                     <td>
-                      {periodo.fechaVencimiento ? (
+                      {fechaVenc ? (
                         <div className={`vencimiento ${urgencia}`}>
-                          <span>{formatearFecha(periodo.fechaVencimiento)}</span>
+                          <span>{formatearFecha(fechaVenc)}</span>
                           <small>
                             {dias >= 0 ? `${dias} días restantes` : `Vencido hace ${Math.abs(dias)} días`}
                           </small>
