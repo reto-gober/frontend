@@ -1,0 +1,81 @@
+---
+// Middleware para verificar acceso basado en roles
+import { routeGuard, isRoleProtectedRoute, getPrimaryRole } from '../lib/roleGuard';
+
+// Obtener la URL actual
+const { pathname } = Astro.url;
+
+// Verificar si es una ruta protegida
+if (isRoleProtectedRoute(pathname)) {
+  // Obtener el usuario de las cookies
+  const token = Astro.cookies.get('token')?.value;
+  
+  if (!token) {
+    // No autenticado, redirigir a login
+    return Astro.redirect('/login');
+  }
+  
+  // En el cliente se debe verificar con el rol del usuario
+  // Este es un check básico del lado del servidor
+  // La verificación real se hace en el cliente con el roleGuard
+}
+
+export interface RoleGuardProps {
+  userRole: string;
+  pathname: string;
+}
+---
+
+<script>
+  // Guardia de roles del lado del cliente
+  import { routeGuard, getPrimaryRole, handle404Redirect } from '../lib/roleGuard';
+  
+  // Función para verificar acceso
+  function checkRoleAccess() {
+    // Obtener usuario del localStorage
+    const usuarioData = localStorage.getItem('usuario');
+    if (!usuarioData) {
+      console.warn('[RoleGuard] No hay usuario autenticado');
+      window.location.href = '/login';
+      return;
+    }
+    
+    const usuario = JSON.parse(usuarioData);
+    const primaryRole = getPrimaryRole(usuario.roles || []);
+    const currentPath = window.location.pathname;
+    
+    console.log('[RoleGuard] Verificando acceso:', { primaryRole, currentPath });
+    
+    // Verificar si el usuario puede acceder a esta ruta
+    const guardResult = routeGuard(currentPath, primaryRole);
+    
+    if (!guardResult.allowed) {
+      console.warn('[RoleGuard] Acceso denegado:', guardResult.reason);
+      
+      // Mostrar notificación si está disponible
+      if (window.notifications?.warning) {
+        window.notifications.warning(
+          'Acceso Denegado',
+          guardResult.reason || 'No tienes permiso para acceder a esta vista'
+        );
+      }
+      
+      // Redirigir al dashboard correcto
+      setTimeout(() => {
+        window.location.href = guardResult.redirectTo || '/login';
+      }, 1000);
+    } else {
+      console.log('[RoleGuard] ✅ Acceso permitido');
+    }
+  }
+  
+  // Ejecutar verificación al cargar la página
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkRoleAccess);
+  } else {
+    checkRoleAccess();
+  }
+  
+  // Escuchar cambios de historial (navegación SPA)
+  window.addEventListener('popstate', checkRoleAccess);
+</script>
