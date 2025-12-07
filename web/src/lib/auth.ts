@@ -48,8 +48,7 @@ export const authService = {
 
   saveToken(data: JwtResponse) {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('usuario', JSON.stringify({
+      const usuario = {
         usuarioId: data.usuarioId,
         documentNumber: data.documentNumber,
         email: data.email,
@@ -58,9 +57,17 @@ export const authService = {
         firstLastname: data.firstLastname,
         secondLastname: data.secondLastname,
         roles: data.roles,
-      }));
-      // Guardar token en cookie para validación del lado del servidor
-      document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+      };
+      
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('usuario', JSON.stringify(usuario));
+      
+      // Guardar token en cookie para middleware de Astro (7 días)
+      const maxAge = 60 * 60 * 24 * 7;
+      document.cookie = `token=${data.token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+      
+      // Guardar usuario en cookie también para middleware
+      document.cookie = `usuario=${encodeURIComponent(JSON.stringify(usuario))}; path=/; max-age=${maxAge}; SameSite=Strict`;
     }
   },
 
@@ -68,8 +75,10 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
-      // Eliminar cookie
+      localStorage.removeItem('selectedView'); // Limpiar vista seleccionada
+      // Eliminar cookies
       document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = 'usuario=; path=/; max-age=0';
       window.location.href = '/login';
     }
   },
@@ -89,7 +98,43 @@ export const authService = {
     return false;
   },
 
-  async validateToken(): Promise<boolean> {
+  /**
+   * Obtiene el dashboard correcto según el rol del usuario
+   * @returns URL del dashboard o /login si no hay usuario
+   */
+  getDashboardByRole(): string {
+    if (typeof window !== 'undefined') {
+      const usuario = this.getUser();
+      if (!usuario || !usuario.roles || usuario.roles.length === 0) {
+        return '/login';
+      }
+      
+      // Importar y usar getPrimaryRole y getDashboardForRole
+      const roles = usuario.roles;
+      const hierarchy = ['admin', 'supervisor', 'responsable', 'auditor'];
+      
+      // Normalizar roles
+      const normalizedRoles = roles.map((r: string) => r.toLowerCase().replace('role_', ''));
+      
+      // Encontrar el rol principal según jerarquía
+      for (const role of hierarchy) {
+        if (normalizedRoles.includes(role)) {
+          const dashboards: Record<string, string> = {
+            admin: '/roles/admin/dashboard',
+            supervisor: '/roles/supervisor/dashboard',
+            responsable: '/roles/responsable/dashboard',
+            auditor: '/roles/auditor/dashboard',
+          };
+          return dashboards[role] || '/login';
+        }
+      }
+      
+      return '/login';
+    }
+    return '/login';
+  },
+
+  async validateToken(): boolean {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (!token) {

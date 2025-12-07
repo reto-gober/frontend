@@ -117,6 +117,7 @@ export function isRoleProtectedRoute(pathname: string): boolean {
 /**
  * Maneja el guardián de ruta: verifica si el usuario puede acceder
  * Si no puede, redirige al dashboard correspondiente
+ * Considera la vista seleccionada por el usuario
  * @param pathname - Ruta a la que intenta acceder
  * @param userRole - Rol del usuario actual
  * @returns Objeto con allowed (bool) y redirectTo (string si no permitido)
@@ -143,8 +144,36 @@ export function routeGuard(
     };
   }
   
-  // Verificar si el usuario puede acceder
-  const hasAccess = canAccessRole(userRole, requiredRole);
+  // Obtener la vista seleccionada por el usuario (si existe)
+  let selectedView: Role | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('selectedView');
+      if (saved) {
+        selectedView = saved as Role;
+      }
+    } catch (e) {
+      console.debug('[RoleGuard] No hay vista seleccionada');
+    }
+  }
+  
+  // Si hay una vista seleccionada, verificar que el usuario pueda acceder a ella
+  if (selectedView) {
+    const canAccessSelected = canAccessRole(userRole, selectedView);
+    if (!canAccessSelected) {
+      // Usuario no puede acceder a la vista seleccionada → limpiar y usar rol real
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('selectedView');
+      }
+      selectedView = null;
+    }
+  }
+  
+  // Determinar qué rol usar para la verificación
+  const roleToCheck = selectedView || userRole;
+  
+  // Verificar si el rol actual (o vista seleccionada) puede acceder a la ruta
+  const hasAccess = canAccessRole(roleToCheck, requiredRole);
   
   if (!hasAccess) {
     return {

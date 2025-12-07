@@ -1,45 +1,65 @@
 import { useState, useEffect } from 'react';
-import { getAvailableViews, getPrimaryRole, type Role } from '../lib/roleGuard';
+import { 
+  getPrimaryRole,
+  canSwitchView,
+  getAvailableViews,
+  getCurrentView,
+  switchToView,
+  type Role 
+} from '../lib/viewSwitcher';
+import { authService } from '../lib/auth';
 
 interface ViewSelectorProps {
   currentRole: string;
 }
 
 export default function ViewSelector({ currentRole }: ViewSelectorProps) {
-  const [availableViews, setAvailableViews] = useState<Array<{role: Role, label: string, route: string}>>([]);
-  const [currentView, setCurrentView] = useState<Role>(currentRole.toLowerCase() as Role);
+  const [availableViews, setAvailableViews] = useState<any[]>([]);
+  const [currentView, setCurrentView] = useState<Role | null>(null);
+  const [userRole, setUserRole] = useState<Role | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-
-  // Solo mostrar el selector para admin y supervisor
-  const showSelector = ['admin', 'supervisor'].includes(currentRole.toLowerCase());
+  const [canSwitch, setCanSwitch] = useState(false);
 
   useEffect(() => {
-    // Obtener vistas disponibles según el rol del usuario
-    const views = getAvailableViews(currentRole);
-    setAvailableViews(views);
-  }, [currentRole]);
+    // Obtener usuario y configurar permisos
+    const usuario = authService.getUser();
+    if (!usuario || !usuario.roles) {
+      return;
+    }
 
-  // Determinar la vista actual desde la URL
-  useEffect(() => {
-    const path = window.location.pathname;
-    const match = path.match(/\/roles\/([^\/]+)/);
-    if (match && match[1]) {
-      setCurrentView(match[1].toLowerCase() as Role);
+    const primaryRole = getPrimaryRole(usuario.roles);
+    setUserRole(primaryRole);
+    
+    // Obtener vista actual (considerando la guardada en localStorage)
+    const current = getCurrentView(primaryRole);
+    setCurrentView(current);
+    
+    // Verificar si puede cambiar de vista
+    const canChange = canSwitchView(primaryRole);
+    setCanSwitch(canChange);
+    
+    if (canChange) {
+      const views = getAvailableViews(primaryRole);
+      setAvailableViews(views);
+      console.log('[ViewSelector] Vistas disponibles:', views.map(v => v.label).join(', '));
     }
   }, []);
 
-  if (!showSelector || availableViews.length <= 1) {
+  const handleViewChange = (targetRole: Role) => {
+    if (!userRole) return;
+    
+    console.log(`[ViewSelector] Cambiando a vista: ${targetRole}`);
+    const success = switchToView(userRole, targetRole);
+    
+    if (success) {
+      setIsOpen(false);
+    }
+  };
+
+  // No mostrar si el usuario no puede cambiar de vista
+  if (!canSwitch || !userRole || !currentView) {
     return null;
   }
-
-  const handleViewChange = (view: typeof availableViews[0]) => {
-    console.log(`[ViewSelector] Cambiando a vista: ${view.label}`);
-    setCurrentView(view.role);
-    setIsOpen(false);
-    
-    // Navegar a la nueva vista
-    window.location.href = view.route;
-  };
 
   const currentViewData = availableViews.find(v => v.role === currentView);
 
@@ -86,7 +106,8 @@ export default function ViewSelector({ currentRole }: ViewSelectorProps) {
               <button
                 key={view.role}
                 className={`view-selector-item ${view.role === currentView ? 'active' : ''}`}
-                onClick={() => handleViewChange(view)}
+                onClick={() => handleViewChange(view.role)}
+                disabled={view.role === currentView}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
                   {view.role === 'admin' && (
