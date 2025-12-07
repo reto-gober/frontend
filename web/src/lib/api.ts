@@ -103,7 +103,15 @@ api.interceptors.response.use(
       // 500/503: ERROR DEL SERVIDOR
       // ========================================
       // NO cerrar sesión, solo mostrar página de error
+      const isSupervisorCalendar = error.config?.url?.includes('/api/dashboard/supervisor/calendario');
+
       if ((status === 500 || status === 503) && !isPublicEndpoint && currentPath !== '/error') {
+        // Para el calendario del supervisor dejamos que el caller maneje el fallback
+        if (isSupervisorCalendar) {
+          console.error('[API] Error calendario supervisor:', status, message);
+          return Promise.reject(error);
+        }
+
         console.error('[API] Error del servidor:', status, message);
         
         // NO borrar token

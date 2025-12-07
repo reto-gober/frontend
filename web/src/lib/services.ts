@@ -1194,7 +1194,9 @@ export interface EventoCalendario {
   puedoActuar?: boolean;
   responsableNombre?: string;
   responsable?: string; // Para supervisor
+  responsableId?: string;
   supervisorNombre?: string;
+  supervisorId?: string;
   entidadNombre?: string;
   entidad?: string; // Para auditor
   tipoIncidencia?: string; // Para supervisor
@@ -1272,12 +1274,31 @@ export const calendarioService = {
     if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
     if (filtros?.tipo) params.append('tipo', filtros.tipo);
     if (filtros?.estado) params.append('estado', filtros.estado);
+    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
 
-    const response = await api.get(`/api/dashboard/supervisor/calendario?${params.toString()}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      return response.data.data;
+    try {
+      const response = await api.get(`/api/dashboard/supervisor/calendario?${params.toString()}`);
+      const data = response.data && typeof response.data === 'object' && 'data' in response.data
+        ? response.data.data
+        : response.data;
+
+      // Compatibilidad si el backend envía "incidencias" en lugar de "eventos"
+      if (data && !data.eventos && Array.isArray((data as any).incidencias)) {
+        return { ...data, eventos: (data as any).incidencias };
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[calendarioService.supervisor] Error cargando calendario:', error);
+      return {
+        eventos: [],
+        totalEventosMes: 0,
+        eventosVencidosMes: 0,
+        eventosProximosMes: 0,
+        validacionesPendientes: 0,
+        incidenciasCriticas: 0,
+      };
     }
-    return response.data;
   },
 
   // Calendario Auditor (Consulta)

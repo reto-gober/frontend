@@ -8,6 +8,7 @@ export default function SupervisorGestionReportesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
+  const [periodosFuente, setPeriodosFuente] = useState<ReportePeriodo[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
   const [size] = useState(20);
@@ -43,6 +44,7 @@ export default function SupervisorGestionReportesClient() {
       // Cargar todos los periodos para extraer filtros y contadores
       const todosData = await flujoReportesService.supervision(0, 1000);
       const todos = todosData.content || [];
+      setPeriodosFuente(todos);
       
       console.log('📊 Periodos cargados para estadísticas:', todos);
       
@@ -94,6 +96,9 @@ export default function SupervisorGestionReportesClient() {
 
       console.log('📊 Estadísticas calculadas:', stats);
       setContadores(stats);
+
+      // Primera visualización con los datos cargados
+      aplicarFiltros(todos);
     } catch (err) {
       console.error('Error al cargar datos iniciales:', err);
     }
@@ -104,9 +109,26 @@ export default function SupervisorGestionReportesClient() {
       setLoading(true);
       setError(null);
 
-      // Cargar periodos del supervisor
-      const data = await flujoReportesService.supervision(page, size);
-      let filtrados = data.content || [];
+      // Usar cache local si existe, de lo contrario cargar una vez
+      let base = periodosFuente;
+      if (base.length === 0) {
+        const data = await flujoReportesService.supervision(page, size);
+        base = data.content || [];
+        setPeriodosFuente(base);
+      }
+
+      aplicarFiltros(base);
+
+    } catch (err: any) {
+      console.error('Error al cargar periodos:', err);
+      setError(err.response?.data?.message || 'Error al cargar los periodos de reportes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const aplicarFiltros = (lista: ReportePeriodo[]) => {
+      let filtrados = [...lista];
       
       // Aplicar filtros locales
       const ahora = new Date();
@@ -166,13 +188,6 @@ export default function SupervisorGestionReportesClient() {
       
       setPeriodos(filtrados);
       setTotalElements(filtrados.length);
-
-    } catch (err: any) {
-      console.error('Error al cargar periodos:', err);
-      setError(err.response?.data?.message || 'Error al cargar los periodos de reportes');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleTabChange = (tab: TabStatus) => {
