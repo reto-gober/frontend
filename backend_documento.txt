@@ -1,541 +1,265 @@
 ================================================================================
-ANÁLISIS BACKEND PARA EL ROL RESPONSABLE - MAPA COMPLETO DE ENDPOINTS
+CORRECCIONES RECOMENDADAS PARA EL FRONTEND - ROL RESPONSABLE
 ================================================================================
-Fecha de generación: 5 de diciembre de 2025
-Basado en: frontend_responsable.txt + código fuente del backend
-
-================================================================================
-1. LISTA DE ENDPOINTS QUE EL ROL RESPONSABLE NECESITA CONSUMIR
-================================================================================
-
-A continuación se listan TODOS los endpoints que el frontend del responsable
-necesita consumir, organizados por módulo/funcionalidad.
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ AUTENTICACIÓN                                                                 │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ POST /api/auth/login           - Iniciar sesión                              │
-│ POST /api/auth/registro        - Registrar usuario (si aplica)               │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ FLUJO DE REPORTES (principal para el Responsable)                            │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ GET  /api/flujo-reportes/mis-periodos                    - Todos mis periodos│
-│ GET  /api/flujo-reportes/mis-periodos/pendientes         - Mis pendientes    │
-│ GET  /api/flujo-reportes/mis-periodos/requieren-correccion - Requieren correc│
-│ POST /api/flujo-reportes/enviar                          - Enviar reporte    │
-│ POST /api/flujo-reportes/corregir-reenviar               - Corregir y reenviar│
-│ GET  /api/flujo-reportes/periodos/{periodoId}            - Detalle periodo   │
-│ GET  /api/flujo-reportes/periodos/{periodoId}/historial  - Historial estados │
-│ GET  /api/flujo-reportes/reportes/{reporteId}/periodos   - Periodos x reporte│
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ EVIDENCIAS                                                                    │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ POST /api/evidencias/reporte/{reporteId}     - Subir evidencia               │
-│ GET  /api/evidencias/reporte/{reporteId}     - Listar evidencias x reporte   │
-│ GET  /api/evidencias/{id}                    - Obtener evidencia por ID      │
-│ GET  /api/evidencias/{id}/descargar          - Descargar archivo             │
-│ GET  /api/evidencias/{id}/url-temporal       - URL prefirmada temporal       │
-│ DELETE /api/evidencias/{id}                  - Eliminar evidencia            │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ DASHBOARD RESPONSABLE                                                         │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ GET /api/dashboard/responsable              - Dashboard completo             │
-│ GET /api/dashboard/responsable/kpis         - Mis KPIs personales            │
-│ GET /api/dashboard/responsable/tareas       - Mis tareas pendientes          │
-│ GET /api/dashboard/responsable/proximos-vencer - Próximos a vencer           │
-│ GET /api/dashboard/responsable/alertas      - Mis alertas personales         │
-│ GET /api/dashboard/responsable/calendario   - Mi calendario personal         │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ REPORTES (lectura)                                                            │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ GET /api/reportes                            - Listar todos (paginado)       │
-│ GET /api/reportes/{id}                       - Detalle de un reporte         │
-│ GET /api/reportes/vencidos                   - Reportes vencidos             │
-│ GET /api/reportes/consolidados               - Reportes consolidados         │
-│ GET /api/reportes/consolidados/{reporteId}   - Detalle consolidado           │
-└──────────────────────────────────────────────────────────────────────────────┘
+Fecha: 5 de diciembre de 2025
+Basado en: frontend_responsable.txt
 
 ================================================================================
-2. ESTRUCTURA DE DATOS QUE RETORNA CADA ENDPOINT
+1. INCONSISTENCIA DE ESTADOS (CRÍTICO)
 ================================================================================
 
-──────────────────────────────────────────────────────────────────────────────
-2.1 POST /api/auth/login
-──────────────────────────────────────────────────────────────────────────────
-REQUEST:
-{
-  "email": "string (obligatorio, formato email)",
-  "password": "string (obligatorio, mínimo 6 caracteres)"
-}
+PROBLEMA:
+El frontend compara estados en minúsculas en algunas vistas y en mayúsculas 
+en otras (especialmente MisTareasClient.tsx).
 
-RESPONSE (JwtResponse):
-{
-  "token": "string",
-  "tipo": "Bearer",
-  "usuarioId": "UUID",
-  "documentNumber": "string",
-  "email": "string",
-  "firstName": "string",
-  "secondName": "string | null",
-  "firstLastname": "string",
-  "secondLastname": "string | null",
-  "roles": ["ROLE_RESPONSABLE", ...]
-}
+VISTAS AFECTADAS:
+- MisTareasClient.tsx usa: "ENVIADO", "APROBADO", "REQUIERE_CORRECCION"
+- Resto de vistas usan: "enviado_a_tiempo", "enviado_tarde", "aprobado"
 
-──────────────────────────────────────────────────────────────────────────────
-2.2 GET /api/flujo-reportes/mis-periodos
-    GET /api/flujo-reportes/mis-periodos/pendientes
-    GET /api/flujo-reportes/mis-periodos/requieren-correccion
-──────────────────────────────────────────────────────────────────────────────
-PARÁMETROS QUERY:
-- page: int (default 0)
-- size: int (default 10)
-- sort: string (default "fechaVencimientoCalculada,asc")
+CORRECCIÓN:
+Normalizar TODOS los estados a un solo formato. Opciones:
+a) Convertir siempre a minúsculas: estado.toLowerCase()
+b) Convertir siempre a mayúsculas: estado.toUpperCase()
+c) Usar una función de normalización centralizada
 
-RESPONSE (ApiResponse<Page<ReportePeriodoResponse>>):
-{
-  "success": true,
-  "message": null,
-  "data": {
-    "content": [ReportePeriodoResponse, ...],
-    "totalPages": int,
-    "totalElements": int,
-    "size": int,
-    "number": int,
-    "first": boolean,
-    "last": boolean,
-    "empty": boolean
-  },
-  "timestamp": "datetime",
-  "statusCode": 200
-}
+EJEMPLO DE CORRECCIÓN en MisTareasClient.tsx:
+```typescript
+// ANTES (incorrecto)
+const esCompletada = (periodo) => 
+  periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
 
-ESTRUCTURA DE ReportePeriodoResponse:
-{
-  "periodoId": "UUID",
-  "reporteId": "UUID",
-  "reporteNombre": "string",
-  "entidadNombre": "string",
-  "periodoTipo": "string", // "mensual", "trimestral", "semestral", "anual"
-  "periodoInicio": "LocalDate (YYYY-MM-DD)",
-  "periodoFin": "LocalDate (YYYY-MM-DD)",
-  "fechaVencimientoCalculada": "LocalDate (YYYY-MM-DD)",
-  "estado": "string", // ver tabla de estados
-  "estadoDescripcion": "string", // descripción legible
-  "fechaEnvioReal": "LocalDateTime | null",
-  "diasDesviacion": "int | null",
-  "responsableElaboracion": {
-    "usuarioId": "UUID",
-    "nombreCompleto": "string",
-    "email": "string",
-    "cargo": "string"
-  },
-  "responsableEnvio": {UsuarioResumen | null},
-  "responsableSupervision": {UsuarioResumen | null},
-  "comentarios": "string | null",
-  "cantidadArchivos": "int",
-  "createdAt": "LocalDateTime",
-  "updatedAt": "LocalDateTime",
-  "puedeEnviar": "boolean",
-  "puedeAprobar": "boolean",
-  "puedeRechazar": "boolean",
-  "puedeCorregir": "boolean",
-  "historialEstados": [{HistorialEstado}, ...] // opcional
-}
-
-HistorialEstado:
-{
-  "estadoAnterior": "string | null",
-  "estadoNuevo": "string",
-  "fecha": "LocalDateTime",
-  "usuarioNombre": "string",
-  "comentario": "string | null"
-}
-
-──────────────────────────────────────────────────────────────────────────────
-2.3 POST /api/flujo-reportes/enviar
-    POST /api/flujo-reportes/corregir-reenviar
-──────────────────────────────────────────────────────────────────────────────
-REQUEST (EnviarReporteRequest):
-{
-  "periodoId": "UUID (obligatorio)",
-  "comentarios": "string | null",
-  "evidenciasIds": ["UUID", ...] // opcional, IDs de evidencias ya subidas
-}
-
-RESPONSE (ApiResponse<ReportePeriodoResponse>):
-{
-  "success": true,
-  "message": "Reporte enviado exitosamente",
-  "data": {ReportePeriodoResponse},
-  "timestamp": "datetime",
-  "statusCode": 200
-}
-
-──────────────────────────────────────────────────────────────────────────────
-2.4 POST /api/evidencias/reporte/{reporteId}
-──────────────────────────────────────────────────────────────────────────────
-REQUEST:
-- Content-Type: multipart/form-data
-- Body: FormData con campo "file" (archivo)
-
-RESPONSE (ApiResponse<EvidenciaResponse>):
-{
-  "success": true,
-  "message": "Evidencia subida exitosamente",
-  "data": {
-    "id": "UUID",
-    "nombreArchivo": "string",
-    "urlPublica": "string | null", // URL directa para acceder al archivo
-    "tipoArchivo": "string", // MIME type
-    "tamano": "long", // en bytes
-    "reporteId": "UUID",
-    "subidoPorId": "UUID",
-    "subidoPorNombre": "string",
-    "creadoEn": "LocalDateTime"
-  },
-  "timestamp": "datetime",
-  "statusCode": 201
-}
-
-──────────────────────────────────────────────────────────────────────────────
-2.5 GET /api/dashboard/responsable
-──────────────────────────────────────────────────────────────────────────────
-RESPONSE (ApiResponse<DashboardResponsableDTO>):
-{
-  "success": true,
-  "data": {
-    "kpisPersonales": {
-      "totalAsignados": long,
-      "pendientes": long,
-      "enProgreso": long,
-      "enviados": long,
-      "aprobados": long,
-      "rechazados": long,
-      "vencidos": long,
-      "proximosAVencer": long, // próximos 7 días
-      "miPorcentajeCumplimiento": double
-    },
-    "tareasPendientes": [
-      {
-        "reporteId": "UUID",
-        "obligacion": "string",
-        "entidad": "string",
-        "descripcion": "string",
-        "fechaVencimiento": "LocalDate",
-        "diasRestantes": int,
-        "prioridad": "VENCIDO|URGENTE|ALTA|MEDIA|BAJA",
-        "estado": "string",
-        "puedeEditar": boolean,
-        "puedeEnviar": boolean
-      }
-    ],
-    "proximosAVencer": [{ReporteProximoVencerDTO}, ...],
-    "misAlertas": [{MiAlertaDTO}, ...],
-    "misReportesRecientes": [{MiReporteDTO}, ...],
-    "miCalendario": {
-      "eventos": [{EventoPersonalDTO}, ...],
-      "pendientesEsteMes": long,
-      "vencidosEsteMes": long,
-      "proximoVencimiento": "LocalDate"
-    }
-  }
-}
+// DESPUÉS (correcto)
+const esCompletada = (periodo) => {
+  const estado = periodo.estado?.toLowerCase();
+  return estado === "enviado_a_tiempo" || 
+         estado === "enviado_tarde" || 
+         estado === "aprobado";
+};
+```
 
 ================================================================================
-3. ESTADO DE IMPLEMENTACIÓN EN EL BACKEND
+2. ALERTAS NO PERSISTEN (FUNCIONALIDAD INCOMPLETA)
 ================================================================================
 
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ ENDPOINT                                              │ ESTADO │ UBICACIÓN   │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ POST /api/auth/login                                  │   ✅   │ AuthController│
-│ POST /api/auth/registro                               │   ✅   │ AuthController│
-├──────────────────────────────────────────────────────────────────────────────┤
-│ GET  /api/flujo-reportes/mis-periodos                 │   ✅   │ FlujoReporteController│
-│ GET  /api/flujo-reportes/mis-periodos/pendientes      │   ✅   │ FlujoReporteController│
-│ GET  /api/flujo-reportes/mis-periodos/requieren-correccion│ ✅ │ FlujoReporteController│
-│ POST /api/flujo-reportes/enviar                       │   ✅   │ FlujoReporteController│
-│ POST /api/flujo-reportes/corregir-reenviar            │   ✅   │ FlujoReporteController│
-│ GET  /api/flujo-reportes/periodos/{periodoId}         │   ✅   │ FlujoReporteController│
-│ GET  /api/flujo-reportes/periodos/{periodoId}/historial│  ✅   │ FlujoReporteController│
-│ GET  /api/flujo-reportes/reportes/{reporteId}/periodos │  ✅   │ FlujoReporteController│
-├──────────────────────────────────────────────────────────────────────────────┤
-│ POST /api/evidencias/reporte/{reporteId}              │   ✅   │ EvidenciaController│
-│ GET  /api/evidencias/reporte/{reporteId}              │   ✅   │ EvidenciaController│
-│ GET  /api/evidencias/{id}                             │   ✅   │ EvidenciaController│
-│ GET  /api/evidencias/{id}/descargar                   │   ✅   │ EvidenciaController│
-│ GET  /api/evidencias/{id}/url-temporal                │   ✅   │ EvidenciaController│
-│ DELETE /api/evidencias/{id}                           │   ✅   │ EvidenciaController│
-├──────────────────────────────────────────────────────────────────────────────┤
-│ GET /api/dashboard/responsable                        │   ✅   │ DashboardController│
-│ GET /api/dashboard/responsable/kpis                   │   ✅   │ DashboardController│
-│ GET /api/dashboard/responsable/tareas                 │   ✅   │ DashboardController│
-│ GET /api/dashboard/responsable/proximos-vencer        │   ✅   │ DashboardController│
-│ GET /api/dashboard/responsable/alertas                │   ✅   │ DashboardController│
-│ GET /api/dashboard/responsable/calendario             │   ✅   │ DashboardController│
-├──────────────────────────────────────────────────────────────────────────────┤
-│ GET /api/reportes                                     │   ✅   │ ReporteController│
-│ GET /api/reportes/{id}                                │   ✅   │ ReporteController│
-│ GET /api/reportes/vencidos                            │   ✅   │ ReporteController│
-│ GET /api/reportes/consolidados                        │   ✅   │ ReporteController│
-│ GET /api/reportes/consolidados/{reporteId}            │   ✅   │ ReporteController│
-└──────────────────────────────────────────────────────────────────────────────┘
+PROBLEMA:
+Las alertas marcadas como "leídas" se pierden al recargar la página.
+No existe integración con backend para persistir este estado.
 
-RESUMEN:
-- ✅ TODOS los endpoints principales están IMPLEMENTADOS
-- No se detectan endpoints faltantes para el flujo del responsable
-
-================================================================================
-4. DIFERENCIAS ENTRE FRONTEND ESPERADO Y BACKEND ACTUAL
-================================================================================
-
-4.1 DIFERENCIAS EN NOMBRES DE CAMPOS (ReportePeriodoResponse)
-──────────────────────────────────────────────────────────────────────────────
-│ FRONTEND ESPERA             │ BACKEND DEVUELVE          │ COMPATIBILIDAD    │
-├─────────────────────────────┼───────────────────────────┼───────────────────┤
-│ responsableElaboracion      │ responsableElaboracion    │ ✅ IGUAL          │
-│   .usuarioId                │   .usuarioId              │ ✅ IGUAL          │
-│   .nombreCompleto           │   .nombreCompleto         │ ✅ IGUAL          │
-│   .email                    │   .email                  │ ✅ IGUAL          │
-│   .cargo                    │   .cargo                  │ ✅ IGUAL          │
-│                             │                           │                   │
-│ responsableSupervision      │ responsableSupervision    │ ✅ IGUAL          │
-│                             │                           │                   │
-│ (no espera)                 │ responsableEnvio          │ ⚠️ CAMPO EXTRA    │
-│                             │                           │ (no afecta)       │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-4.2 DIFERENCIAS EN ESTADOS
-──────────────────────────────────────────────────────────────────────────────
-│ FRONTEND USA                │ BACKEND USA               │ ESTADO            │
-├─────────────────────────────┼───────────────────────────┼───────────────────┤
-│ NO_INICIADO                 │ pendiente                 │ ⚠️ DIFERENTE      │
-│ PENDIENTE                   │ pendiente                 │ ⚠️ DIFERENTE      │
-│ PENDIENTE_ENVIO             │ en_elaboracion            │ ⚠️ DIFERENTE      │
-│ EN_ELABORACION              │ en_elaboracion            │ ✅ EQUIVALENTE    │
-│ EN_REVISION                 │ en_revision               │ ✅ EQUIVALENTE    │
-│ ENVIADO                     │ enviado_a_tiempo          │ ⚠️ DIFERENTE      │
-│                             │ enviado_tarde             │ ⚠️ DIFERENTE      │
-│ APROBADO                    │ aprobado                  │ ✅ EQUIVALENTE    │
-│ COMPLETADO                  │ aprobado                  │ ⚠️ DIFERENTE      │
-│ REQUIERE_CORRECCION         │ requiere_correccion       │ ✅ EQUIVALENTE    │
-│ (no usa)                    │ rechazado                 │ ⚠️ NO MAPEADO     │
-│ (no usa)                    │ vencido                   │ ⚠️ NO MAPEADO     │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-ESTADOS DEL BACKEND (según ReportePeriodoMapper):
-- "pendiente"           → "Pendiente de elaboración"
-- "en_elaboracion"      → "En proceso de elaboración"
-- "enviado_a_tiempo"    → "Enviado a tiempo"
-- "enviado_tarde"       → "Enviado fuera de plazo"
-- "en_revision"         → "En revisión por supervisor"
-- "requiere_correccion" → "Requiere corrección"
-- "aprobado"            → "Aprobado"
-- "rechazado"           → "Rechazado"
-- "vencido"             → "Vencido sin enviar"
-
-⚠️ RECOMENDACIÓN CRÍTICA:
-El frontend debe ajustar su lógica de filtrado para usar los estados del backend.
-Ejemplo de mapeo sugerido en frontend:
-- "Pendientes" → ["pendiente", "en_elaboracion"]
-- "Enviados"   → ["enviado_a_tiempo", "enviado_tarde", "aprobado"]
-- "Requieren corrección" → ["requiere_correccion"]
-
-4.3 DIFERENCIAS EN EvidenciaResponse
-──────────────────────────────────────────────────────────────────────────────
-│ FRONTEND ESPERA             │ BACKEND DEVUELVE          │ COMPATIBILIDAD    │
-├─────────────────────────────┼───────────────────────────┼───────────────────┤
-│ id                          │ id                        │ ✅ IGUAL          │
-│ nombreArchivo               │ nombreArchivo             │ ✅ IGUAL          │
-│ tipoArchivo                 │ tipoArchivo               │ ✅ IGUAL          │
-│ tamano                      │ tamano                    │ ✅ IGUAL          │
-│ reporteId                   │ reporteId                 │ ✅ IGUAL          │
-│ subidoPorId                 │ subidoPorId               │ ✅ IGUAL          │
-│ subidoPorNombre             │ subidoPorNombre           │ ✅ IGUAL          │
-│ creadoEn                    │ creadoEn                  │ ✅ IGUAL          │
-│ (no espera)                 │ urlPublica                │ ⚠️ CAMPO EXTRA    │
-│                             │                           │ (útil para el FE) │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-================================================================================
-5. VALIDACIONES Y REGLAS POR ENDPOINT
-================================================================================
-
-5.1 POST /api/flujo-reportes/enviar
-──────────────────────────────────────────────────────────────────────────────
-VALIDACIONES:
-✓ periodoId es obligatorio (UUID válido)
-✓ El usuario autenticado debe ser el responsableElaboracion del periodo
-✓ El periodo debe estar en estado: "pendiente", "en_elaboracion" o "requiere_correccion"
-✓ comentarios es opcional (string)
-✓ evidenciasIds es opcional (lista de UUIDs de evidencias existentes)
-
-REGLAS DE NEGOCIO:
-- Si fecha actual <= fechaVencimientoCalculada → estado = "enviado_a_tiempo"
-- Si fecha actual > fechaVencimientoCalculada → estado = "enviado_tarde"
-- Se registra fechaEnvioReal con timestamp actual
-- Se calcula diasDesviacion (días respecto a fecha vencimiento)
-- Se guarda el usuario actual como responsableEnvio
-- Se notifica por email al supervisor
-
-ERRORES POSIBLES:
-- 404: "Periodo no encontrado: {periodoId}"
-- 403: "No tienes permiso para enviar este reporte"
-- 400: "El reporte no puede ser enviado en su estado actual: {estado}"
-
-5.2 POST /api/flujo-reportes/corregir-reenviar
-──────────────────────────────────────────────────────────────────────────────
-VALIDACIONES:
-✓ Mismas validaciones que enviar
-✓ El periodo debe estar en estado "requiere_correccion"
-
-ERRORES POSIBLES:
-- 404: "Periodo no encontrado: {periodoId}"
-- 400: "El reporte no está en estado de corrección requerida"
-
-5.3 POST /api/evidencias/reporte/{reporteId}
-──────────────────────────────────────────────────────────────────────────────
-VALIDACIONES:
-✓ reporteId debe existir en la base de datos
-✓ Debe existir al menos un periodo para ese reporte
-✓ El archivo no puede tener nombre vacío
-✓ El usuario debe estar autenticado
-
-REGLAS DE NEGOCIO:
-- La evidencia se asocia al periodo más reciente del reporte
-- Se sube a Cloudflare R2 con estructura: reportes/{reporteId}/periodo-{periodoId}/{nombreArchivo}
-- Se genera URL pública (si está configurado)
-
-ERRORES POSIBLES:
-- 404: "Reporte no encontrado"
-- 404: "No se encontró ningún periodo activo para este reporte"
-- 404: "Usuario no encontrado"
-- 400: "El nombre del archivo no puede estar vacío"
-- 500: "Error al subir el archivo: {mensaje}"
-
-5.4 GET /api/flujo-reportes/mis-periodos
-──────────────────────────────────────────────────────────────────────────────
-VALIDACIONES:
-✓ Usuario debe estar autenticado
-✓ Usuario debe tener rol RESPONSABLE, SUPERVISOR o ADMIN
-
-REGLAS DE NEGOCIO:
-- Retorna solo periodos donde el usuario es responsableElaboracion
-- Ordenados por fechaVencimientoCalculada ASC por defecto
-
-5.5 DELETE /api/evidencias/{id}
-──────────────────────────────────────────────────────────────────────────────
-VALIDACIONES:
-✓ Usuario debe tener rol ADMIN, SUPERVISOR o RESPONSABLE
-✓ La evidencia debe existir
-
-NOTA: No hay validación de que el usuario sea el dueño de la evidencia.
-      Cualquier usuario con los roles permitidos puede eliminar cualquier evidencia.
-      ⚠️ POSIBLE MEJORA: Validar que solo el subidoPor o un admin pueda eliminar.
-
-================================================================================
-6. INCONSISTENCIAS DETECTADAS
-================================================================================
-
-6.1 ESTADOS NO ALINEADOS (CRÍTICO)
-──────────────────────────────────────────────────────────────────────────────
-El frontend espera estados en MAYÚSCULAS/formato diferente:
-- Frontend: NO_INICIADO, PENDIENTE, PENDIENTE_ENVIO, ENVIADO, COMPLETADO
-- Backend:  pendiente, en_elaboracion, enviado_a_tiempo, enviado_tarde, aprobado
-
-SOLUCIÓN REQUERIDA:
-El frontend debe adaptar su lógica para usar los estados del backend:
-
-// Filtros frontend → estados backend
-const estadosFrontToBack = {
-  'PENDIENTES': ['pendiente', 'en_elaboracion'],
-  'ENVIADOS': ['enviado_a_tiempo', 'enviado_tarde'],
-  'APROBADOS': ['aprobado'],
-  'REQUIERE_CORRECCION': ['requiere_correccion'],
-  'VENCIDOS': ['vencido'] // o calcular por fecha
+CORRECCIÓN TEMPORAL (localStorage):
+```typescript
+// Guardar estado en localStorage
+const marcarComoLeida = (alertaId: string) => {
+  const leidasGuardadas = JSON.parse(localStorage.getItem('alertasLeidas') || '[]');
+  leidasGuardadas.push(alertaId);
+  localStorage.setItem('alertasLeidas', JSON.stringify(leidasGuardadas));
+  // Actualizar estado React
 };
 
-6.2 CÁLCULO DE VENCIDOS
-──────────────────────────────────────────────────────────────────────────────
-El frontend calcula "vencidos" como:
-- fechaVencimiento < hoy AND estado NOT IN ('enviado', 'aprobado', 'completado')
+// Recuperar al cargar
+useEffect(() => {
+  const leidasGuardadas = JSON.parse(localStorage.getItem('alertasLeidas') || '[]');
+  // Aplicar a las alertas generadas
+}, []);
+```
 
-El backend tiene estado "vencido" pero el flujo normal no lo asigna automáticamente.
-Se recomienda:
-- Opción A: Job programado en backend que cambie a "vencido" los periodos pasados
-- Opción B: Mantener cálculo en frontend basado en fecha
-
-6.3 ENDPOINT DE CALENDARIO NO DEDICADO
-──────────────────────────────────────────────────────────────────────────────
-El frontend menciona CalendarioClient.tsx que espera eventos de calendario.
-El backend tiene:
-- /api/dashboard/responsable/calendario → retorna CalendarioPersonalDTO
-- /api/calendar/sincronizar → solo para admin, sincroniza datos
-
-NO EXISTE un endpoint directo como GET /api/calendar/events para el responsable.
-El frontend genera eventos localmente desde los periodos.
-✅ Esto es correcto según la implementación actual del frontend.
-
-6.4 ALERTAS GENERADAS EN FRONTEND
-──────────────────────────────────────────────────────────────────────────────
-El frontend (AlertasClient.tsx) genera alertas localmente basándose en periodos.
-El backend tiene /api/dashboard/responsable/alertas que retorna MiAlertaDTO.
-
-⚠️ Verificar que la lógica del backend coincida con lo que espera el frontend:
-- Críticas: periodos vencidos
-- Advertencias: próximos a vencer (3 días) y que requieren corrección
-- Éxito: aprobados en últimos 7 días
-
-6.5 DIFERENCIA EN SUBIDA DE EVIDENCIAS
-──────────────────────────────────────────────────────────────────────────────
-Frontend espera:
-- POST /api/evidencias/reporte/{reporteId}
-
-Backend implementa:
-- POST /api/evidencias/reporte/{reporteId}
-
-✅ COMPATIBLE - pero el backend asocia la evidencia al PERIODO más reciente,
-no directamente al reporte. Esto puede causar confusión si hay múltiples periodos.
-
-RECOMENDACIÓN: Agregar endpoint alternativo:
-- POST /api/evidencias/periodo/{periodoId} → para subir a un periodo específico
+CORRECCIÓN DEFINITIVA:
+Solicitar al backend endpoint: POST /api/alertas/marcar-leida
+Y endpoint: GET /api/alertas/usuario para obtener alertas persistidas.
 
 ================================================================================
-7. RESUMEN EJECUTIVO
+3. TAREAS MARCADAS NO PERSISTEN
 ================================================================================
 
-ESTADO GENERAL: ✅ MAYORMENTE COMPATIBLE
+PROBLEMA:
+El checkbox de tareas en MisTareasClient.tsx es solo visual y se pierde
+al recargar.
 
-PROBLEMAS CRÍTICOS A RESOLVER:
-1. ⚠️ Estados no alineados entre frontend y backend (ver sección 6.1)
-2. ⚠️ Frontend usa estados en MAYÚSCULAS, backend usa minúsculas
+CORRECCIÓN:
+Similar a las alertas, usar localStorage como solución temporal:
+```typescript
+const TAREAS_MARCADAS_KEY = 'tareasMarcadasResponsable';
 
-PROBLEMAS MENORES:
-3. Campo extra "responsableEnvio" en backend (no afecta)
-4. Campo extra "urlPublica" en evidencias (beneficio adicional)
-5. Falta endpoint para subir evidencias a periodo específico
+const cargarTareasMarcadas = () => {
+  return JSON.parse(localStorage.getItem(TAREAS_MARCADAS_KEY) || '[]');
+};
 
-ENDPOINTS COMPLETAMENTE IMPLEMENTADOS:
-- ✅ Flujo de reportes (mis-periodos, enviar, corregir)
-- ✅ Evidencias (subir, listar, descargar, eliminar)
-- ✅ Dashboard responsable (KPIs, tareas, alertas, calendario)
-- ✅ Autenticación (login, registro)
-- ✅ Reportes (lectura)
-
-ACCIONES REQUERIDAS EN FRONTEND:
-1. Adaptar mapeo de estados a los valores del backend
-2. Actualizar filtros para usar estados correctos
-3. Usar el campo estadoDescripcion para mostrar texto legible
+const guardarTareasMarcadas = (tareas: string[]) => {
+  localStorage.setItem(TAREAS_MARCADAS_KEY, JSON.stringify(tareas));
+};
+```
 
 ================================================================================
-FIN DEL ANÁLISIS
+4. PAGINACIÓN INEFICIENTE
+================================================================================
+
+PROBLEMA:
+El frontend solicita hasta 1000 registros y luego pagina localmente.
+Esto es ineficiente y puede causar problemas de rendimiento.
+
+VISTAS AFECTADAS:
+- ResponsableDashboardClient.tsx: size=1000
+- MisReportesClient.tsx: size=1000
+- CalendarioClient.tsx: size=1000
+- CalendarioResponsableClient.tsx: size=1000
+- AlertasClient.tsx: size=1000
+
+CORRECCIÓN:
+Implementar paginación real hacia el backend:
+```typescript
+// ANTES
+const { data } = await flujoReportesService.misPeriodos(0, 1000);
+
+// DESPUÉS
+const [page, setPage] = useState(0);
+const pageSize = 20;
+const { data, totalPages } = await flujoReportesService.misPeriodos(page, pageSize);
+
+// Y manejar cambios de página con el backend
+const handlePageChange = (newPage: number) => {
+  setPage(newPage);
+  // El useEffect debería recargar los datos
+};
+```
+
+================================================================================
+5. FILTROS NO SE ENVÍAN AL BACKEND
+================================================================================
+
+PROBLEMA:
+Los filtros (pendientes, enviados, vencidos, etc.) se aplican en frontend
+después de traer todos los datos. Esto es ineficiente.
+
+CORRECCIÓN:
+Enviar filtros como parámetros al backend:
+```typescript
+// ANTES
+const { data } = await flujoReportesService.misPeriodos(0, 1000);
+const filtrados = data.filter(p => p.estado === 'pendiente');
+
+// DESPUÉS
+const { data } = await flujoReportesService.misPeriodos(0, 20, {
+  estado: 'pendiente',
+  // otros filtros
+});
+```
+
+Verificar que el backend soporte estos parámetros de filtrado.
+
+================================================================================
+6. MANEJO DE FECHAS INCONSISTENTE
+================================================================================
+
+PROBLEMA:
+Se calculan días restantes comparando fechas directamente, sin considerar
+zonas horarias o normalización.
+
+CORRECCIÓN:
+Usar una librería de fechas o normalizar:
+```typescript
+// Función centralizada para cálculo de días
+const calcularDiasRestantes = (fechaVencimiento: string): number => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0); // Normalizar a inicio del día
+  
+  const vencimiento = new Date(fechaVencimiento);
+  vencimiento.setHours(0, 0, 0, 0);
+  
+  return Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+};
+```
+
+================================================================================
+7. FALTA MANEJO DE ERRORES CONSISTENTE
+================================================================================
+
+PROBLEMA:
+No se documenta manejo de errores cuando los endpoints fallan.
+
+CORRECCIÓN:
+Implementar try-catch con feedback al usuario:
+```typescript
+try {
+  const { data } = await flujoReportesService.misPeriodos(0, 100);
+  setPeriodos(data);
+} catch (error) {
+  toast.error('Error al cargar los reportes. Intente nuevamente.');
+  console.error('Error:', error);
+}
+```
+
+================================================================================
+8. ESTADO "en_revision" NO SE MANEJA CORRECTAMENTE
+================================================================================
+
+PROBLEMA:
+El estado "en_revision" se lista pero no se clasifica en ninguna categoría
+de los filtros (pendientes, enviados, etc.).
+
+CORRECCIÓN:
+Incluir "en_revision" en la clasificación de enviados:
+```typescript
+const esEnviado = (estado: string) => {
+  const e = estado?.toLowerCase();
+  return ['enviado_a_tiempo', 'enviado_tarde', 'aprobado', 'en_revision'].includes(e);
+};
+```
+
+================================================================================
+9. EVENTOS DE CALENDARIO DUPLICADOS
+================================================================================
+
+PROBLEMA:
+En CalendarioClient.tsx se generan hasta 3 eventos por periodo (vencimiento,
+envío, aprobación). Esto puede saturar la vista de calendario.
+
+CORRECCIÓN:
+Considerar mostrar solo el evento más relevante según el estado:
+```typescript
+const generarEvento = (periodo: ReportePeriodo) => {
+  if (periodo.estado === 'aprobado') {
+    return { tipo: 'aprobado', fecha: periodo.updatedAt };
+  } else if (['enviado_a_tiempo', 'enviado_tarde'].includes(periodo.estado)) {
+    return { tipo: 'enviado', fecha: periodo.fechaEnvioReal || periodo.updatedAt };
+  } else {
+    return { tipo: 'vencimiento', fecha: periodo.fechaVencimientoCalculada };
+  }
+};
+```
+
+================================================================================
+10. RESPONSIVE Y ACCESIBILIDAD (REVISAR)
+================================================================================
+
+PROBLEMA:
+No se documenta si las vistas son responsive o accesibles.
+
+CORRECCIÓN:
+- Verificar que los componentes tengan atributos aria-*
+- Verificar que funcionen en móviles
+- Agregar loading states mientras se cargan datos
+
+================================================================================
+RESUMEN DE PRIORIDADES
+================================================================================
+
+CRÍTICO (corregir inmediatamente):
+1. Inconsistencia de estados mayúsculas/minúsculas
+2. Estado "en_revision" sin clasificar
+
+ALTO (corregir pronto):
+3. Manejo de errores consistente
+4. Cálculo de fechas con normalización
+
+MEDIO (mejora de rendimiento):
+5. Paginación real hacia backend
+6. Filtros enviados al backend
+
+BAJO (mejoras de UX):
+7. Persistir alertas leídas (localStorage temporal)
+8. Persistir tareas marcadas (localStorage temporal)
+9. Eventos de calendario sin duplicar
+10. Revisar responsive/accesibilidad
+
+================================================================================
+FIN DE CORRECCIONES RECOMENDADASa
 ================================================================================

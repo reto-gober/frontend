@@ -4,6 +4,16 @@ import {
   flujoReportesService,
   type ReporteResponse,
 } from "../../lib/services";
+import {
+  calcularDiasRestantes,
+  esFechaVencida,
+  formatearFecha,
+} from "../../lib/utils/fechas";
+import {
+  esEstadoPendiente,
+  esEstadoEnviado,
+  normalizarEstado,
+} from "../../lib/utils/estados";
 
 export default function ResponsableDashboardClient() {
   const [loading, setLoading] = useState(true);
@@ -34,52 +44,30 @@ export default function ResponsableDashboardClient() {
       setLoading(true);
       setError(null);
 
-      // Obtener el ID del usuario actual (en producción vendría del contexto de autenticación)
-      // Por ahora cargamos todos los reportes y filtramos después
-      const reportesData = await reportesService.listar(0, 1000);
-      const reportes = reportesData.content;
-      const ahora = new Date();
-      const tresDias = new Date(ahora.getTime() + 3 * 24 * 60 * 60 * 1000);
-
-      // Calcular KPIs basados en periodos del flujo de reportes
+      // Obtener mis periodos desde el flujo de reportes
       const periodosResponse = await flujoReportesService.misPeriodos(0, 1000);
       const periodos = periodosResponse.content;
 
-      const pendientes = periodos.filter(
-        (p) =>
-          p.estado === "pendiente" ||
-          p.estado === "en_elaboracion" ||
-          p.estado === "requiere_correccion"
+      const ahora = new Date();
+      const tresDias = new Date(ahora.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+      const pendientes = periodos.filter((p) =>
+        esEstadoPendiente(p.estado)
       ).length;
 
-      const enviados = periodos.filter(
-        (p) =>
-          p.estado === "enviado_a_tiempo" ||
-          p.estado === "enviado_tarde" ||
-          p.estado === "aprobado"
-      ).length;
+      const enviados = periodos.filter((p) => esEstadoEnviado(p.estado)).length;
 
       const vencidos = periodos.filter((p) => {
-        if (
-          p.fechaVencimientoCalculada &&
-          p.estado !== "aprobado" &&
-          p.estado !== "enviado_a_tiempo" &&
-          p.estado !== "enviado_tarde"
-        ) {
-          return new Date(p.fechaVencimientoCalculada) < ahora;
+        if (p.fechaVencimientoCalculada && !esEstadoEnviado(p.estado)) {
+          return esFechaVencida(p.fechaVencimientoCalculada);
         }
         return false;
       }).length;
 
       const porVencer = periodos.filter((p) => {
-        if (
-          p.fechaVencimientoCalculada &&
-          p.estado !== "aprobado" &&
-          p.estado !== "enviado_a_tiempo" &&
-          p.estado !== "enviado_tarde"
-        ) {
-          const fechaVenc = new Date(p.fechaVencimientoCalculada);
-          return fechaVenc >= ahora && fechaVenc <= tresDias;
+        if (p.fechaVencimientoCalculada && !esEstadoEnviado(p.estado)) {
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3;
         }
         return false;
       }).length;
@@ -87,9 +75,10 @@ export default function ResponsableDashboardClient() {
       setKpis({ pendientes, enviados, vencidos, porVencer });
 
       // Estado de reportes para gráfica basado en periodos
-      const enProceso = periodos.filter(
-        (p) => p.estado === "en_elaboracion" || p.estado === "en_revision"
-      ).length;
+      const enProceso = periodos.filter((p) => {
+        const estado = normalizarEstado(p.estado);
+        return estado === "en_elaboracion" || estado === "en_revision";
+      }).length;
 
       setEstadoReportes({
         pendientes,
@@ -101,16 +90,11 @@ export default function ResponsableDashboardClient() {
       // Próximos vencimientos (ordenar por fecha más cercana)
       const periodosConVencimiento = periodos
         .filter(
-          (p) =>
-            p.fechaVencimientoCalculada &&
-            p.estado !== "aprobado" &&
-            p.estado !== "enviado_a_tiempo" &&
-            p.estado !== "enviado_tarde"
+          (p) => p.fechaVencimientoCalculada && !esEstadoEnviado(p.estado)
         )
         .map((p) => {
-          const fechaVenc = new Date(p.fechaVencimientoCalculada);
-          const diasRestantes = Math.ceil(
-            (fechaVenc.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24)
+          const diasRestantes = calcularDiasRestantes(
+            p.fechaVencimientoCalculada
           );
 
           return {
@@ -135,11 +119,7 @@ export default function ResponsableDashboardClient() {
   };
 
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    return formatearFecha(fecha);
   };
 
   const handleKpiClick = (filtro: string) => {

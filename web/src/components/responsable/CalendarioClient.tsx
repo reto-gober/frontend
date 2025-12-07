@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
+import { formatearFecha, formatearFechaCompleta } from "../../lib/utils/fechas";
+import {
+  esEstadoPendiente,
+  esEstadoEnviado,
+  normalizarEstado,
+} from "../../lib/utils/estados";
 
 interface EventoCalendario {
   id: string;
@@ -16,6 +22,7 @@ type VistaCalendario = "mes" | "lista";
 export default function CalendarioClient() {
   const [eventos, setEventos] = useState<EventoCalendario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [vista, setVista] = useState<VistaCalendario>("lista");
   const [mesActual, setMesActual] = useState(new Date());
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
@@ -27,35 +34,36 @@ export default function CalendarioClient() {
   const loadEventos = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const response = await flujoReportesService.misPeriodos(0, 1000);
       const periodos = response.content;
 
       const eventosGenerados: EventoCalendario[] = [];
-      const now = new Date();
 
       periodos.forEach((periodo) => {
         if (!periodo.fechaVencimientoCalculada) return;
 
-        const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
+        const estado = normalizarEstado(periodo.estado);
 
-        // Evento de vencimiento
-        eventosGenerados.push({
-          id: `venc-${periodo.periodoId}`,
-          periodoId: periodo.periodoId,
-          fecha: fechaVenc,
-          titulo: periodo.reporteNombre,
-          descripcion: `Vencimiento - ${periodo.entidadNombre}`,
-          tipo: "vencimiento",
-          estado: periodo.estado,
-        });
-
-        // Evento de envío si el estado indica que fue enviado
-        if (
-          periodo.estado === "enviado_a_tiempo" ||
-          periodo.estado === "enviado_tarde" ||
-          periodo.estado === "aprobado"
+        // Generar solo el evento más relevante según el estado para evitar duplicados
+        if (estado === "aprobado") {
+          // Evento de aprobación
+          eventosGenerados.push({
+            id: `apr-${periodo.periodoId}`,
+            periodoId: periodo.periodoId,
+            fecha: new Date(periodo.updatedAt),
+            titulo: periodo.reporteNombre,
+            descripcion: `Aprobado - ${periodo.entidadNombre}`,
+            tipo: "aprobado",
+            estado: periodo.estado,
+          });
+        } else if (
+          estado === "enviado_a_tiempo" ||
+          estado === "enviado_tarde" ||
+          estado === "en_revision"
         ) {
+          // Evento de envío
           eventosGenerados.push({
             id: `env-${periodo.periodoId}`,
             periodoId: periodo.periodoId,
@@ -65,17 +73,15 @@ export default function CalendarioClient() {
             tipo: "enviado",
             estado: periodo.estado,
           });
-        }
-
-        // Evento de aprobación si fue aprobado
-        if (periodo.estado === "aprobado" && periodo.updatedAt) {
+        } else {
+          // Evento de vencimiento para pendientes
           eventosGenerados.push({
-            id: `apr-${periodo.periodoId}`,
+            id: `venc-${periodo.periodoId}`,
             periodoId: periodo.periodoId,
-            fecha: new Date(periodo.updatedAt),
+            fecha: new Date(periodo.fechaVencimientoCalculada),
             titulo: periodo.reporteNombre,
-            descripcion: `Aprobado - ${periodo.entidadNombre}`,
-            tipo: "aprobado",
+            descripcion: `Vencimiento - ${periodo.entidadNombre}`,
+            tipo: "vencimiento",
             estado: periodo.estado,
           });
         }
@@ -87,6 +93,7 @@ export default function CalendarioClient() {
       setEventos(eventosGenerados);
     } catch (err) {
       console.error("Error al cargar eventos del calendario:", err);
+      setError("Error al cargar eventos del calendario. Intente nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -94,19 +101,10 @@ export default function CalendarioClient() {
 
   const eventosFiltrados = eventos.filter((evento) => {
     if (filtroEstado === "pendientes") {
-      return (
-        evento.tipo === "vencimiento" &&
-        (evento.estado === "pendiente" ||
-          evento.estado === "en_elaboracion" ||
-          evento.estado === "requiere_correccion")
-      );
+      return evento.tipo === "vencimiento" && esEstadoPendiente(evento.estado);
     }
     if (filtroEstado === "enviados") {
-      return (
-        evento.estado === "enviado_a_tiempo" ||
-        evento.estado === "enviado_tarde" ||
-        evento.estado === "aprobado"
-      );
+      return esEstadoEnviado(evento.estado);
     }
     return true;
   });
@@ -136,19 +134,14 @@ export default function CalendarioClient() {
     });
   };
 
-  const formatearFecha = (fecha: Date) => {
+  const formatearFechaEvento = (fecha: Date) => {
     const dia = fecha.getDate();
     const mes = fecha.toLocaleDateString("es-CO", { month: "short" });
     return { dia: dia.toString().padStart(2, "0"), mes };
   };
 
-  const formatearFechaCompleta = (fecha: Date) => {
-    return fecha.toLocaleDateString("es-CO", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const formatearFechaCompletaEvento = (fecha: Date) => {
+    return formatearFechaCompleta(fecha);
   };
 
   const getColorEvento = (tipo: string) => {
@@ -342,7 +335,7 @@ export default function CalendarioClient() {
         ) : (
           <div className="eventos-list">
             {eventosMes.map((evento) => {
-              const { dia, mes } = formatearFecha(evento.fecha);
+              const { dia, mes } = formatearFechaEvento(evento.fecha);
               const esProximo =
                 evento.fecha > new Date() &&
                 evento.fecha < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -372,7 +365,7 @@ export default function CalendarioClient() {
                     <p className="evento-description">{evento.descripcion}</p>
                     <div className="evento-footer">
                       <span className="evento-date-full">
-                        {formatearFechaCompleta(evento.fecha)}
+                        {formatearFechaCompletaEvento(evento.fecha)}
                       </span>
                       <button
                         className="evento-action-btn"

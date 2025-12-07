@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { flujoReportesService } from "../../lib/services";
+import { esEstadoEnviado } from "../../lib/utils/estados";
 
 const menuItems = [
   {
@@ -123,18 +124,15 @@ export default function SidebarResponsable() {
           if (!periodo.fechaVencimientoCalculada) return;
 
           const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
-          const esEnviado =
-            periodo.estado === "enviado_a_tiempo" ||
-            periodo.estado === "enviado_tarde" ||
-            periodo.estado === "aprobado";
+          const enviado = esEstadoEnviado(periodo.estado);
 
           // Contar alertas críticas - Reportes vencidos
-          if (fechaVenc < now && !esEnviado) {
+          if (fechaVenc < now && !enviado) {
             alertasCount++;
           }
 
           // Contar alertas de advertencia - Por vencer en 3 días
-          if (fechaVenc >= now && fechaVenc <= tresDias && !esEnviado) {
+          if (fechaVenc >= now && fechaVenc <= tresDias && !enviado) {
             alertasCount++;
           }
 

@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
-import notifications from '../../lib/notifications';
+import notifications from "../../lib/notifications";
+import {
+  calcularDiasRestantes,
+  esFechaVencida,
+  venceDentroDeNDias,
+} from "../../lib/utils/fechas";
+import { esEstadoEnviado, esEstadoAprobado } from "../../lib/utils/estados";
 
 interface Alerta {
   id: string;
@@ -41,15 +47,12 @@ export default function AlertasClient() {
         if (!periodo.fechaVencimientoCalculada) return;
 
         const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
-        const esEnviado =
-          periodo.estado === "enviado_a_tiempo" ||
-          periodo.estado === "enviado_tarde" ||
-          periodo.estado === "aprobado";
+        const enviado = esEstadoEnviado(periodo.estado);
 
         // Alertas críticas - Reportes vencidos
-        if (fechaVenc < now && !esEnviado) {
-          const diasVencido = Math.ceil(
-            (now.getTime() - fechaVenc.getTime()) / (1000 * 60 * 60 * 24)
+        if (esFechaVencida(fechaVenc) && !enviado) {
+          const diasVencido = Math.abs(
+            calcularDiasRestantes(periodo.fechaVencimientoCalculada)
           );
           generatedAlertas.push({
             id: `vencido-${periodo.periodoId}`,
@@ -64,9 +67,12 @@ export default function AlertasClient() {
         }
 
         // Alertas de advertencia - Por vencer en 3 días
-        if (fechaVenc >= now && fechaVenc <= tresDias && !esEnviado) {
-          const diasRestantes = Math.ceil(
-            (fechaVenc.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        if (
+          venceDentroDeNDias(periodo.fechaVencimientoCalculada, 3) &&
+          !enviado
+        ) {
+          const diasRestantes = calcularDiasRestantes(
+            periodo.fechaVencimientoCalculada
           );
           generatedAlertas.push({
             id: `porvencer-${periodo.periodoId}`,
@@ -95,7 +101,7 @@ export default function AlertasClient() {
         }
 
         // Alertas de éxito - Reportes aprobados recientemente
-        if (periodo.estado === "aprobado") {
+        if (esEstadoAprobado(periodo.estado)) {
           const updatedDate = new Date(periodo.updatedAt);
           const diasDesdeAprobacion = Math.ceil(
             (now.getTime() - updatedDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -124,6 +130,18 @@ export default function AlertasClient() {
       setAlertas(generatedAlertas);
     } catch (err) {
       console.error("Error al cargar alertas:", err);
+      // Mostrar mensaje de error al usuario
+      setAlertas([
+        {
+          id: "error-load",
+          tipo: "critica",
+          titulo: "Error al cargar alertas",
+          mensaje:
+            "No se pudieron cargar las alertas. Por favor, intente nuevamente.",
+          fecha: new Date().toISOString(),
+          leida: false,
+        },
+      ]);
     } finally {
       setLoading(false);
     }

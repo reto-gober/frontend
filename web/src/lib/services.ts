@@ -238,7 +238,13 @@ export interface UserSessionLogResponse {
   usuarioId?: string;
   usuarioNombre?: string;
   email: string;
-  evento: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'TOKEN_REFRESH' | 'PASSWORD_CHANGE' | 'SESSION_EXPIRED';
+  evento:
+    | "LOGIN_SUCCESS"
+    | "LOGIN_FAILED"
+    | "LOGOUT"
+    | "TOKEN_REFRESH"
+    | "PASSWORD_CHANGE"
+    | "SESSION_EXPIRED";
   ipAddress?: string;
   userAgent?: string;
   timestamp: string;
@@ -721,20 +727,23 @@ export const usuariosService = {
   },
 
   // Cambiar rol de usuario (usando PUT con workaround)
-  async cambiarRol(documentNumber: string, nuevoRol: string): Promise<UsuarioResponse> {
+  async cambiarRol(
+    documentNumber: string,
+    nuevoRol: string
+  ): Promise<UsuarioResponse> {
     // Primero obtenemos los datos actuales del usuario
     const usuarioActual = await this.obtener(documentNumber);
-    
+
     // Actualizamos solo el rol, manteniendo los demás campos
     const dataActualizada: UsuarioRequest = {
       documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || 'CC',
+      documentType: usuarioActual.documentType || "CC",
       email: usuarioActual.email,
       firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || '',
+      secondName: usuarioActual.secondName || "",
       firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || '',
-      roles: [nuevoRol]
+      secondLastname: usuarioActual.secondLastname || "",
+      roles: [nuevoRol],
     };
 
     return this.actualizar(documentNumber, dataActualizada);
@@ -744,23 +753,23 @@ export const usuariosService = {
   async desactivar(documentNumber: string): Promise<UsuarioResponse> {
     // Primero obtenemos los datos actuales del usuario
     const usuarioActual = await this.obtener(documentNumber);
-    
+
     // Actualizamos el estado a inactivo
     const dataActualizada: UsuarioRequest = {
       documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || 'CC',
+      documentType: usuarioActual.documentType || "CC",
       email: usuarioActual.email,
       firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || '',
+      secondName: usuarioActual.secondName || "",
       firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || '',
-      roles: usuarioActual.roles
+      secondLastname: usuarioActual.secondLastname || "",
+      roles: usuarioActual.roles,
     };
 
     // El campo 'activo' debe ir en el request (agregar si no existe)
     const response = await api.put(`/api/usuarios/${documentNumber}`, {
       ...dataActualizada,
-      activo: false
+      activo: false,
     });
 
     if (
@@ -777,23 +786,23 @@ export const usuariosService = {
   async activar(documentNumber: string): Promise<UsuarioResponse> {
     // Primero obtenemos los datos actuales del usuario
     const usuarioActual = await this.obtener(documentNumber);
-    
+
     // Actualizamos el estado a activo
     const dataActualizada: UsuarioRequest = {
       documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || 'CC',
+      documentType: usuarioActual.documentType || "CC",
       email: usuarioActual.email,
       firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || '',
+      secondName: usuarioActual.secondName || "",
       firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || '',
-      roles: usuarioActual.roles
+      secondLastname: usuarioActual.secondLastname || "",
+      roles: usuarioActual.roles,
     };
 
     // El campo 'activo' debe ir en el request
     const response = await api.put(`/api/usuarios/${documentNumber}`, {
       ...dataActualizada,
-      activo: true
+      activo: true,
     });
 
     if (
@@ -891,9 +900,16 @@ export const flujoReportesService = {
     });
     if (sort) params.append("sort", sort);
 
-    const response = await api.get(
-      `/api/flujo-reportes/mis-periodos?${params}`
-    );
+    const url = `/api/flujo-reportes/mis-periodos?${params}`;
+    console.log("🌐 [API] Llamando a:", url);
+    console.log("🌐 [API] Headers:", api.defaults.headers);
+
+    const response = await api.get(url);
+
+    console.log("🌐 [API] Respuesta status:", response.status);
+    console.log("🌐 [API] Respuesta data completa:", response.data);
+    console.log("🌐 [API] Respuesta data.data:", response.data.data);
+
     return response.data.data;
   },
 
@@ -1275,8 +1291,12 @@ export const auditoriaService = {
     if (fechaDesde) params.fechaDesde = fechaDesde;
     if (fechaHasta) params.fechaHasta = fechaHasta;
 
-    const response = await api.get('/api/auditoria/accesos', { params });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/auditoria/accesos", { params });
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1284,8 +1304,12 @@ export const auditoriaService = {
 
   // Obtener estadísticas (Admin)
   async obtenerEstadisticas(): Promise<AccesosEstadisticasDTO> {
-    const response = await api.get('/api/auditoria/accesos/estadisticas');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/auditoria/accesos/estadisticas");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1297,30 +1321,52 @@ export const auditoriaService = {
     page = 0,
     size = 20
   ): Promise<Page<UserSessionLogResponse>> {
-    const response = await api.get(`/api/auditoria/accesos/usuario/${usuarioId}`, {
-      params: { page, size }
-    });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get(
+      `/api/auditoria/accesos/usuario/${usuarioId}`,
+      {
+        params: { page, size },
+      }
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   // Obtener último acceso de un usuario (Admin)
-  async obtenerUltimoAccesoUsuario(usuarioId: string): Promise<UserSessionLogResponse> {
-    const response = await api.get(`/api/auditoria/accesos/usuario/${usuarioId}/ultimo`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+  async obtenerUltimoAccesoUsuario(
+    usuarioId: string
+  ): Promise<UserSessionLogResponse> {
+    const response = await api.get(
+      `/api/auditoria/accesos/usuario/${usuarioId}/ultimo`
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   // Obtener mis propios accesos (Usuario autenticado)
-  async obtenerMisAccesos(page = 0, size = 20): Promise<Page<UserSessionLogResponse>> {
-    const response = await api.get('/api/auditoria/mis-accesos', {
-      params: { page, size }
+  async obtenerMisAccesos(
+    page = 0,
+    size = 20
+  ): Promise<Page<UserSessionLogResponse>> {
+    const response = await api.get("/api/auditoria/mis-accesos", {
+      params: { page, size },
     });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1328,8 +1374,12 @@ export const auditoriaService = {
 
   // Obtener mi último acceso (Usuario autenticado)
   async obtenerMiUltimoAcceso(): Promise<UserSessionLogResponse> {
-    const response = await api.get('/api/auditoria/mi-ultimo-acceso');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/auditoria/mi-ultimo-acceso");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1337,13 +1387,16 @@ export const auditoriaService = {
 
   // Limpiar logs antiguos (Admin)
   async limpiarLogsAntiguos(diasRetencion = 90): Promise<void> {
-    const response = await api.delete('/api/auditoria/accesos/limpiar', {
-      params: { diasRetencion }
+    const response = await api.delete("/api/auditoria/accesos/limpiar", {
+      params: { diasRetencion },
     });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 };
-

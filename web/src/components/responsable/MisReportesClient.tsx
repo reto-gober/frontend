@@ -3,6 +3,8 @@ import { TarjetaPeriodo } from "../flujo/TarjetaPeriodo";
 import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
+import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
+import { esEstadoPendiente, esEstadoEnviado } from "../../lib/utils/estados";
 
 type FilterType =
   | "todos"
@@ -67,38 +69,20 @@ export default function MisReportesClient() {
 
       const newCounts = {
         todos: allPeriodos.length,
-        pendientes: allPeriodos.filter(
-          (p) =>
-            p.estado === "pendiente" ||
-            p.estado === "en_elaboracion" ||
-            p.estado === "requiere_correccion"
-        ).length,
-        enviados: allPeriodos.filter(
-          (p) =>
-            p.estado === "enviado_a_tiempo" ||
-            p.estado === "enviado_tarde" ||
-            p.estado === "aprobado"
-        ).length,
+        pendientes: allPeriodos.filter((p) => esEstadoPendiente(p.estado))
+          .length,
+        enviados: allPeriodos.filter((p) => esEstadoEnviado(p.estado)).length,
         vencidos: allPeriodos.filter((p) => {
           if (!p.fechaVencimientoCalculada) return false;
-          const vencimiento = new Date(p.fechaVencimientoCalculada);
           return (
-            vencimiento < now &&
-            p.estado !== "aprobado" &&
-            p.estado !== "enviado_a_tiempo" &&
-            p.estado !== "enviado_tarde"
+            esFechaVencida(p.fechaVencimientoCalculada) &&
+            !esEstadoEnviado(p.estado)
           );
         }).length,
         porVencer: allPeriodos.filter((p) => {
           if (!p.fechaVencimientoCalculada) return false;
-          const vencimiento = new Date(p.fechaVencimientoCalculada);
-          return (
-            vencimiento >= now &&
-            vencimiento <= threeDaysFromNow &&
-            p.estado !== "aprobado" &&
-            p.estado !== "enviado_a_tiempo" &&
-            p.estado !== "enviado_tarde"
-          );
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
         }).length,
       };
 
@@ -109,45 +93,31 @@ export default function MisReportesClient() {
 
       switch (activeFilter) {
         case "pendientes":
-          filteredPeriodos = allPeriodos.filter(
-            (p) =>
-              p.estado === "pendiente" ||
-              p.estado === "en_elaboracion" ||
-              p.estado === "requiere_correccion"
+          filteredPeriodos = allPeriodos.filter((p) =>
+            esEstadoPendiente(p.estado)
           );
           break;
         case "enviados":
-          filteredPeriodos = allPeriodos.filter(
-            (p) =>
-              p.estado === "enviado_a_tiempo" ||
-              p.estado === "enviado_tarde" ||
-              p.estado === "aprobado"
+          filteredPeriodos = allPeriodos.filter((p) =>
+            esEstadoEnviado(p.estado)
           );
           break;
         case "vencidos":
           filteredPeriodos = allPeriodos.filter((p) => {
             if (!p.fechaVencimientoCalculada) return false;
-            const vencimiento = new Date(p.fechaVencimientoCalculada);
             return (
-              vencimiento < now &&
-              p.estado !== "aprobado" &&
-              p.estado !== "enviado_a_tiempo" &&
-              p.estado !== "enviado_tarde"
+              esFechaVencida(p.fechaVencimientoCalculada) &&
+              !esEstadoEnviado(p.estado)
             );
           });
           break;
         case "porVencer":
           filteredPeriodos = allPeriodos.filter((p) => {
             if (!p.fechaVencimientoCalculada) return false;
-            const vencimiento = new Date(p.fechaVencimientoCalculada);
-            return (
-              vencimiento >= now &&
-              vencimiento <= threeDaysFromNow &&
-              p.estado !== "aprobado" &&
-              p.estado !== "enviado_a_tiempo" &&
-              p.estado !== "enviado_tarde"
-            );
+            const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+            return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
           });
+          break;
           break;
         case "todos":
         default:
