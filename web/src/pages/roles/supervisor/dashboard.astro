@@ -4,146 +4,223 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
 ---
 
 <SupervisorLayout title="Tablero de Supervisión">
-  <SupervisorDashboardClient client:load />
+  <div class="dashboard-shell">
+    <SupervisorDashboardClient client:load />
+  </div>
 </SupervisorLayout>
 
 <style is:global>
+  body {
+    background: #f5f7fa;
+  }
+
+  .dashboard-shell {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 80px 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
   .dashboard-supervisor {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 20px;
   }
 
   .dashboard-header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
     background: white;
-    border-radius: 12px;
-    box-shadow: var(--shadow-card);
+    border-radius: 14px;
+    padding: 26px 28px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .header-left {
+  .filters-shell .filters-top-row {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .filters-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px 16px;
+    align-items: flex-end;
+    flex: 1;
+  }
+
+  .filters-group.basic {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .filters-advanced {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-top: 8px;
+  }
+
+  .filters-actions {
+    display: flex;
     align-items: center;
+    gap: 12px;
+    justify-content: flex-end;
+    min-width: 220px;
+  }
+
+  .filters-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 10px;
   }
 
   .period-filter {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .filter-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--neutral-700);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--neutral-800);
   }
 
   .filter-select {
-    padding: 0.5rem 1rem;
+    width: 100%;
+    padding: 0.55rem 0.85rem;
     border: 1px solid var(--neutral-200);
-    border-radius: 8px;
+    border-radius: 10px;
     background: white;
-    font-size: 0.875rem;
-    color: var(--neutral-700);
+    font-size: 0.9rem;
+    color: var(--neutral-800);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.06);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .filter-select:hover {
-    border-color: var(--color-primary-400);
+  .filter-select.small {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
   }
 
   .filter-select:focus {
     outline: none;
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px rgba(61, 133, 209, 0.1);
+    box-shadow: 0 0 0 3px rgba(61, 133, 209, 0.16);
   }
 
-  .header-actions {
-    display: flex;
-    gap: 0.75rem;
+  .link-toggle {
+    background: transparent;
+    border: none;
+    color: var(--color-primary-700);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 0;
+    text-decoration: underline;
   }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge.subtle {
+    background: #eef2f7;
+    color: #475569;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .badge.neutral { background: var(--neutral-100); color: var(--neutral-700); }
+  .badge.info { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .badge.danger { background: var(--error-red-100); color: var(--error-red-700); }
 
   .btn-review {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.625rem 1.125rem;
+    padding: 0.85rem 1.4rem;
     background: var(--color-primary-600);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.875rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-shadow: 0 12px 30px rgba(79, 130, 255, 0.2);
   }
 
   .btn-review:hover {
     background: var(--color-primary-700);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-hover);
+    box-shadow: 0 16px 36px rgba(79, 130, 255, 0.24);
   }
 
   .kpis-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px 20px;
   }
 
   .kpi-card {
-    background: white;
-    padding: 1.5rem;
+    background: #f8fafc;
+    padding: 16px 18px;
     border-radius: 12px;
-    box-shadow: var(--shadow-card);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: all 0.2s;
+    box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    border-left: 3px solid var(--color-primary-500);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    min-height: 120px;
+    cursor: pointer;
   }
 
   .kpi-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
+    box-shadow: 0 10px 24px rgba(15,23,42,0.08);
   }
 
-  .kpi-card.primary { border-left: 4px solid var(--color-primary-600); }
-  .kpi-card.warning { border-left: 4px solid var(--accent-orange-600); }
-  .kpi-card.info { border-left: 4px solid var(--secondary-purple-600); }
-  .kpi-card.danger { border-left: 4px solid var(--error-red-600); }
+  .kpi-card.primary { border-left-color: var(--color-primary-500); background: #f4f7fb; }
+  .kpi-card.warning { border-left-color: #f59e0b; background: #fdf7ec; }
+  .kpi-card.info { border-left-color: #3b82f6; background: #eef4ff; }
+  .kpi-card.danger { border-left-color: #ef4444; background: #fdf2f2; }
+  .kpi-card.success { border-left-color: #10b981; background: #f1f9f5; }
 
   .kpi-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .kpi-card.primary .kpi-icon {
-    background: var(--color-primary-100);
+    background: white;
     color: var(--color-primary-600);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.08);
   }
 
-  .kpi-card.warning .kpi-icon {
-    background: var(--accent-orange-100);
-    color: var(--accent-orange-600);
-  }
-
-  .kpi-card.info .kpi-icon {
-    background: var(--secondary-purple-100);
-    color: var(--secondary-purple-600);
-  }
-
-  .kpi-card.danger .kpi-icon {
-    background: var(--error-red-100);
-    color: var(--error-red-600);
-  }
+  .kpi-card.warning .kpi-icon { color: #d97706; background: #fff7ed; }
+  .kpi-card.info .kpi-icon { color: #2563eb; background: #eef4ff; }
+  .kpi-card.danger .kpi-icon { color: #b91c1c; background: #fff1f2; }
+  .kpi-card.success .kpi-icon { color: #0f9f6e; background: #eefcf4; }
 
   .kpi-content {
     flex: 1;
@@ -151,38 +228,44 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
 
   .kpi-value {
     display: block;
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 1.7rem;
+    font-weight: 800;
     color: var(--neutral-900);
-    line-height: 1;
-    margin-bottom: 0.25rem;
+    line-height: 1.1;
+    margin: 0 0 0.2rem 0;
   }
 
   .kpi-label {
     display: block;
-    font-size: 0.875rem;
-    color: var(--neutral-600);
+    font-size: 0.9rem;
+    color: var(--neutral-650, #4b5563);
+    margin: 0;
   }
 
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
   }
 
   .dashboard-card {
     background: white;
     border-radius: 12px;
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 4px 14px rgba(15,23,42,0.06);
+    border: 1px solid #e5e7eb;
     overflow: hidden;
   }
 
   .dashboard-card.wide {
-    grid-column: span 2;
+    grid-column: span 12;
+  }
+
+  .dashboard-card.half {
+    grid-column: span 6;
   }
 
   .card-header {
-    padding: 1.25rem 1.5rem;
+    padding: 18px 22px;
     border-bottom: 1px solid var(--neutral-100);
     display: flex;
     justify-content: space-between;
@@ -190,14 +273,14 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
   }
 
   .card-title {
-    font-size: 1.125rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--neutral-900);
     margin: 0;
   }
 
   .card-body {
-    padding: 1.5rem;
+    padding: 18px 22px;
   }
 
   .donut-chart-container {
@@ -207,8 +290,8 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
   }
 
   .donut-chart {
-    width: 200px;
-    height: 200px;
+    width: 220px;
+    height: 220px;
   }
 
   .legend-grid {
@@ -252,11 +335,16 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
     color: var(--neutral-600);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    cursor: pointer;
   }
 
   .data-table tbody tr {
     border-bottom: 1px solid var(--neutral-100);
     transition: background 0.2s;
+  }
+
+  .data-table tbody tr:nth-child(even) {
+    background: #fafafa;
   }
 
   .data-table tbody tr:hover {
@@ -267,29 +355,6 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
     padding: 0.875rem 1rem;
     font-size: 0.875rem;
     color: var(--neutral-700);
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .badge.neutral {
-    background: var(--neutral-100);
-    color: var(--neutral-700);
-  }
-
-  .badge.info {
-    background: var(--color-primary-100);
-    color: var(--color-primary-700);
-  }
-
-  .badge.danger {
-    background: var(--error-red-100);
-    color: var(--error-red-700);
   }
 
   .progress-bar-small {
@@ -325,6 +390,12 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
     to { transform: rotate(360deg); }
   }
 
+  @media (max-width: 1200px) {
+    .dashboard-shell {
+      padding: 24px 32px 40px;
+    }
+  }
+
   @media (max-width: 1024px) {
     .kpis-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -334,14 +405,24 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
       grid-template-columns: 1fr;
     }
 
-    .dashboard-card.wide {
+    .dashboard-card.wide,
+    .dashboard-card.half {
       grid-column: span 1;
     }
   }
 
   @media (max-width: 640px) {
+    .dashboard-shell {
+      padding: 16px;
+    }
+
     .kpis-grid {
       grid-template-columns: 1fr;
+    }
+
+    .filters-actions {
+      width: 100%;
+      justify-content: flex-start;
     }
   }
 </style>

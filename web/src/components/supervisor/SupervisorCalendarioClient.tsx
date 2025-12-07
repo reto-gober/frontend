@@ -343,73 +343,197 @@ export default function SupervisorCalendarioClient() {
 
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title">Detalle del reporte</h2>
-              <button className="modal-close" onClick={handleCloseModal}>
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="modal-content reporte-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-modern">
+              <div className="modal-header-content">
+                <div className="modal-icon">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="modal-title">Detalle del Reporte</h2>
+                  <p className="modal-subtitle">Información completa del reporte</p>
+                </div>
+              </div>
+              <button className="modal-close-modern" onClick={handleCloseModal} aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
 
-            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            <div className="modal-body-modern">
               {loadingReporte ? (
-                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                  <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
-                  <p style={{ marginTop: '1rem', color: 'var(--neutral-600)' }}>Cargando informacion...</p>
+                <div className="loading-state">
+                  <div className="loading-spinner-modern"></div>
+                  <p className="loading-text">Cargando información del reporte...</p>
                 </div>
               ) : reporteSeleccionado ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-900)', margin: 0 }}>
-                      {reporteSeleccionado.nombre}
-                    </h3>
+                <div className="reporte-detail-content">
+                  {/* Encabezado del Reporte */}
+                  <div className="reporte-header-section">
+                    <h3 className="reporte-nombre">{reporteSeleccionado.nombre}</h3>
                     {reporteSeleccionado.descripcion && (
-                      <p style={{ color: 'var(--neutral-600)', lineHeight: 1.6, marginTop: '0.25rem' }}>
-                        {reporteSeleccionado.descripcion}
-                      </p>
+                      <p className="reporte-descripcion">{reporteSeleccionado.descripcion}</p>
                     )}
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'var(--neutral-50)', borderRadius: '8px' }}>
-                    <div>
-                      <span className="mini-label">Frecuencia</span>
-                      <p style={{ margin: 0, fontWeight: 600 }}>{reporteSeleccionado.frecuencia}</p>
+                  {/* Estado y Información Principal */}
+                  <div className="info-cards-grid">
+                    <div className="info-card info-card-primary">
+                      <div className="info-card-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      </div>
+                      <div className="info-card-content">
+                        <span className="info-card-label">Frecuencia</span>
+                        <span className="info-card-value">{reporteSeleccionado.frecuencia}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="mini-label">Formato</span>
-                      <p style={{ margin: 0, fontWeight: 600 }}>{reporteSeleccionado.formatoRequerido}</p>
+
+                    <div className="info-card info-card-warning">
+                      <div className="info-card-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                      </div>
+                      <div className="info-card-content">
+                        <span className="info-card-label">Fecha de Vencimiento</span>
+                        <span className="info-card-value">
+                          {new Date(reporteSeleccionado.fechaVencimiento + 'T00:00:00').toLocaleDateString('es-CO', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                          })}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="mini-label">Vencimiento</span>
-                      <p style={{ margin: 0, fontWeight: 600 }}>
-                        {new Date(reporteSeleccionado.fechaVencimiento + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </p>
+
+                    <div className="info-card info-card-success">
+                      <div className="info-card-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                      </div>
+                      <div className="info-card-content">
+                        <span className="info-card-label">Formato Requerido</span>
+                        <span className="info-card-value">{reporteSeleccionado.formatoRequerido}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="mini-label">Estado</span>
-                      <p style={{ margin: 0, fontWeight: 600, color: reporteSeleccionado.estado === 'activo' ? 'var(--success-green-600)' : 'var(--neutral-600)' }}>
-                        {reporteSeleccionado.estado}
-                      </p>
+
+                    <div className={`info-card ${reporteSeleccionado.estado === 'activo' ? 'info-card-active' : 'info-card-inactive'}`}>
+                      <div className="info-card-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                      </div>
+                      <div className="info-card-content">
+                        <span className="info-card-label">Estado</span>
+                        <span className="info-card-value">
+                          {reporteSeleccionado.estado.charAt(0).toUpperCase() + reporteSeleccionado.estado.slice(1)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
+                  {/* Responsables */}
+                  {(reporteSeleccionado.responsableElabora || reporteSeleccionado.responsableSupervisa) && (
+                    <div className="detail-section">
+                      <h4 className="section-title">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        Responsables
+                      </h4>
+                      <div className="responsables-grid">
+                        {reporteSeleccionado.responsableElabora && (
+                          <div className="responsable-item">
+                            <div className="responsable-badge elabora">E</div>
+                            <div>
+                              <div className="responsable-label">Elabora</div>
+                              <div className="responsable-nombre">{reporteSeleccionado.responsableElabora}</div>
+                            </div>
+                          </div>
+                        )}
+                        {reporteSeleccionado.responsableSupervisa && (
+                          <div className="responsable-item">
+                            <div className="responsable-badge supervisa">S</div>
+                            <div>
+                              <div className="responsable-label">Supervisa</div>
+                              <div className="responsable-nombre">{reporteSeleccionado.responsableSupervisa}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Base Legal */}
                   {reporteSeleccionado.baseLegal && (
-                    <div>
-                      <span className="mini-label">Base legal</span>
-                      <p style={{ color: 'var(--neutral-600)', marginTop: '0.25rem' }}>{reporteSeleccionado.baseLegal}</p>
+                    <div className="detail-section">
+                      <h4 className="section-title">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        Base Legal
+                      </h4>
+                      <div className="base-legal-content">
+                        <p>{reporteSeleccionado.baseLegal}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Entidad */}
+                  {reporteSeleccionado.entidadNombre && (
+                    <div className="detail-section">
+                      <h4 className="section-title">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                          <polyline points="9 22 9 12 15 12 15 22" />
+                        </svg>
+                        Entidad
+                      </h4>
+                      <div className="entidad-badge">
+                        {reporteSeleccionado.entidadNombre}
+                      </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <p style={{ color: 'var(--neutral-500)' }}>No se pudo cargar la informacion</p>
+                <div className="empty-state">
+                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <p>No se pudo cargar la información del reporte</p>
+                </div>
               )}
             </div>
 
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={handleCloseModal}>
+            <div className="modal-footer-modern">
+              <button className="btn-modern btn-secondary-modern" onClick={handleCloseModal}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
                 Cerrar
               </button>
             </div>

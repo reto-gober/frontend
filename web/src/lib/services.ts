@@ -281,6 +281,12 @@ export interface KpisSupervisor {
   reportesRequierenCorreccion: number;
   reportesPendientes: number;
   reportesAtrasados: number;
+  porcentajeCumplimientoATiempo: number;
+  totalEnviadosATiempo: number;
+  totalEnviadosTarde: number;
+  totalVencidos: number;
+  totalPendientes: number;
+  diasRetrasoPromedio: number;
 }
 
 export interface CargaResponsable {
@@ -292,6 +298,8 @@ export interface CargaResponsable {
   enRevision: number;
   aprobados: number;
   atrasados: number;
+  vencidos?: number;
+  retrasoPromedio?: number;
   porcentajeCumplimiento: number;
 }
 
@@ -303,14 +311,55 @@ export interface DistribucionEntidad {
   pendientes: number;
   aprobados: number;
   atrasados: number;
+  enviadosATiempo?: number;
   porcentajeCumplimiento: number;
+}
+
+export interface TendenciaTemporal {
+  vista: 'mensual' | 'trimestral' | string;
+  etiquetas: string[];
+  aTiempo: number[];
+  tarde: number[];
+  vencido: number[];
+  pendiente: number[];
+}
+
+export interface AlertaPrioritaria {
+  periodoId: string;
+  reporteId: string;
+  nombreReporte: string;
+  entidad: string;
+  responsable: string;
+  estado: string;
+  fechaLimite: string;
+  diasRestantes: number;
+  tipo: string;
+  color: string;
+  accionSugerida: string;
+}
+
+export interface AccionPendienteSupervisor {
+  periodoId: string;
+  reporteId: string;
+  nombreReporte: string;
+  entidad: string;
+  estado: string;
+  fechaLimite: string;
+  tipo: string;
+  responsable: string;
 }
 
 export interface DashboardSupervisorResponse {
   kpis: KpisSupervisor;
   estadoGeneral: Record<string, number>;
+  distribucionEstados?: Record<string, number>;
   cargaPorResponsable: CargaResponsable[];
   distribucionPorEntidad: DistribucionEntidad[];
+  tendenciaTemporal?: TendenciaTemporal;
+  alertasPrioritarias?: AlertaPrioritaria[];
+  accionesPendientes?: AccionPendienteSupervisor[];
+  entidadesMayorIncumplimiento?: DistribucionEntidad[];
+  responsablesMayorIncumplimiento?: CargaResponsable[];
 }
 
 // ==================== EVIDENCIAS SUPERVISOR ====================
@@ -692,8 +741,30 @@ export const dashboardService = {
     return response.data;
   },
 
-  async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
-    const response = await api.get('/api/supervisor/dashboard');
+  async dashboardSupervisor(filters?: {
+    entidadId?: string;
+    responsableId?: string;
+    frecuencia?: string;
+    estado?: string;
+    tipoAlerta?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    vistaTemporal?: string;
+    limitePeriodos?: number;
+  }): Promise<DashboardSupervisorResponse> {
+    const params = new URLSearchParams();
+    if (filters?.entidadId) params.append('entidadId', filters.entidadId);
+    if (filters?.responsableId) params.append('responsableId', filters.responsableId);
+    if (filters?.frecuencia) params.append('frecuencia', filters.frecuencia);
+    if (filters?.estado) params.append('estado', filters.estado);
+    if (filters?.tipoAlerta) params.append('tipoAlerta', filters.tipoAlerta);
+    if (filters?.fechaInicio) params.append('fechaInicio', filters.fechaInicio);
+    if (filters?.fechaFin) params.append('fechaFin', filters.fechaFin);
+    if (filters?.vistaTemporal) params.append('vistaTemporal', filters.vistaTemporal);
+    if (filters?.limitePeriodos) params.append('limitePeriodos', filters.limitePeriodos.toString());
+
+    const query = params.toString();
+    const response = await api.get(`/api/supervisor/dashboard${query ? `?${query}` : ''}`);
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }
@@ -964,7 +1035,7 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: 'aprobar' | 'rechazar';
+  accion: 'aprobar' | 'rechazar' | 'revisar';
   comentarios?: string;
   motivoRechazo?: string;
 }
