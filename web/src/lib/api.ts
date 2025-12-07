@@ -33,12 +33,12 @@ api.interceptors.response.use(
   (error) => {
     if (typeof window !== "undefined") {
       const status = error.response?.status;
-      const message = error.response?.data?.message || "";
+      const message = error.response?.data?.message || error.message || 'Error desconocido';
       const currentPath = window.location.pathname;
-      const isLoginRequest = error.config?.url?.includes("/api/auth/login");
-      const isRegisterRequest =
-        error.config?.url?.includes("/api/auth/registro");
-
+      const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+      const isRegisterRequest = error.config?.url?.includes('/api/auth/registro');
+      const isErrorPage = currentPath === '/error';
+      
       // Mensajes que indican problemas de autenticación (token inválido, expirado, faltante)
       const authenticationErrors = [
         "Autenticación requerida",
@@ -82,11 +82,60 @@ api.interceptors.response.use(
         }
 
         // Redirect to login
-        window.location.href = "/login";
+        window.location.href = '/login';
+        return Promise.reject(error);
       }
 
-      // For 403 or 401 without authentication error message, let the application handle it
-      // (could be permission denied, access forbidden, etc.)
+      // Handle 403 (Forbidden) - Permission denied
+      if (status === 403 && !isErrorPage && !isLoginRequest && !isRegisterRequest) {
+        console.warn('[API Interceptor] Acceso denegado (403) - Redirigiendo al dashboard por rol');
+        
+        // Obtener rol del usuario y redirigir a su dashboard
+        const usuarioData = localStorage.getItem('usuario');
+        if (usuarioData) {
+          const usuario = JSON.parse(usuarioData);
+          
+          // Importar dinámicamente roleGuard
+          import('./roleGuard').then(({ getPrimaryRole, getDashboardForRole }) => {
+            const primaryRole = getPrimaryRole(usuario.roles || []);
+            const dashboard = getDashboardForRole(primaryRole);
+            
+            notifications.warning(
+              'Acceso Denegado',
+              'No tienes permiso para acceder a este recurso'
+            );
+            
+            setTimeout(() => {
+              window.location.href = dashboard;
+            }, 1000);
+          }).catch((e) => {
+            console.error('[API Interceptor] Error al cargar roleGuard:', e);
+            window.location.href = '/login';
+          });
+        } else {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
+      // Handle other critical errors (500, 503, network errors)
+      if (!isErrorPage && !isLoginRequest && !isRegisterRequest) {
+        // Errores del servidor (500, 503)
+        if (status === 500 || status === 503) {
+          const errorMessage = encodeURIComponent(message);
+          window.location.href = `/error?code=${status}&message=${errorMessage}`;
+          return Promise.reject(error);
+        }
+
+        // Errores de red (sin respuesta del servidor)
+        if (!error.response && error.message === 'Network Error') {
+          const errorMessage = encodeURIComponent('No se pudo conectar con el servidor');
+          window.location.href = `/error?code=503&message=${errorMessage}`;
+          return Promise.reject(error);
+        }
+      }
+      
+      // For other errors, let the application handle them
     }
     return Promise.reject(error);
   }

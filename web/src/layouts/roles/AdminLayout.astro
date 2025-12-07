@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../BaseLayout.astro';
 import SidebarAdmin from '../../components/sidebar/SidebarAdmin';
+import ViewSelector from '../../components/ViewSelector';
 
 export interface Props {
   title: string;
@@ -10,6 +11,51 @@ const { title } = Astro.props;
 ---
 
 <BaseLayout title={title}>
+  <!-- Guardia de roles -->
+  <script>
+    import { routeGuard, getPrimaryRole } from '../../lib/roleGuard';
+    
+    function checkRoleAccess() {
+      const usuarioData = localStorage.getItem('usuario');
+      if (!usuarioData) {
+        console.warn('[AdminLayout] No hay usuario en localStorage');
+        window.location.href = '/login';
+        return;
+      }
+      
+      const usuario = JSON.parse(usuarioData);
+      console.log('[AdminLayout] Usuario cargado:', usuario);
+      console.log('[AdminLayout] Roles del usuario:', usuario.roles);
+      
+      const primaryRole = getPrimaryRole(usuario.roles || []);
+      console.log('[AdminLayout] Rol principal detectado:', primaryRole);
+      
+      const currentPath = window.location.pathname;
+      console.log('[AdminLayout] Ruta actual:', currentPath);
+      
+      const guardResult = routeGuard(currentPath, primaryRole);
+      console.log('[AdminLayout] Resultado de guardia:', guardResult);
+      
+      if (!guardResult.allowed) {
+        console.warn('[AdminLayout] Acceso denegado:', guardResult.reason);
+        if (window.notifications?.warning) {
+          window.notifications.warning('Acceso Denegado', guardResult.reason || 'Sin permisos');
+        }
+        setTimeout(() => {
+          window.location.href = guardResult.redirectTo || '/login';
+        }, 1000);
+      } else {
+        console.log('[AdminLayout] ✅ Acceso permitido');
+      }
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkRoleAccess);
+    } else {
+      checkRoleAccess();
+    }
+  </script>
+
   <div class="role-container role-admin sidebar-expanded">
     <SidebarAdmin client:load />
     <div class="role-content">
@@ -18,6 +64,9 @@ const { title } = Astro.props;
           <h1 class="page-title">{title}</h1>
         </div>
         <div class="topbar-right">
+          <!-- Selector de vistas -->
+          <ViewSelector client:load currentRole="admin" />
+          
           <div class="search-box">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/>

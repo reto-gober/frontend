@@ -20,6 +20,12 @@ export default function AdminUsuariosClient() {
   const [selectedRol, setSelectedRol] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Modal de invitación
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('responsable');
+  const [inviting, setInviting] = useState(false);
+
   // Últimos accesos
   const [ultimosAccesos, setUltimosAccesos] = useState<Map<string, UserSessionLogResponse>>(new Map());
   const [loadingAccesos, setLoadingAccesos] = useState(false);
@@ -66,7 +72,8 @@ export default function AdminUsuariosClient() {
       const promises = usuarios.map(async (usuario) => {
         try {
           const ultimoAcceso = await auditoriaService.obtenerUltimoAccesoUsuario(usuario.usuarioId);
-          if (ultimoAcceso) {
+          // Solo agregar al mapa si realmente hay datos de acceso
+          if (ultimoAcceso && ultimoAcceso.sessionLogId) {
             accesosMap.set(usuario.usuarioId, ultimoAcceso);
           }
         } catch (err) {
@@ -169,7 +176,7 @@ export default function AdminUsuariosClient() {
   const handleToggleEstado = async () => {
     if (!editingUsuario) return;
 
-    const esActivo = editingUsuario.estado === 'ACTIVO';
+    const esActivo = editingUsuario.estado?.toUpperCase() === 'ACTIVO';
     const accion = esActivo ? 'desactivar' : 'activar';
     const accionTitle = esActivo ? 'Desactivar' : 'Activar';
 
@@ -212,12 +219,99 @@ export default function AdminUsuariosClient() {
     if (!confirmed) return;
 
     try {
+      setLoading(true);
       await usuariosService.eliminar(usuario.documentNumber);
       await cargarUsuarios();
       notifications.success('Usuario eliminado correctamente');
     } catch (err: any) {
-      console.error('Error al eliminar usuario:', err);
-      notifications.error(err.response?.data?.message || 'Error al eliminar el usuario');
+      console.error('Error al eliminar:', err);
+      notifications.error(err.response?.data?.message || 'Error al eliminar usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Abrir modal de invitación
+  const handleOpenInviteModal = () => {
+    setInviteEmail('');
+    setInviteRole('responsable');
+    setShowInviteModal(true);
+  };
+
+  // Cerrar modal de invitación
+  const handleCloseInviteModal = () => {
+    setShowInviteModal(false);
+    setInviteEmail('');
+    setInviteRole('responsable');
+  };
+
+  // Enviar invitación
+  const handleSendInvitation = async () => {
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!inviteEmail || !emailRegex.test(inviteEmail)) {
+      notifications.warning('Email inválido', 'Por favor ingresa un correo electrónico válido');
+      return;
+    }
+
+    if (!inviteRole) {
+      notifications.warning('Rol requerido', 'Por favor selecciona un rol para el usuario');
+      return;
+    }
+
+    try {
+      setInviting(true);
+      const result = await usuariosService.invitar(inviteEmail, inviteRole);
+      
+      if (result.success) {
+        notifications.success('Invitación enviada', `Se ha enviado un correo de invitación a ${inviteEmail}. El usuario recibirá un enlace válido por 72 horas.`);
+        handleCloseInviteModal();
+        
+        // Recargar lista de usuarios para mostrar el usuario invitado
+        await cargarUsuarios();
+      } else {
+        notifications.error('Error al enviar invitación', result.message || 'No se pudo enviar la invitación');
+      }
+    } catch (err: any) {
+      console.error('Error al invitar usuario:', err);
+      const errorMessage = err.response?.data?.message || 'Error al procesar la invitación';
+      
+      // Mensaje específico si el email ya existe
+      if (errorMessage.includes('ya existe') || errorMessage.includes('already exists')) {
+        notifications.error('Email ya registrado', 'Este correo electrónico ya está registrado en el sistema');
+      } else {
+        notifications.error('Error al enviar invitación', errorMessage);
+      }
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  // Cancelar invitación
+  const handleCancelInvitation = async (usuario: UsuarioResponse) => {
+    const confirmed = await notifications.confirm(
+      `Se cancelará la invitación enviada a ${usuario.email}`,
+      '¿Cancelar invitación?',
+      'Sí, cancelar',
+      'No'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      // Cancelar invitación usando el usuarioId
+      await usuariosService.cancelarInvitacion(usuario.usuarioId);
+      notifications.success('Invitación cancelada correctamente');
+      
+      // Remover del listado
+      setUsuarios(prev => prev.filter(u => u.usuarioId !== usuario.usuarioId));
+      setFilteredUsuarios(prev => prev.filter(u => u.usuarioId !== usuario.usuarioId));
+    } catch (err: any) {
+      console.error('Error al cancelar invitación:', err);
+      notifications.error('Error al cancelar', err.response?.data?.message || 'No se pudo cancelar la invitación');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -255,8 +349,9 @@ export default function AdminUsuariosClient() {
   const formatLastAccess = (usuarioId: string) => {
     const ultimoAcceso = ultimosAccesos.get(usuarioId);
     
-    if (!ultimoAcceso) {
-      return { texto: 'Nunca', detalles: null, clase: 'never' };
+    // Si no hay datos de acceso o el objeto está vacío
+    if (!ultimoAcceso || !ultimoAcceso.sessionLogId) {
+      return { texto: 'Sin accesos', detalles: null, clase: 'never' };
     }
     
     const now = new Date();
@@ -341,15 +436,26 @@ export default function AdminUsuariosClient() {
           <h1 className="page-title">Gestión de Usuarios</h1>
           <p className="page-description">Administra los usuarios del sistema y sus roles</p>
         </div>
-        <button className="btn-primary" id="btnNuevoUsuario">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="8.5" cy="7" r="4"/>
-            <line x1="20" y1="8" x2="20" y2="14"/>
-            <line x1="23" y1="11" x2="17" y2="11"/>
-          </svg>
-          Nuevo Usuario
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn-secondary" onClick={handleOpenInviteModal}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <path d="M22 11h-4"/>
+              <path d="M20 9v4"/>
+            </svg>
+            Invitar Usuario
+          </button>
+          <button className="btn-primary" id="btnNuevoUsuario">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/>
+              <line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            Nuevo Usuario
+          </button>
+        </div>
       </div>
 
       {/* Filtros y búsqueda */}
@@ -437,12 +543,17 @@ export default function AdminUsuariosClient() {
                   </td>
                   <td>{usuario.proceso || '-'}</td>
                   <td>
-                    <span className={`status-badge ${usuario.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
-                      {usuario.estado || 'ACTIVO'}
+                    <span className={`status-badge ${
+                      usuario.estado === 'invited' ? 'invited' : 
+                      usuario.estado?.toUpperCase() === 'ACTIVO' ? 'active' : 'inactive'
+                    }`}>
+                      {usuario.estado === 'invited' ? 'INVITADO' : usuario.estado?.toUpperCase() || 'ACTIVO'}
                     </span>
                   </td>
                   <td>
-                    {loadingAccesos ? (
+                    {usuario.estado === 'invited' ? (
+                      <span className="access-time never">Pendiente de registro</span>
+                    ) : loadingAccesos ? (
                       <span className="loading-text">Cargando...</span>
                     ) : (() => {
                       const acceso = formatLastAccess(usuario.usuarioId);
@@ -494,28 +605,44 @@ export default function AdminUsuariosClient() {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button 
-                        className="btn-icon" 
-                        title={usuario.usuarioId === currentUserId ? "No puedes editar tu propio usuario" : "Editar"}
-                        onClick={() => handleEditUsuario(usuario)}
-                        disabled={usuario.usuarioId === currentUserId}
-                        style={usuario.usuarioId === currentUserId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                      >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                      </button>
-                      <button 
-                        className="btn-icon danger" 
-                        title="Eliminar"
-                        onClick={() => handleEliminarUsuario(usuario)}
-                      >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 6h18"/>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                      </button>
+                      {usuario.estado === 'invited' ? (
+                        <button 
+                          className="btn-icon warning" 
+                          title="Cancelar invitación"
+                          onClick={() => handleCancelInvitation(usuario)}
+                        >
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                          </svg>
+                        </button>
+                      ) : (
+                        <>
+                          <button 
+                            className="btn-icon" 
+                            title={usuario.usuarioId === currentUserId ? "No puedes editar tu propio usuario" : "Editar"}
+                            onClick={() => handleEditUsuario(usuario)}
+                            disabled={usuario.usuarioId === currentUserId}
+                            style={usuario.usuarioId === currentUserId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                          </button>
+                          <button 
+                            className="btn-icon danger" 
+                            title="Eliminar"
+                            onClick={() => handleEliminarUsuario(usuario)}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h18"/>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -605,8 +732,8 @@ export default function AdminUsuariosClient() {
                   Estado del Usuario
                 </label>
                 <div className="status-info">
-                  <span className={`status-badge-large ${editingUsuario.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
-                    {editingUsuario.estado === 'ACTIVO' ? (
+                  <span className={`status-badge-large ${editingUsuario.estado?.toUpperCase() === 'ACTIVO' ? 'active' : 'inactive'}`}>
+                    {editingUsuario.estado?.toUpperCase() === 'ACTIVO' ? (
                       <>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -627,12 +754,29 @@ export default function AdminUsuariosClient() {
                   </span>
                 </div>
                 <button 
-                  className={`btn-${editingUsuario.estado === 'ACTIVO' ? 'danger' : 'success'} full-width`}
+                  className={`btn-${editingUsuario.estado?.toUpperCase() === 'ACTIVO' ? 'danger' : 'success'} full-width`}
                   onClick={handleToggleEstado}
                   disabled={saving}
-                  style={{ marginTop: '0.5rem' }}
+                  style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
-                  {saving ? 'Procesando...' : editingUsuario.estado === 'ACTIVO' ? 'Desactivar Usuario' : 'Activar Usuario'}
+                  {saving ? 'Procesando...' : editingUsuario.estado?.toUpperCase() === 'ACTIVO' ? (
+                    <>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                      Desactivar Usuario
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                      </svg>
+                      Activar Usuario
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -659,6 +803,118 @@ export default function AdminUsuariosClient() {
                 disabled={saving}
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Invitación */}
+      {showInviteModal && (
+        <div className="modal-overlay" onClick={handleCloseInviteModal}>
+          <div className="modal-content invite-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Invitar Usuario</h2>
+              <button className="close-button" onClick={handleCloseInviteModal}>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p className="modal-description">
+                Envía una invitación para que un nuevo usuario se registre en el sistema
+              </p>
+
+              <div className="form-section">
+                <label className="form-label">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="correo@ejemplo.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  disabled={inviting}
+                />
+              </div>
+
+              <div className="form-section">
+                <label className="form-label">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Rol
+                </label>
+                <select
+                  className="form-select"
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  disabled={inviting}
+                >
+                  <option value="responsable">Responsable</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Administrador</option>
+                  <option value="auditor">Auditor</option>
+                </select>
+              </div>
+
+              <div className="info-box">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <div>
+                  <p><strong>Proceso de invitación:</strong></p>
+                  <ul style={{ margin: '0.5rem 0 0 1.25rem', fontSize: '0.8125rem', lineHeight: '1.6' }}>
+                    <li>Se enviará un correo electrónico al usuario</li>
+                    <li>El correo incluirá un enlace válido por 72 horas</li>
+                    <li>El usuario completará su información personal</li>
+                    <li>Una vez completado, podrá acceder al sistema</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary" 
+                onClick={handleCloseInviteModal}
+                disabled={inviting}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={handleSendInvitation}
+                disabled={inviting || !inviteEmail}
+              >
+                {inviting ? (
+                  <>
+                    <svg className="spinner" viewBox="0 0 24 24" width="16" height="16">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
+                    </svg>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="22" y1="2" x2="11" y2="13"/>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                    Enviar Invitación
+                  </>
+                )}
               </button>
             </div>
           </div>

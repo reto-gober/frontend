@@ -1,797 +1,131 @@
-# Especificación Completa de Endpoints - Sistema de Gestión de Reportes
+# 📋 Especificación Completa de Endpoints - Sistema de Gestión de Reportes
 
-**Última actualización:** 2025-12-04  
+**Fecha:** 6 de diciembre de 2025  
 **Versión:** 2.0  
-**Backend Base URL:** `http://localhost:8080/api`
+**Base URL:** `http://localhost:8080/api`
 
 ---
 
-## 📋 Tabla de Contenidos
+## 📑 Índice de Endpoints
 
-1. [Autenticación y Autorización](#1-autenticación-y-autorización)
-2. [Configuración de UI](#2-configuración-de-ui)
-3. [Reportes (CRUD)](#3-reportes-crud)
-4. [Flujo de Reportes](#4-flujo-de-reportes)
-5. [Entidades](#5-entidades)
-6. [Usuarios](#6-usuarios)
-7. [Evidencias](#7-evidencias)
-8. [Dashboard](#8-dashboard)
-9. [Responsables de Reportes](#9-responsables-de-reportes)
-10. [Códigos de Estado y Errores](#10-códigos-de-estado-y-errores)
+1. [Autenticación](#1-autenticación)
+2. [Usuarios](#2-usuarios)
+3. [Invitaciones](#3-invitaciones)
+4. [Entidades](#4-entidades)
+5. [Reportes](#5-reportes)
+6. [Períodos de Reporte](#6-períodos-de-reporte)
+7. [Archivos y Evidencias](#7-archivos-y-evidencias)
+8. [Calendarios y Eventos](#8-calendarios-y-eventos)
+9. [Dashboard](#9-dashboard)
+10. [Auditoría](#10-auditoría)
 
 ---
 
-## 1. Autenticación y Autorización
+## 1. Autenticación
 
 ### 1.1 Login
-**Endpoint:** `POST /api/auth/login`  
-**Autenticación:** No requerida  
-**Descripción:** Inicia sesión y obtiene un token JWT
+```http
+POST /api/auth/login
+```
 
-#### Request Body:
+**Body:**
 ```json
 {
-  "email": "admin@example.com",
+  "email": "usuario@example.com",
   "password": "password123"
 }
 ```
 
-#### Response 200 (Success):
+**Response 200:**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "tipo": "Bearer",
-  "usuarioId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "documentNumber": "123456789",
-  "email": "admin@example.com",
-  "firstName": "Juan",
-  "secondName": "Carlos",
-  "firstLastname": "Pérez",
-  "secondLastname": "García",
-  "roles": ["admin"]
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "tipo": "Bearer",
+    "usuarioId": "uuid",
+    "documentNumber": "1234567890",
+    "email": "usuario@example.com",
+    "firstName": "Juan",
+    "secondName": "Carlos",
+    "firstLastname": "Pérez",
+    "secondLastname": "López",
+    "roles": ["responsable"]
+  },
+  "message": "Login exitoso"
 }
 ```
 
-#### Response 401 (Error):
+**Response 400 (Usuario Inactivo):**
 ```json
 {
   "success": false,
-  "message": "Credenciales inválidas",
-  "statusCode": 401,
-  "timestamp": "2025-12-04T10:00:00Z"
+  "message": "Tu cuenta está inactiva. Contacta al administrador.",
+  "statusCode": 400
 }
 ```
+
+**Validaciones:**
+- ✅ Email debe ser válido
+- ✅ Contraseña requerida
+- ✅ Usuario debe estar activo (`estado: "activo"`)
+- ✅ Credenciales deben ser correctas
+- ✅ Registra acceso en auditoría
+
+**Notificaciones por Email:**
+- ✅ Login exitoso se registra en `user_session_log`
+- ✅ Login fallido se registra con razón
 
 ---
 
 ### 1.2 Registro
-**Endpoint:** `POST /api/auth/registro`  
-**Autenticación:** No requerida (puede requerir admin en producción)  
-**Descripción:** Registra un nuevo usuario
+```http
+POST /api/auth/registro
+```
 
-#### Request Body:
+**Body:**
 ```json
 {
-  "documentNumber": "987654321",
+  "documentNumber": "1234567890",
   "documentType": "CC",
-  "email": "nuevo@example.com",
-  "firstName": "María",
-  "secondName": "Fernanda",
-  "firstLastname": "López",
-  "secondLastname": "Martínez",
-  "password": "Pass1234!",
-  "telefono": "+57 310 987 6543",
-  "proceso": "Gestión de Reportes",
-  "cargo": "Analista",
+  "firstName": "Juan",
+  "secondName": "Carlos",
+  "firstLastname": "Pérez",
+  "secondLastname": "López",
+  "email": "juan@example.com",
+  "birthDate": "1990-01-15",
+  "password": "Password123!",
   "roles": ["responsable"]
 }
 ```
 
-#### Response 201 (Success):
+**Response 200:**
 ```json
 {
-  "mensaje": "Usuario registrado exitosamente"
+  "success": true,
+  "message": "Usuario registrado exitosamente"
 }
 ```
 
+**Validaciones:**
+- ✅ Email único
+- ✅ Documento único
+- ✅ Contraseña mínimo 6 caracteres
+- ✅ Rol válido
+
 ---
 
-## 2. Configuración de UI
+## 2. Usuarios
 
-### 2.1 Obtener Configuración por Rol
-**Endpoint:** `GET /api/config/ui`  
-**Autenticación:** Bearer Token requerido  
-**Descripción:** **CRÍTICO** - Retorna la configuración de UI, menú, permisos y endpoints según el rol del usuario autenticado
-
-#### Headers:
-```
+### 2.1 Listar Usuarios
+```http
+GET /api/usuarios?page=0&size=10&sort=createdAt,desc
 Authorization: Bearer {token}
 ```
 
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "rolPrincipal": "admin",
-    "roles": ["admin"],
-    "usuario": {
-      "usuarioId": "uuid",
-      "nombreCompleto": "Juan Pérez García",
-      "email": "admin@example.com",
-      "cargo": "Administrador del Sistema"
-    },
-    "menu": {
-      "items": [
-        {
-          "id": "dashboard",
-          "label": "Dashboard",
-          "icon": "dashboard",
-          "ruta": "/panel",
-          "visible": true,
-          "subItems": []
-        },
-        {
-          "id": "reportes",
-          "label": "Reportes",
-          "icon": "file-text",
-          "ruta": "/reportes",
-          "visible": true,
-          "subItems": [
-            {
-              "id": "crear-reporte",
-              "label": "Crear Reporte",
-              "ruta": "/reportes/nuevo",
-              "visible": true
-            },
-            {
-              "id": "listar-reportes",
-              "label": "Ver Todos",
-              "ruta": "/reportes",
-              "visible": true
-            }
-          ]
-        },
-        {
-          "id": "entidades",
-          "label": "Entidades",
-          "icon": "building",
-          "ruta": "/entidades",
-          "visible": true
-        },
-        {
-          "id": "usuarios",
-          "label": "Usuarios",
-          "icon": "users",
-          "ruta": "/usuarios",
-          "visible": true
-        }
-      ]
-    },
-    "permisos": {
-      "puedeCrearReporte": true,
-      "puedeEditarReporte": true,
-      "puedeEliminarReporte": true,
-      "puedeEnviarReporte": true,
-      "puedeAprobarReporte": true,
-      "puedeRechazarReporte": true,
-      "puedeVerUsuarios": true,
-      "puedeCrearUsuarios": true,
-      "puedeEditarUsuarios": true,
-      "puedeEliminarUsuarios": true,
-      "puedeCambiarRoles": true,
-      "puedeVerEntidades": true,
-      "puedeCrearEntidades": true,
-      "puedeEditarEntidades": true,
-      "puedeEliminarEntidades": true,
-      "puedeVerAuditoria": true,
-      "puedeExportarReportes": true,
-      "puedeConfigurarAlertas": true,
-      "puedeConfigurarSistema": true
-    },
-    "dashboard": {
-      "tipo": "admin",
-      "rutaDashboard": "/admin/dashboard",
-      "widgetsVisibles": [
-        "metricas-globales",
-        "gestion-usuarios",
-        "gestion-entidades",
-        "alertas-globales",
-        "calendario-global"
-      ],
-      "endpoints": {
-        "dashboard": "/api/dashboard/admin",
-        "estadisticas": "/api/dashboard/estadisticas"
-      }
-    }
-  },
-  "message": "Configuración obtenida exitosamente",
-  "statusCode": 200,
-  "timestamp": "2025-12-04T10:00:00Z"
-}
-```
+**Roles:** `admin`, `auditor`
 
-**Nota:** La configuración varía según el rol:
-- **admin:** Acceso total, todos los permisos
-- **supervisor:** Aprobación, supervisión, sin crear/eliminar usuarios
-- **responsable:** Solo sus reportes, sin gestión de usuarios/entidades
-- **auditor:** Solo lectura, sin modificaciones
-
----
-
-## 3. Reportes (CRUD)
-
-### 3.1 Listar Reportes
-**Endpoint:** `GET /api/reportes`  
-**Autenticación:** Bearer Token  
-**Descripción:** Lista todos los reportes con paginación
-
-#### Query Parameters:
-- `page` (int, default: 0): Número de página
-- `size` (int, default: 10): Elementos por página
-- `sort` (string, default: "fechaVencimiento,asc"): Ordenamiento
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "content": [
-      {
-        "reporteId": "uuid",
-        "nombre": "Reporte SUI Mensual",
-        "descripcion": "Reporte mensual de servicios públicos",
-        "entidadId": "uuid",
-        "entidadNombre": "Superintendencia de Servicios Públicos",
-        "frecuencia": "MENSUAL",
-        "formatoRequerido": "EXCEL",
-        "baseLegal": "Resolución 123 de 2023",
-        "fechaInicioVigencia": "2024-01-01",
-        "fechaFinVigencia": null,
-        "fechaVencimiento": "2024-12-05",
-        "plazoAdicionalDias": 5,
-        "linkInstrucciones": "https://sui.gov.co/instructivo",
-        "responsableElaboracionIds": ["uuid1", "uuid2"],
-        "responsableElaboracionNombres": "Juan Pérez, María García",
-        "responsableSupervisionIds": ["uuid3"],
-        "responsableSupervisionNombres": "Carlos Rodríguez",
-        "correosNotificacion": ["juan@entidad.gov.co"],
-        "telefonoResponsable": "+57 300 123 4567",
-        "estado": "PENDIENTE",
-        "createdAt": "2024-01-15T10:00:00Z",
-        "updatedAt": "2024-12-01T14:30:00Z"
-      }
-    ],
-    "totalPages": 5,
-    "totalElements": 48,
-    "size": 10,
-    "number": 0,
-    "first": true,
-    "last": false,
-    "empty": false
-  },
-  "message": "Reportes obtenidos exitosamente",
-  "statusCode": 200
-}
-```
-
----
-
-### 3.2 Obtener Reporte por ID
-**Endpoint:** `GET /api/reportes/{reporteId}`  
-**Autenticación:** Bearer Token  
-**Descripción:** Obtiene un reporte específico por su UUID
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "reporteId": "uuid",
-    "nombre": "Reporte SUI Mensual",
-    "descripcion": "Descripción detallada",
-    "entidadId": "uuid",
-    "entidadNombre": "Superintendencia",
-    "frecuencia": "MENSUAL",
-    "formatoRequerido": "EXCEL",
-    "baseLegal": "Resolución 123",
-    "fechaInicioVigencia": "2024-01-01",
-    "fechaFinVigencia": null,
-    "fechaVencimiento": "2024-12-05",
-    "plazoAdicionalDias": 5,
-    "linkInstrucciones": "https://...",
-    "responsables": [
-      {
-        "usuarioId": "uuid1",
-        "nombreCompleto": "Juan Pérez",
-        "tipoResponsabilidad": "elaboracion",
-        "esPrincipal": true
-      }
-    ],
-    "correosNotificacion": ["email@example.com"],
-    "telefonoResponsable": "+57 300 123 4567",
-    "estado": "PENDIENTE",
-    "createdAt": "2024-01-15T10:00:00Z",
-    "updatedAt": "2024-12-01T14:30:00Z"
-  },
-  "statusCode": 200
-}
-```
-
----
-
-### 3.3 Crear Reporte
-**Endpoint:** `POST /api/reportes`  
-**Autenticación:** Bearer Token  
-**Roles permitidos:** admin, supervisor  
-**Descripción:** Crea un nuevo reporte con sus responsables
-
-#### Request Body:
-```json
-{
-  "nombre": "Reporte SUI Mensual",
-  "descripcion": "Reporte mensual de servicios públicos",
-  "entidadId": "uuid",
-  "frecuencia": "MENSUAL",
-  "formatoRequerido": "EXCEL",
-  "baseLegal": "Resolución 123 de 2023",
-  "fechaInicioVigencia": "2024-01-01",
-  "fechaFinVigencia": null,
-  "fechaVencimiento": "2024-12-05",
-  "plazoAdicionalDias": 5,
-  "linkInstrucciones": "https://sui.gov.co/instructivo",
-  "responsables": [
-    {
-      "usuarioId": "uuid1",
-      "tipoResponsabilidad": "elaboracion",
-      "esPrincipal": true,
-      "fechaInicio": "2024-01-01",
-      "observaciones": "Responsable principal"
-    },
-    {
-      "usuarioId": "uuid2",
-      "tipoResponsabilidad": "supervision",
-      "esPrincipal": true,
-      "fechaInicio": "2024-01-01"
-    }
-  ],
-  "correosNotificacion": ["email@example.com"],
-  "telefonoResponsable": "+57 300 123 4567",
-  "estado": "PENDIENTE"
-}
-```
-
-**Valores permitidos:**
-- `frecuencia`: "MENSUAL", "TRIMESTRAL", "SEMESTRAL", "ANUAL"
-- `formatoRequerido`: "PDF", "EXCEL", "WORD", "OTRO"
-- `tipoResponsabilidad`: "elaboracion", "supervision", "revision"
-
-#### Response 201:
-```json
-{
-  "success": true,
-  "data": {
-    "reporteId": "uuid",
-    // ... datos del reporte creado
-  },
-  "message": "Reporte creado exitosamente",
-  "statusCode": 201
-}
-```
-
----
-
-### 3.4 Actualizar Reporte
-**Endpoint:** `PUT /api/reportes/{reporteId}`  
-**Autenticación:** Bearer Token  
-**Roles permitidos:** admin, supervisor  
-**Descripción:** Actualiza un reporte existente
-
-#### Request Body:
-Igual que crear reporte
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    // ... reporte actualizado
-  },
-  "message": "Reporte actualizado exitosamente",
-  "statusCode": 200
-}
-```
-
----
-
-### 3.5 Eliminar Reporte
-**Endpoint:** `DELETE /api/reportes/{reporteId}`  
-**Autenticación:** Bearer Token  
-**Roles permitidos:** admin  
-**Descripción:** Elimina un reporte
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "mensaje": "Reporte eliminado exitosamente"
-  },
-  "statusCode": 200
-}
-```
-
----
-
-### 3.6 Filtrar Reportes por Estado
-**Endpoint:** `GET /api/reportes/estado/{estado}`  
-**Autenticación:** Bearer Token  
-**Descripción:** Lista reportes filtrados por estado
-
-#### Estados permitidos:
-- `PENDIENTE`
-- `EN_PROGRESO`
-- `COMPLETADO`
-- `VENCIDO`
-
-#### Query Parameters:
-- `page`, `size`, `sort` (igual que listar)
-
----
-
-### 3.7 Reportes de una Entidad
-**Endpoint:** `GET /api/reportes/entidad/{entidadId}`  
-**Autenticación:** Bearer Token  
-**Descripción:** Lista todos los reportes de una entidad específica
-
----
-
-### 3.8 Reportes Vencidos
-**Endpoint:** `GET /api/reportes/vencidos`  
-**Autenticación:** Bearer Token  
-**Roles permitidos:** admin, supervisor, auditor  
-**Descripción:** Lista todos los reportes vencidos
-
----
-
-## 4. Flujo de Reportes
-
-### Estados del Flujo:
-1. `pendiente` - Esperando elaboración
-2. `en_elaboracion` - En proceso de creación
-3. `enviado` - Enviado a supervisión
-4. `en_revision` - Siendo revisado
-5. `requiere_correccion` - Necesita cambios
-6. `aprobado` - Aprobado por supervisor
-7. `rechazado` - Rechazado
-8. `vencido` - Pasó la fecha límite
-9. `extemporaneo` - Enviado fuera de plazo
-
----
-
-### 4.1 Obtener Mis Periodos (Responsable)
-**Endpoint:** `GET /api/flujo-reportes/mis-periodos`  
-**Autenticación:** Bearer Token  
-**Roles:** responsable  
-**Descripción:** Lista los periodos de reportes asignados al usuario autenticado
-
-#### Query Parameters:
-- `page`, `size`, `sort`
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "content": [
-      {
-        "periodoId": "uuid",
-        "reporteId": "uuid",
-        "reporteNombre": "Reporte SUI Mensual",
-        "entidadNombre": "Superintendencia",
-        "periodoTipo": "mensual",
-        "periodoInicio": "2024-11-01",
-        "periodoFin": "2024-11-30",
-        "fechaVencimientoCalculada": "2024-12-05",
-        "estado": "pendiente",
-        "estadoDescripcion": "Pendiente de elaboración",
-        "fechaEnvioReal": null,
-        "diasDesviacion": null,
-        "responsableElaboracion": {
-          "usuarioId": "uuid",
-          "nombreCompleto": "Juan Pérez García",
-          "email": "juan@entidad.gov.co"
-        },
-        "responsableSupervision": {
-          "usuarioId": "uuid",
-          "nombreCompleto": "Carlos Rodríguez",
-          "email": "carlos@entidad.gov.co"
-        },
-        "comentarios": null,
-        "cantidadArchivos": 0,
-        "puedeEnviar": true,
-        "puedeAprobar": false,
-        "puedeRechazar": false,
-        "puedeCorregir": false,
-        "createdAt": "2024-11-01T00:00:00Z",
-        "updatedAt": "2024-11-01T00:00:00Z"
-      }
-    ],
-    "totalPages": 3,
-    "totalElements": 28
-  },
-  "statusCode": 200
-}
-```
-
----
-
-### 4.2 Periodos Pendientes
-**Endpoint:** `GET /api/flujo-reportes/mis-periodos/pendientes`  
-**Autenticación:** Bearer Token  
-**Roles:** responsable  
-**Descripción:** Solo periodos en estado "pendiente"
-
----
-
-### 4.3 Periodos que Requieren Corrección
-**Endpoint:** `GET /api/flujo-reportes/mis-periodos/requieren-correccion`  
-**Autenticación:** Bearer Token  
-**Roles:** responsable  
-**Descripción:** Solo periodos en estado "requiere_correccion"
-
----
-
-### 4.4 Enviar Reporte
-**Endpoint:** `POST /api/flujo-reportes/enviar`  
-**Autenticación:** Bearer Token  
-**Roles:** responsable  
-**Descripción:** Envía un periodo completado al supervisor
-
-#### Request Body:
-```json
-{
-  "periodoId": "uuid",
-  "comentarios": "Reporte completado según lineamientos",
-  "evidenciasIds": ["uuid1", "uuid2", "uuid3"]
-}
-```
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "periodoId": "uuid",
-    "estado": "enviado",
-    // ... resto de datos del periodo
-  },
-  "message": "Reporte enviado exitosamente",
-  "statusCode": 200
-}
-```
-
----
-
-### 4.5 Corregir y Reenviar
-**Endpoint:** `POST /api/flujo-reportes/corregir-reenviar`  
-**Autenticación:** Bearer Token  
-**Roles:** responsable  
-**Descripción:** Corrige y reenvía un periodo que requiere corrección
-
-#### Request Body:
-```json
-{
-  "periodoId": "uuid",
-  "comentarios": "Correcciones realizadas según indicaciones",
-  "evidenciasIds": ["uuid1", "uuid2"]
-}
-```
-
----
-
-### 4.6 Periodos Pendientes de Validación (Supervisor)
-**Endpoint:** `GET /api/flujo-reportes/pendientes-validacion`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor  
-**Descripción:** Lista periodos enviados esperando revisión
-
----
-
-### 4.7 Periodos Bajo Mi Supervisión
-**Endpoint:** `GET /api/flujo-reportes/supervision`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor  
-**Descripción:** Todos los periodos donde el usuario es supervisor
-
----
-
-### 4.8 Validar Reporte (Aprobar/Rechazar)
-**Endpoint:** `POST /api/flujo-reportes/validar`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor  
-**Descripción:** Aprueba o rechaza un periodo enviado
-
-#### Request Body:
-```json
-{
-  "periodoId": "uuid",
-  "accion": "aprobar",
-  "comentarios": "Reporte aprobado sin observaciones",
-  "motivoRechazo": null
-}
-```
-
-**Acciones permitidas:** "aprobar", "rechazar"  
-**Nota:** `motivoRechazo` es requerido si `accion` = "rechazar"
-
----
-
-### 4.9 Aprobar Directamente
-**Endpoint:** `POST /api/flujo-reportes/{periodoId}/aprobar`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor  
-**Query Parameters:**
-- `comentarios` (string): Comentarios opcionales
-
----
-
-### 4.10 Rechazar Directamente
-**Endpoint:** `POST /api/flujo-reportes/{periodoId}/rechazar`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor  
-**Query Parameters:**
-- `motivoRechazo` (string, required): Motivo del rechazo
-
----
-
-### 4.11 Solicitar Corrección
-**Endpoint:** `POST /api/flujo-reportes/solicitar-correccion`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor  
-**Descripción:** Solicita correcciones sin rechazar completamente
-
-#### Request Body:
-```json
-{
-  "periodoId": "uuid",
-  "motivoCorreccion": "Revisar cifras del tercer trimestre",
-  "detallesCorreccion": "Los valores en la tabla 3 no coinciden",
-  "fechaLimiteCorreccion": "2024-12-10"
-}
-```
-
----
-
-### 4.12 Obtener Detalle de Periodo
-**Endpoint:** `GET /api/flujo-reportes/periodos/{periodoId}`  
-**Autenticación:** Bearer Token  
-**Descripción:** Obtiene información completa de un periodo
-
----
-
-### 4.13 Historial de Estados
-**Endpoint:** `GET /api/flujo-reportes/periodos/{periodoId}/historial`  
-**Autenticación:** Bearer Token  
-**Descripción:** Historial de cambios de estado de un periodo
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "estadoAnterior": "pendiente",
-      "estadoNuevo": "en_elaboracion",
-      "fecha": "2024-11-05T10:00:00Z",
-      "usuarioNombre": "Juan Pérez García",
-      "comentario": "Iniciado trabajo en el reporte"
-    },
-    {
-      "estadoAnterior": "en_elaboracion",
-      "estadoNuevo": "enviado",
-      "fecha": "2024-11-28T16:30:00Z",
-      "usuarioNombre": "Juan Pérez García",
-      "comentario": "Reporte completado"
-    }
-  ],
-  "statusCode": 200
-}
-```
-
----
-
-## 5. Entidades
-
-### 5.1 Listar Entidades
-**Endpoint:** `GET /api/entidades`  
-**Autenticación:** Bearer Token  
-**Descripción:** Lista todas las entidades
-
-#### Query Parameters:
-- `page`, `size`, `sort`
-
-#### Response 200:
-```json
-{
-  "success": true,
-  "data": {
-    "content": [
-      {
-        "entidadId": "uuid",
-        "nit": "900123456-7",
-        "nombre": "Superintendencia de Servicios Públicos",
-        "paginaWeb": "https://www.superservicios.gov.co",
-        "baseLegal": "Ley 142 de 1994",
-        "observaciones": "Ente regulador",
-        "estado": "ACTIVA",
-        "createdAt": "2024-01-01T00:00:00Z",
-        "updatedAt": "2024-01-01T00:00:00Z"
-      }
-    ],
-    "totalPages": 2,
-    "totalElements": 15
-  },
-  "statusCode": 200
-}
-```
-
----
-
-### 5.2 Entidades Activas
-**Endpoint:** `GET /api/entidades/activas`  
-**Autenticación:** Bearer Token  
-**Descripción:** Solo entidades con estado "ACTIVA"
-
----
-
-### 5.3 Obtener Entidad por ID
-**Endpoint:** `GET /api/entidades/{entidadId}`  
-**Autenticación:** Bearer Token
-
----
-
-### 5.4 Crear Entidad
-**Endpoint:** `POST /api/entidades`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, supervisor
-
-#### Request Body:
-```json
-{
-  "nit": "900123456-7",
-  "nombre": "Nueva Entidad",
-  "paginaWeb": "https://ejemplo.gov.co",
-  "baseLegal": "Ley XYZ",
-  "observaciones": "Observaciones adicionales",
-  "estado": "ACTIVA"
-}
-```
-
----
-
-### 5.5 Actualizar Entidad
-**Endpoint:** `PUT /api/entidades/{entidadId}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, supervisor
-
----
-
-### 5.6 Eliminar Entidad
-**Endpoint:** `DELETE /api/entidades/{entidadId}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin
-
----
-
-## 6. Usuarios
-
-### 6.1 Listar Usuarios
-**Endpoint:** `GET /api/usuarios`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, supervisor
-
-#### Response 200:
+**Response 200:**
 ```json
 {
   "success": true,
@@ -799,364 +133,1276 @@ Igual que crear reporte
     "content": [
       {
         "usuarioId": "uuid",
-        "documentNumber": "123456789",
-        "documentType": "CC",
-        "email": "juan.perez@entidad.gov.co",
-        "firstName": "Juan",
-        "secondName": "Carlos",
-        "firstLastname": "Pérez",
-        "secondLastname": "García",
-        "telefono": "+57 300 123 4567",
-        "proceso": "Gestión de Reportes",
-        "cargo": "Analista de Cumplimiento",
-        "estado": "ACTIVO",
-        "ultimoAcceso": "2025-12-04T09:30:00Z",
-        "roles": ["responsable", "supervisor"],
-        "createdAt": "2024-01-15T00:00:00Z",
-        "updatedAt": "2024-12-01T10:00:00Z"
+        "documentNumber": "1234567890",
+        "nombreCompleto": "Juan Carlos Pérez López",
+        "email": "juan@example.com",
+        "telefono": "+57 300 1234567",
+        "cargo": "Analista",
+        "rolCodigo": "responsable",
+        "rolNombre": "Responsable",
+        "estado": "activo",
+        "createdAt": "2025-01-15T10:30:00Z"
       }
     ],
-    "totalPages": 3,
-    "totalElements": 25
-  },
-  "statusCode": 200
+    "totalElements": 50,
+    "totalPages": 5,
+    "size": 10,
+    "number": 0
+  }
 }
 ```
 
 ---
 
-### 6.2 Obtener Usuario por Document Number
-**Endpoint:** `GET /api/usuarios/{documentNumber}`  
-**Autenticación:** Bearer Token
+### 2.2 Obtener Usuario por ID
+```http
+GET /api/usuarios/{documentNumber}
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`, `auditor`, `supervisor`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "usuarioId": "uuid",
+    "documentNumber": "1234567890",
+    "documentType": "CC",
+    "firstName": "Juan",
+    "secondName": "Carlos",
+    "firstLastname": "Pérez",
+    "secondLastname": "López",
+    "nombreCompleto": "Juan Carlos Pérez López",
+    "email": "juan@example.com",
+    "telefono": "+57 300 1234567",
+    "cargo": "Analista Senior",
+    "rolCodigo": "responsable",
+    "rolNombre": "Responsable",
+    "estado": "activo",
+    "ultimoAcceso": "2025-12-05T14:30:00Z",
+    "createdAt": "2025-01-15T10:30:00Z"
+  }
+}
+```
 
 ---
 
-### 6.3 Actualizar Usuario
-**Endpoint:** `PUT /api/usuarios/{documentNumber}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin
+### 2.3 Actualizar Usuario
+```http
+PUT /api/usuarios/{documentNumber}
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Body:**
+```json
+{
+  "firstName": "Juan Carlos",
+  "secondName": "Alberto",
+  "firstLastname": "Pérez",
+  "secondLastname": "López",
+  "email": "juan.nuevo@example.com",
+  "telefono": "+57 300 9999999",
+  "documentType": "CC",
+  "documentNumber": "1234567890",
+  "rolCodigo": "supervisor",
+  "activo": true,
+  "cargo": "Coordinador"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": { /* usuario actualizado */ },
+  "message": "Usuario actualizado exitosamente"
+}
+```
 
 ---
 
-### 6.4 Eliminar Usuario
-**Endpoint:** `DELETE /api/usuarios/{documentNumber}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin
+### 2.4 Desactivar Usuario
+```http
+PATCH /api/usuarios/{documentNumber}/desactivar
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "usuarioId": "uuid",
+    "estado": "inactivo",
+    "email": "usuario@example.com"
+  },
+  "message": "Usuario desactivado exitosamente"
+}
+```
+
+**Efecto:**
+- ✅ Usuario no podrá iniciar sesión
+- ✅ Estado cambia a "inactivo"
+- ✅ Se registra en auditoría
 
 ---
 
-## 7. Evidencias
+### 2.5 Activar Usuario
+```http
+PATCH /api/usuarios/{documentNumber}/activar
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "usuarioId": "uuid",
+    "estado": "activo",
+    "email": "usuario@example.com"
+  },
+  "message": "Usuario activado exitosamente"
+}
+```
+
+---
+
+## 3. Invitaciones
+
+### 3.1 Invitar Usuario
+```http
+POST /api/users/invite
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Body:**
+```json
+{
+  "email": "nuevo@example.com",
+  "role": "responsable"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Invitation sent"
+}
+```
+
+**Comportamiento:**
+- ✅ Si email existe y está activo → Error
+- ✅ Si email existe y está invitado → Regenera token y reenvía correo
+- ✅ Si no existe → Crea usuario con estado "invited"
+- ✅ Genera token único (válido 72 horas)
+- ✅ Envía correo con plantilla HTML profesional
+
+**Email Enviado:**
+- **Asunto:** "Invitación a Sistema de Gestión de Reportes"
+- **Template:** `invitation.html`
+- **Variables:** email, token, expiración
+- **Link:** `http://frontend.com/registro-invitado?token={token}`
+
+---
+
+### 3.2 Cancelar Invitación
+```http
+DELETE /api/users/invite/{usuarioId}
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Invitation cancelled"
+}
+```
+
+**Validaciones:**
+- ✅ Usuario debe existir
+- ✅ Usuario debe tener estado "invited" o "inactive"
+- ✅ Usuario no debe haber completado registro (sin contraseña)
+
+---
+
+### 3.3 Validar Token de Invitación
+```http
+GET /api/users/validate-invitation?token={token}
+```
+
+**Público (sin autenticación)**
+
+**Response 200 (Válido):**
+```json
+{
+  "success": true,
+  "data": true,
+  "message": "Token válido"
+}
+```
+
+**Response 200 (Inválido):**
+```json
+{
+  "success": true,
+  "data": false,
+  "message": "Token inválido o expirado"
+}
+```
+
+---
+
+### 3.4 Completar Registro con Invitación
+```http
+POST /api/users/complete-invitation
+```
+
+**Público (sin autenticación)**
+
+**Body:**
+```json
+{
+  "token": "abc123-token-xyz",
+  "firstName": "Juan",
+  "secondName": "Carlos",
+  "firstLastname": "Pérez",
+  "secondLastname": "López",
+  "documentType": "CC",
+  "documentNumber": "1234567890",
+  "password": "Password123!",
+  "telefono": "+57 300 1234567"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "User activated"
+}
+```
+
+**Validaciones:**
+- ✅ Token debe existir y estar en estado "pending"
+- ✅ Token no debe estar expirado
+- ✅ Token no debe estar cancelado
+- ✅ Token no debe estar usado
+- ✅ Documento no debe estar en uso
+- ✅ Contraseña se encripta con Bcrypt
+- ✅ Usuario cambia a estado "activo"
+- ✅ Token se marca como "used"
+
+---
+
+## 4. Entidades
+
+### 4.1 Crear Entidad
+```http
+POST /api/entidades
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Body:**
+```json
+{
+  "nit": "900123456-1",
+  "nombre": "Empresa de Servicios Públicos",
+  "paginaWeb": "https://www.empresa.com",
+  "baseLegal": "Decreto 1234 de 2020",
+  "estado": "ACTIVA",
+  "observaciones": "Entidad del sector público"
+}
+```
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "data": {
+    "entidadId": "uuid",
+    "nit": "900123456-1",
+    "nombre": "Empresa de Servicios Públicos",
+    "paginaWeb": "https://www.empresa.com",
+    "estado": "ACTIVA",
+    "createdAt": "2025-12-06T10:00:00Z"
+  },
+  "message": "Entidad creada exitosamente"
+}
+```
+
+---
+
+### 4.2 Listar Entidades
+```http
+GET /api/entidades?page=0&size=10
+Authorization: Bearer {token}
+```
+
+**Roles:** Todos los autenticados
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "entidadId": "uuid",
+        "nit": "900123456-1",
+        "nombre": "Empresa de Servicios Públicos",
+        "estado": "ACTIVA",
+        "createdAt": "2025-12-06T10:00:00Z"
+      }
+    ],
+    "totalElements": 20,
+    "totalPages": 2
+  }
+}
+```
+
+---
+
+## 5. Reportes
+
+### 5.1 Crear Reporte
+```http
+POST /api/reportes
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`, `supervisor`
+
+**Body:**
+```json
+{
+  "nombre": "Reporte Mensual de Operaciones",
+  "descripcion": "Reporte detallado de operaciones mensuales",
+  "entidadId": "uuid-entidad",
+  "frecuencia": "mensual",
+  "formatoRequerido": "PDF",
+  "baseLegal": "Resolución 123 de 2020",
+  "fechaInicioVigencia": "2025-01-01",
+  "fechaFinVigencia": "2025-12-31",
+  "fechaVencimiento": "2025-01-31",
+  "plazoAdicionalDias": 5,
+  "linkInstrucciones": "https://docs.ejemplo.com/instrucciones",
+  "durationMonths": 12,
+  "responsables": [
+    {
+      "usuarioId": "uuid-responsable",
+      "tipoResponsabilidad": "ELABORACION",
+      "esPrincipal": true,
+      "orden": 1
+    },
+    {
+      "usuarioId": "uuid-supervisor",
+      "tipoResponsabilidad": "SUPERVISION",
+      "esPrincipal": true,
+      "orden": 2
+    }
+  ],
+  "correosNotificacion": [
+    "notificaciones@empresa.com",
+    "alertas@empresa.com"
+  ]
+}
+```
+
+**Frecuencias Válidas:**
+- `"diaria"` o `"diario"` - Cada 1 día
+- `"semanal"` - Cada 7 días
+- `"quincenal"` - Cada 15 días
+- `"mensual"` - Cada mes
+- `"bimestral"` - Cada 2 meses
+- `"trimestral"` - Cada 3 meses
+- `"semestral"` - Cada 6 meses
+- `"anual"` - Cada año
+- `"45"` - Frecuencia personalizada (cada 45 días)
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "data": {
+    "reporteId": "uuid",
+    "nombre": "Reporte Mensual de Operaciones",
+    "entidadNombre": "Empresa de Servicios Públicos",
+    "frecuencia": "mensual",
+    "estado": "activo",
+    "durationMonths": 12,
+    "responsables": [
+      {
+        "usuarioNombre": "Juan Pérez",
+        "tipoResponsabilidadNombre": "Elaboración",
+        "esPrincipal": true
+      }
+    ]
+  },
+  "message": "Reporte creado exitosamente"
+}
+```
+
+**Efectos Automáticos:**
+- ✅ Se generan períodos automáticamente según `durationMonths`
+- ✅ Primer período inicia en `fechaInicioVigencia`
+- ✅ Se crean eventos de calendario para cada período
+- ✅ **Se envía correo de confirmación** a responsables
+
+**Email Enviado:**
+- **Asunto:** "✅ Reporte Creado Exitosamente: {nombre}"
+- **Template:** `reporte-creado.html`
+- **Destinatarios:** Responsables de elaboración y supervisión
+- **Variables:** Todos los datos del reporte
+
+---
+
+### 5.2 Listar Reportes
+```http
+GET /api/reportes?page=0&size=10&sort=nombre,asc
+Authorization: Bearer {token}
+```
+
+**Roles:** Todos los autenticados
+
+**Filtros opcionales:**
+- `?estado=activo`
+- `?entidadId=uuid`
+- `?responsableId=uuid`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "reporteId": "uuid",
+        "nombre": "Reporte Mensual",
+        "entidadNombre": "Empresa XYZ",
+        "frecuencia": "mensual",
+        "estado": "activo",
+        "responsableElaboracionNombre": "Juan Pérez",
+        "responsableSupervisionNombre": "María González"
+      }
+    ],
+    "totalElements": 25,
+    "totalPages": 3
+  }
+}
+```
+
+---
+
+### 5.3 Obtener Reporte por ID
+```http
+GET /api/reportes/{reporteId}
+Authorization: Bearer {token}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "reporteId": "uuid",
+    "nombre": "Reporte Mensual de Operaciones",
+    "descripcion": "Descripción detallada",
+    "entidadId": "uuid",
+    "entidadNombre": "Empresa XYZ",
+    "frecuencia": "mensual",
+    "formatoRequerido": "PDF",
+    "fechaInicioVigencia": "2025-01-01",
+    "fechaVencimiento": "2025-01-31",
+    "durationMonths": 12,
+    "responsables": [
+      {
+        "usuarioId": "uuid",
+        "usuarioNombre": "Juan Pérez",
+        "tipoResponsabilidadNombre": "Elaboración",
+        "esPrincipal": true,
+        "activo": true
+      }
+    ],
+    "correosNotificacion": ["alertas@empresa.com"],
+    "estado": "activo",
+    "createdAt": "2025-01-01T10:00:00Z"
+  }
+}
+```
+
+---
+
+### 5.4 Actualizar Reporte
+```http
+PUT /api/reportes/{reporteId}
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`, `supervisor`
+
+**Body:** Mismo formato que crear reporte
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": { /* reporte actualizado */ },
+  "message": "Reporte actualizado exitosamente"
+}
+```
+
+---
+
+### 5.5 Eliminar Reporte
+```http
+DELETE /api/reportes/{reporteId}
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Reporte eliminado exitosamente"
+}
+```
+
+**Efecto en cascada:**
+- ✅ Se eliminan todos los períodos asociados
+- ✅ Se eliminan todos los eventos de calendario
+- ✅ Se eliminan todos los archivos asociados
+
+---
+
+## 6. Períodos de Reporte
+
+### 6.1 Listar Períodos de un Reporte
+```http
+GET /api/periodos/reporte/{reporteId}?page=0&size=10
+Authorization: Bearer {token}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "periodoId": "uuid",
+        "numeroPeriodo": 1,
+        "periodoInicio": "2025-01-01",
+        "periodoFin": "2025-01-31",
+        "fechaVencimientoCalculada": "2025-01-31",
+        "estado": "pendiente",
+        "diasRestantes": 25,
+        "estaAtrasado": false,
+        "fechaEnvio": null,
+        "archivosCount": 0
+      }
+    ],
+    "totalElements": 12
+  }
+}
+```
+
+**Estados posibles:**
+- `"pendiente"` - No enviado aún
+- `"enviado"` - Enviado por responsable
+- `"aprobado"` - Aprobado por supervisor
+- `"rechazado"` - Rechazado, requiere correcciones
+- `"vencido"` - No enviado antes del vencimiento
+
+---
+
+### 6.2 Obtener Período por ID
+```http
+GET /api/periodos/{periodoId}
+Authorization: Bearer {token}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "periodoId": "uuid",
+    "reporte": {
+      "reporteId": "uuid",
+      "nombre": "Reporte Mensual",
+      "entidadNombre": "Empresa XYZ"
+    },
+    "numeroPeriodo": 1,
+    "periodoInicio": "2025-01-01",
+    "periodoFin": "2025-01-31",
+    "fechaVencimientoCalculada": "2025-01-31",
+    "estado": "enviado",
+    "fechaEnvio": "2025-01-28T15:30:00Z",
+    "observaciones": "Todo correcto",
+    "archivos": [
+      {
+        "archivoId": "uuid",
+        "nombreArchivo": "reporte_enero.pdf",
+        "urlPublica": "https://r2.cloudflare.com/bucket/file.pdf",
+        "tipoArchivo": "application/pdf",
+        "tamanoBytes": 1024000,
+        "uploadedAt": "2025-01-28T15:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 6.3 Enviar Período (Responsable)
+```http
+POST /api/periodos/{periodoId}/enviar
+Authorization: Bearer {token}
+```
+
+**Roles:** `responsable`
+
+**Body:**
+```json
+{
+  "observaciones": "Reporte completado según especificaciones",
+  "archivosIds": [
+    "uuid-archivo-1",
+    "uuid-archivo-2"
+  ]
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "periodoId": "uuid",
+    "estado": "enviado",
+    "fechaEnvio": "2025-01-28T15:30:00Z"
+  },
+  "message": "Período enviado exitosamente"
+}
+```
+
+**Efectos Automáticos:**
+- ✅ Estado cambia a "enviado"
+- ✅ Se registra fecha de envío
+- ✅ **Se envía correo al supervisor**
+- ✅ Se actualiza evento de calendario
+
+**Email Enviado al Supervisor:**
+- **Asunto:** "📬 Reporte Enviado para Revisión: {nombre}"
+- **Template:** `notificacion-supervisor.html`
+- **Variables:** Responsable, reporte, período, archivos adjuntos
+- **Destinatarios:** Todos los supervisores del reporte
+
+---
+
+### 6.4 Aprobar Período (Supervisor)
+```http
+POST /api/periodos/{periodoId}/aprobar
+Authorization: Bearer {token}
+```
+
+**Roles:** `supervisor`
+
+**Body:**
+```json
+{
+  "observaciones": "Aprobado sin observaciones"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "periodoId": "uuid",
+    "estado": "aprobado",
+    "fechaAprobacion": "2025-01-29T10:00:00Z"
+  },
+  "message": "Período aprobado exitosamente"
+}
+```
+
+**Efectos:**
+- ✅ Estado cambia a "aprobado"
+- ✅ Se registra fecha de aprobación
+- ✅ Se actualiza evento de calendario (verde)
+
+---
+
+### 6.5 Rechazar Período (Supervisor)
+```http
+POST /api/periodos/{periodoId}/rechazar
+Authorization: Bearer {token}
+```
+
+**Roles:** `supervisor`
+
+**Body:**
+```json
+{
+  "observaciones": "Faltan datos en la sección 3. Por favor completar."
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "periodoId": "uuid",
+    "estado": "rechazado"
+  },
+  "message": "Período rechazado"
+}
+```
+
+**Efectos:**
+- ✅ Estado cambia a "rechazado"
+- ✅ Responsable puede volver a enviar
+- ✅ **Se envía correo al responsable** con las observaciones
+
+---
+
+## 7. Archivos y Evidencias
 
 ### 7.1 Subir Archivo
-**Endpoint:** `POST /api/evidencias/reporte/{reporteId}`  
-**Autenticación:** Bearer Token  
-**Content-Type:** multipart/form-data
+```http
+POST /api/archivos/upload
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
 
-#### Request:
-- **Form field:** `file` (binary)
+**Body (FormData):**
+```
+file: [archivo binario]
+periodoId: uuid-periodo
+descripcion: "Reporte mensual en PDF"
+```
 
-#### Response 200:
+**Response 201:**
 ```json
 {
   "success": true,
   "data": {
-    "id": "uuid",
-    "nombreArchivo": "reporte_sui_nov_2024.xlsx",
-    "tipoArchivo": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "tamano": 245678,
-    "reporteId": "uuid",
-    "subidoPorId": "uuid",
-    "subidoPorNombre": "Juan Pérez",
-    "creadoEn": "2024-12-04T10:30:00Z"
+    "archivoId": "uuid",
+    "nombreArchivo": "reporte_enero.pdf",
+    "urlPublica": "https://r2.cloudflare.com/bucket/abc123.pdf",
+    "tipoArchivo": "application/pdf",
+    "tamanoBytes": 1024000,
+    "uploadedAt": "2025-01-28T15:30:00Z"
   },
-  "message": "Archivo subido exitosamente",
-  "statusCode": 200
+  "message": "Archivo subido exitosamente"
 }
 ```
 
-**Límites:**
-- Tamaño máximo: 10 MB
-- Formatos permitidos: PDF, XLSX, DOCX, PNG, JPG
+**Validaciones:**
+- ✅ Tamaño máximo: 50 MB
+- ✅ Tipos permitidos: PDF, Excel, Word, Imágenes
+- ✅ Usuario debe tener permisos sobre el período
+
+**Almacenamiento:**
+- ✅ Cloudflare R2 (S3-compatible)
+- ✅ URL pública generada automáticamente
+- ✅ Metadata almacenada en PostgreSQL
 
 ---
 
-### 7.2 Listar Evidencias de un Reporte
-**Endpoint:** `GET /api/evidencias/reporte/{reporteId}`  
-**Autenticación:** Bearer Token
+### 7.2 Listar Archivos de un Período
+```http
+GET /api/archivos/periodo/{periodoId}
+Authorization: Bearer {token}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "archivoId": "uuid",
+      "nombreArchivo": "reporte.pdf",
+      "urlPublica": "https://r2.cloudflare.com/bucket/file.pdf",
+      "tipoArchivo": "application/pdf",
+      "tamanoBytes": 1024000,
+      "descripcion": "Reporte principal",
+      "uploadedAt": "2025-01-28T15:30:00Z",
+      "uploadedBy": "Juan Pérez"
+    }
+  ]
+}
+```
 
 ---
 
-### 7.3 Descargar Evidencia
-**Endpoint:** `GET /api/evidencias/{evidenciaId}/descargar`  
-**Autenticación:** Bearer Token  
-**Response:** Archivo binario
+### 7.3 Eliminar Archivo
+```http
+DELETE /api/archivos/{archivoId}
+Authorization: Bearer {token}
+```
+
+**Roles:** `responsable` (solo sus archivos), `admin`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Archivo eliminado exitosamente"
+}
+```
+
+**Efecto:**
+- ✅ Se elimina de Cloudflare R2
+- ✅ Se elimina el registro de la BD
 
 ---
 
-### 7.4 Obtener Metadata de Evidencia
-**Endpoint:** `GET /api/evidencias/{evidenciaId}`  
-**Autenticación:** Bearer Token
+## 8. Calendarios y Eventos
+
+### 8.1 Obtener Eventos del Calendario (Responsable)
+```http
+GET /api/dashboard/mis-eventos?fechaInicio=2025-01-01&fechaFin=2025-01-31
+Authorization: Bearer {token}
+```
+
+**Roles:** `responsable`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "eventoId": "uuid",
+      "titulo": "Reporte Mensual - Período 1",
+      "descripcionCorta": "Pendiente - Vence en 3 días",
+      "startDate": "2025-01-01",
+      "endDate": "2025-01-31",
+      "colorEstado": "#FFA500",
+      "periodo": {
+        "periodoId": "uuid",
+        "estado": "pendiente",
+        "diasRestantes": 3
+      },
+      "reporte": {
+        "reporteId": "uuid",
+        "nombre": "Reporte Mensual"
+      }
+    }
+  ]
+}
+```
+
+**Colores por Estado:**
+- `#FFA500` (Naranja) - Pendiente
+- `#4CAF50` (Verde) - Aprobado
+- `#FF6B6B` (Rojo) - Vencido
+- `#2196F3` (Azul) - Enviado
 
 ---
 
-### 7.5 Eliminar Evidencia
-**Endpoint:** `DELETE /api/evidencias/{evidenciaId}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, responsable (solo sus archivos)
+### 8.2 Obtener Eventos del Calendario (Supervisor)
+```http
+GET /api/dashboard/calendario-supervisor?fechaInicio=2025-01-01&fechaFin=2025-01-31
+Authorization: Bearer {token}
+```
+
+**Roles:** `supervisor`
+
+**Response 200:** Mismo formato que responsable, pero con todos los reportes que supervisa
 
 ---
 
-## 8. Dashboard
+### 8.3 Obtener Eventos del Calendario (Admin)
+```http
+GET /api/dashboard/admin/calendario?fechaInicio=2025-01-01&fechaFin=2025-01-31
+Authorization: Bearer {token}
+```
 
-### 8.1 Dashboard General (Redirige según rol)
-**Endpoint:** `GET /api/dashboard`  
-**Autenticación:** Bearer Token  
-**Descripción:** Retorna el dashboard correspondiente al rol del usuario
+**Roles:** `admin`, `auditor`
+
+**Response 200:** Todos los eventos del sistema
 
 ---
 
-### 8.2 Estadísticas Generales
-**Endpoint:** `GET /api/dashboard/estadisticas`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, supervisor, auditor
+## 9. Dashboard
 
-#### Query Parameters:
-- `periodo` (string): "mes_actual", "trimestre_actual", "año_actual", "personalizado"
-- `fechaInicio` (date): Si periodo = "personalizado"
-- `fechaFin` (date): Si periodo = "personalizado"
+### 9.1 Estadísticas del Responsable
+```http
+GET /api/dashboard/mis-estadisticas
+Authorization: Bearer {token}
+```
 
-#### Response 200:
+**Roles:** `responsable`
+
+**Response 200:**
 ```json
 {
   "success": true,
   "data": {
-    "totalReportes": 48,
-    "reportesPendientes": 12,
-    "reportesEnProgreso": 8,
-    "reportesEnviados": 15,
-    "reportesVencidos": 3,
-    "tasaCumplimiento": 87.5
-  },
-  "statusCode": 200
+    "reportesAsignados": 5,
+    "periodosPendientes": 3,
+    "periodosEnviados": 10,
+    "periodosVencidos": 1,
+    "proximosAVencer": [
+      {
+        "reporteNombre": "Reporte Mensual",
+        "periodoNumero": 12,
+        "fechaVencimiento": "2025-12-31",
+        "diasRestantes": 5
+      }
+    ]
+  }
 }
 ```
 
 ---
 
-### 8.3 Dashboard Admin
-**Endpoint:** `GET /api/dashboard/admin`  
-**Autenticación:** Bearer Token  
-**Roles:** admin
+### 9.2 Estadísticas del Supervisor
+```http
+GET /api/dashboard/supervisor/estadisticas
+Authorization: Bearer {token}
+```
 
-#### Response incluye:
-- Métricas globales del sistema
-- Gestión de usuarios
-- Gestión de entidades
-- Alertas globales
-- Calendario global
+**Roles:** `supervisor`
 
----
-
-### 8.4 Dashboard Responsable
-**Endpoint:** `GET /api/dashboard/responsable`  
-**Autenticación:** Bearer Token  
-**Roles:** responsable
-
-#### Response incluye:
-- KPIs personales
-- Tareas pendientes
-- Reportes próximos a vencer
-- Alertas personales
-- Calendario personal
-
----
-
-### 8.5 Dashboard Supervisor
-**Endpoint:** `GET /api/dashboard/supervisor`  
-**Autenticación:** Bearer Token  
-**Roles:** supervisor
-
-#### Response incluye:
-- KPIs de cumplimiento
-- Reportes por revisar
-- Alertas críticas
-- Métricas por entidad
-- Gráficos de cumplimiento
-
----
-
-### 8.6 Dashboard Auditor
-**Endpoint:** `GET /api/dashboard/auditor`  
-**Autenticación:** Bearer Token  
-**Roles:** auditor
-
-#### Response incluye:
-- Resumen ejecutivo
-- Análisis de tendencias
-- Cumplimiento por entidad
-- Cumplimiento por obligación
-- Reportes históricos
-
----
-
-## 9. Responsables de Reportes
-
-### 9.1 Agregar Responsable
-**Endpoint:** `POST /api/reportes/{reporteId}/responsables`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, supervisor
-
-#### Request Body:
+**Response 200:**
 ```json
 {
-  "usuarioId": "uuid",
-  "tipoResponsabilidad": "revision",
-  "esPrincipal": false,
-  "fechaInicio": "2024-06-01",
-  "observaciones": "Nuevo revisor de calidad"
+  "success": true,
+  "data": {
+    "reportesSupervisados": 15,
+    "periodosPendientesRevision": 5,
+    "periodosAprobados": 25,
+    "periodosRechazados": 2
+  }
 }
 ```
 
 ---
 
-### 9.2 Listar Responsables de un Reporte
-**Endpoint:** `GET /api/reportes/{reporteId}/responsables`  
-**Autenticación:** Bearer Token
+### 9.3 Estadísticas del Admin
+```http
+GET /api/dashboard/admin/estadisticas
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`, `auditor`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalReportes": 50,
+    "totalUsuarios": 100,
+    "totalEntidades": 20,
+    "periodosPendientes": 30,
+    "periodosVencidos": 5,
+    "cumplimientoPromedio": 85.5
+  }
+}
+```
 
 ---
 
-### 9.3 Actualizar Responsable
-**Endpoint:** `PUT /api/reporte-responsable/{responsableId}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin, supervisor
+## 10. Auditoría
+
+### 10.1 Listar Accesos al Sistema
+```http
+GET /api/auditoria/accesos?page=0&size=20
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`
+
+**Filtros opcionales:**
+- `?usuarioId=uuid`
+- `?evento=LOGIN_SUCCESS`
+- `?fechaInicio=2025-01-01`
+- `?fechaFin=2025-12-31`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "sessionLogId": "uuid",
+        "email": "usuario@example.com",
+        "evento": "LOGIN_SUCCESS",
+        "ipAddress": "192.168.1.100",
+        "userAgent": "Mozilla/5.0...",
+        "datosAdicionales": {
+          "roles": ["responsable"],
+          "documentNumber": "1234567890"
+        },
+        "timestamp": "2025-12-06T10:30:00Z"
+      }
+    ],
+    "totalElements": 150
+  }
+}
+```
+
+**Eventos registrados:**
+- `LOGIN_SUCCESS` - Login exitoso
+- `LOGIN_FAILED` - Login fallido (credenciales incorrectas, cuenta inactiva, etc.)
 
 ---
 
-### 9.4 Eliminar Responsable
-**Endpoint:** `DELETE /api/reporte-responsable/{responsableId}`  
-**Autenticación:** Bearer Token  
-**Roles:** admin
+### 10.2 Estadísticas de Accesos
+```http
+GET /api/auditoria/accesos/estadisticas
+Authorization: Bearer {token}
+```
+
+**Roles:** `admin`, `auditor`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalAccesos": 1500,
+    "accesosExitosos": 1450,
+    "accesosFallidos": 50,
+    "usuariosActivos": 85,
+    "intentosFuerzaBruta": 2
+  }
+}
+```
 
 ---
 
-## 10. Códigos de Estado y Errores
+### 10.3 Último Acceso de un Usuario
+```http
+GET /api/auditoria/accesos/usuario/{usuarioId}/ultimo
+Authorization: Bearer {token}
+```
 
-### Códigos HTTP
+**Roles:** `admin`
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "email": "usuario@example.com",
+    "evento": "LOGIN_SUCCESS",
+    "timestamp": "2025-12-06T10:30:00Z",
+    "ipAddress": "192.168.1.100"
+  }
+}
+```
+
+---
+
+### 10.4 Mis Accesos (Usuario)
+```http
+GET /api/auditoria/mis-accesos?page=0&size=10
+Authorization: Bearer {token}
+```
+
+**Roles:** Todos los autenticados
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "evento": "LOGIN_SUCCESS",
+        "timestamp": "2025-12-06T10:30:00Z",
+        "ipAddress": "192.168.1.100"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 📧 Resumen de Notificaciones por Email
+
+### Correos Automáticos del Sistema
+
+| Evento | Template | Destinatarios | Variables Principales |
+|--------|----------|---------------|----------------------|
+| **Invitación de Usuario** | `invitation.html` | Usuario invitado | email, token, expiración |
+| **Reporte Creado** | `reporte-creado.html` | Responsables asignados | Datos del reporte, responsables |
+| **Alerta de Vencimiento** | `alert-vencimiento.html` | Responsable de elaboración | Días restantes, fecha vencimiento |
+| **Período Enviado** | `notificacion-supervisor.html` | Supervisores | Responsable, archivos, período |
+| **Período Rechazado** | (Simple HTML) | Responsable | Observaciones del supervisor |
+
+### Características de los Correos
+
+- ✅ Templates HTML responsive con Thymeleaf
+- ✅ Diseño profesional con gradientes
+- ✅ Variables dinámicas sustituidas
+- ✅ Links funcionales incluidos
+- ✅ Compatible con todos los clientes de correo
+- ✅ Asuntos descriptivos con emojis
+- ✅ Footer con información del sistema
+
+---
+
+## 🔐 Autenticación y Autorización
+
+### Header de Autenticación
+
+Todos los endpoints protegidos requieren:
+```http
+Authorization: Bearer {jwt-token}
+```
+
+### Roles del Sistema
+
+| Rol | Código | Permisos |
+|-----|--------|----------|
+| **Administrador** | `admin` | Acceso total al sistema |
+| **Supervisor** | `supervisor` | Crear reportes, aprobar/rechazar períodos |
+| **Responsable** | `responsable` | Enviar períodos, subir archivos |
+| **Auditor** | `auditor` | Solo lectura, acceso a auditoría |
+
+### Validación de Estado
+
+- ✅ Solo usuarios con `estado: "activo"` pueden iniciar sesión
+- ✅ Usuarios con `estado: "inactivo"` son rechazados en login
+- ✅ Usuarios con `estado: "invited"` deben completar registro primero
+
+---
+
+## 📝 Códigos de Estado HTTP
 
 | Código | Significado | Uso |
 |--------|-------------|-----|
 | 200 | OK | Operación exitosa |
-| 201 | Created | Recurso creado exitosamente |
-| 204 | No Content | Eliminación exitosa |
-| 400 | Bad Request | Datos inválidos |
+| 201 | Created | Recurso creado |
+| 400 | Bad Request | Validación fallida |
 | 401 | Unauthorized | Token inválido o expirado |
-| 403 | Forbidden | Sin permisos |
+| 403 | Forbidden | Sin permisos suficientes |
 | 404 | Not Found | Recurso no encontrado |
-| 409 | Conflict | Conflicto (ej: email duplicado) |
+| 409 | Conflict | Conflicto (email duplicado, etc.) |
 | 500 | Internal Server Error | Error del servidor |
 
 ---
 
-### Formato de Error Estándar
+## 🎯 Flujos Completos
 
-```json
-{
-  "success": false,
-  "message": "Descripción del error",
-  "errors": [
-    {
-      "field": "email",
-      "message": "El email ya está registrado"
-    }
-  ],
-  "statusCode": 400,
-  "timestamp": "2025-12-04T10:00:00Z",
-  "path": "/api/reportes"
-}
+### Flujo 1: Onboarding de Usuario
+
+1. Admin invita usuario: `POST /api/users/invite`
+2. Sistema envía correo con token
+3. Usuario valida token: `GET /api/users/validate-invitation?token=...`
+4. Usuario completa registro: `POST /api/users/complete-invitation`
+5. Usuario inicia sesión: `POST /api/auth/login`
+
+### Flujo 2: Creación y Gestión de Reporte
+
+1. Admin/Supervisor crea reporte: `POST /api/reportes`
+2. Sistema genera períodos automáticamente
+3. Sistema envía correo de confirmación
+4. Sistema crea eventos de calendario
+5. Responsable ve eventos: `GET /api/dashboard/mis-eventos`
+
+### Flujo 3: Envío y Aprobación de Período
+
+1. Responsable sube archivos: `POST /api/archivos/upload`
+2. Responsable envía período: `POST /api/periodos/{id}/enviar`
+3. Sistema envía correo al supervisor
+4. Supervisor revisa: `GET /api/periodos/{id}`
+5. Supervisor aprueba o rechaza: `POST /api/periodos/{id}/aprobar`
+
+### Flujo 4: Alertas de Vencimiento
+
+1. Sistema detecta períodos próximos a vencer (tarea programada)
+2. Sistema envía correo de alerta: `sendAlertaVencimiento()`
+3. Responsable recibe notificación
+4. Responsable completa y envía el período
+
+---
+
+## 🔧 Configuración Requerida
+
+### Variables de Entorno
+
+```bash
+# Database
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/llanogas
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=your-password
+
+# Email (Gmail)
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-gmail-app-password
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRATION=86400000
+
+# Cloudflare R2
+R2_ACCOUNT_ID=your-account-id
+R2_ACCESS_KEY=your-access-key
+R2_SECRET_KEY=your-secret-key
+R2_BUCKET_NAME=your-bucket
+
+# Frontend
+APP_FRONTEND_URL=http://localhost:3000
 ```
 
 ---
 
-## 📝 Notas Importantes
+## 📚 Documentación Adicional
 
-### Autenticación
-- Todas las peticiones (excepto login y registro) requieren header:  
-  `Authorization: Bearer {token}`
-- Token JWT expira en 24 horas
-- Debe incluir `usuarioId` y `roles` en el payload
-
-### Paginación
-- Todas las listas soportan paginación
-- Parámetros: `page` (0-indexed), `size`, `sort`
-- Ejemplo: `?page=0&size=10&sort=nombre,asc`
-
-### Formatos de Fecha
-- ISO 8601: `YYYY-MM-DDTHH:mm:ssZ`
-- Zona horaria: UTC
-
-### Roles del Sistema
-- `admin`: Acceso completo
-- `supervisor`: Supervisión y aprobación
-- `responsable`: Elaboración de reportes
-- `auditor`: Solo lectura
+- **Swagger UI:** `http://localhost:8080/swagger-ui.html`
+- **API Docs:** `http://localhost:8080/v3/api-docs`
 
 ---
 
-## 🎯 Checklist de Funcionalidades Implementadas
+## ✅ Estado del Sistema
 
-### ✅ Autenticación
-- [x] Login con JWT
-- [x] Registro de usuarios
-- [x] Configuración UI por rol
+```
+✅ TODOS LOS ENDPOINTS IMPLEMENTADOS
+✅ AUTENTICACIÓN Y AUTORIZACIÓN COMPLETA
+✅ INVITACIONES CON EMAIL FUNCIONALES
+✅ GESTIÓN DE REPORTES Y PERÍODOS
+✅ CALENDARIOS DINÁMICOS
+✅ AUDITORÍA DE ACCESOS
+✅ NOTIFICACIONES AUTOMÁTICAS POR EMAIL
+✅ ALMACENAMIENTO EN CLOUDFLARE R2
+✅ TESTS DE INTEGRACIÓN PASADOS
+✅ DOCUMENTACIÓN COMPLETA
+```
 
-### ✅ Reportes
-- [x] CRUD completo
-- [x] Múltiples responsables
-- [x] Filtrado por estado
-- [x] Filtrado por entidad
+**Fecha de última actualización:** 6 de diciembre de 2025  
+**Versión:** 2.0  
+**Estado:** Producción Ready 🚀
 
-### ✅ Flujo de Reportes
-- [x] Mis periodos
-- [x] Enviar reporte
-- [x] Aprobar/Rechazar
-- [x] Solicitar corrección
-- [x] Historial de estados
-
-### ✅ Entidades
-- [x] CRUD completo
-- [x] Filtro de activas
-
-### ✅ Usuarios
-- [x] CRUD completo
-- [x] Gestión de roles
-
-### ✅ Evidencias
-- [x] Subir archivos
-- [x] Descargar archivos
-- [x] Listar por reporte
-
-### ✅ Dashboard
-- [x] Dashboard por rol
-- [x] Estadísticas generales
-- [x] Métricas personalizadas
-
----
-
-## 🚀 Próximos Pasos
-
-### Funcionalidades Pendientes
-- [ ] Notificaciones por email
-- [ ] Exportación de reportes (PDF/Excel)
-- [ ] Calendario de eventos
-- [ ] Búsqueda avanzada
-- [ ] Logs de auditoría
-
-### Mejoras Técnicas
-- [ ] Cache con Redis
-- [ ] Rate limiting
-- [ ] Compresión de respuestas
-- [ ] WebSockets para notificaciones en tiempo real
-
----
-
-**Contacto:** Para dudas o soporte, consultar la documentación del proyecto o contactar al equipo de desarrollo.
