@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadConfig = async () => {
     try {
-      const response = await api.get('/config/ui');
+      const response = await api.get('/api/config/ui');
       if (response.data.success) {
         const userData = response.data.data;
         setUser(userData);
