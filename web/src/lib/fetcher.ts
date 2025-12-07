@@ -1,5 +1,6 @@
 import api from './api';
-import { CacheKey, dedupe, getCache, invalidateCache, setCache } from './cache';
+import type { CacheKey } from './cache';
+import { dedupe, getCache, invalidateCache, setCache } from './cache';
 
 export async function fetchCached<T>(key: CacheKey, url: string): Promise<T> {
   const cached = getCache<T>(key);
@@ -20,3 +21,4 @@ export async function mutate<T>(key: CacheKey, fn: () => Promise<T>): Promise<T>
 }
 
 export { invalidateCache } from './cache';
+export type { CacheKey } from './cache';
