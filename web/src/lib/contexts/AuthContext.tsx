@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { api } from '../api';
+import { fetchCached, invalidateCache } from '../fetcher';
 import type { ConfiguracionRolResponse, PermisosConfig, LoginRequest } from '../types/auth';
 
 interface AuthContextType {
@@ -44,27 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadConfig = async () => {
     try {
-      const response = await api.get('/config/ui');
-      if (response.data.success) {
-        const userData = response.data.data;
-        setUser(userData);
-        
-        // Establecer rol activo por defecto (el rol principal del usuario)
-        const primaryRole = userData.roles[0];
-        const savedRole = localStorage.getItem('activeRole');
-        
-        // Si hay un rol guardado y es válido para este usuario, usarlo
-        if (savedRole && userData.roles.includes(savedRole)) {
-          setActiveRole(savedRole);
-        } else {
-          setActiveRole(primaryRole);
-          localStorage.setItem('activeRole', primaryRole);
-        }
+      const userData = await fetchCached<ConfiguracionRolResponse>('user', '/config/ui');
+      setUser(userData);
+      
+      // Establecer rol activo por defecto (el rol principal del usuario)
+      const primaryRole = userData.roles[0];
+      const savedRole = localStorage.getItem('activeRole');
+      
+      // Si hay un rol guardado y es válido para este usuario, usarlo
+      if (savedRole && userData.roles.includes(savedRole)) {
+        setActiveRole(savedRole);
+      } else {
+        setActiveRole(primaryRole);
+        localStorage.setItem('activeRole', primaryRole);
       }
     } catch (error) {
       console.error('Error loading config:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('activeRole');
+      invalidateCache('user');
       setUser(null);
       setActiveRole(null);
     } finally {
@@ -78,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.data.success) {
         const { token } = response.data.data;
         localStorage.setItem('token', token);
+        invalidateCache(['user']);
         await loadConfig();
       }
     } catch (error) {
@@ -89,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('activeRole');
+    invalidateCache(['user', 'systemSettings', 'alertRules']);
     setUser(null);
     setActiveRole(null);
     window.location.href = '/login';

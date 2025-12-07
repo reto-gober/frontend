@@ -4,818 +4,475 @@ import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
 
 <AdminLayout title="Configuración">
   <div class="configuracion-page">
-    <!-- Header -->
     <div class="page-header">
       <div class="header-info">
         <h1 class="page-title">Configuración del Sistema</h1>
-        <p class="page-description">Ajustes generales y preferencias de la plataforma</p>
+        <p class="page-description">Ajustes generales, SMTP y reglas de alertas</p>
       </div>
+      <div class="badge">Cache local: 5 min</div>
     </div>
 
-    <!-- Tabs de configuración -->
     <div class="config-tabs">
-      <button class="tab-btn active" data-tab="general">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        General
-      </button>
-      <button class="tab-btn" data-tab="notificaciones">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        Notificaciones
-      </button>
-      <button class="tab-btn" data-tab="alertas">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        Alertas
-      </button>
-      <button class="tab-btn" data-tab="integraciones">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-          <polyline points="15 3 21 3 21 9"/>
-          <line x1="10" y1="14" x2="21" y2="3"/>
-        </svg>
-        Integraciones
-      </button>
-      <button class="tab-btn" data-tab="seguridad">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-        Seguridad
-      </button>
+      <button class="tab-btn active" data-tab="general">General</button>
+      <button class="tab-btn" data-tab="notificaciones">SMTP</button>
+      <button class="tab-btn" data-tab="alertas">Alertas</button>
+      <button class="tab-btn" data-tab="seguridad">Seguridad</button>
     </div>
 
-    <!-- Contenido de configuración -->
     <div class="config-content">
-      <!-- Sección General -->
       <section class="config-section" id="tab-general">
         <div class="section-card">
-          <h3 class="section-title">Información de la Empresa</h3>
+          <div class="section-header">
+            <h3 class="section-title">Información de la empresa</h3>
+            <span class="section-hint">Se actualiza en vivo usando cache de 5 minutos</span>
+          </div>
           <div class="form-grid">
             <div class="form-group">
-              <label class="form-label">Nombre de la empresa</label>
-              <input type="text" class="form-input" value="Llanogas S.A. E.S.P." />
+              <label class="form-label" for="companyName">Nombre</label>
+              <input id="companyName" type="text" class="form-input" placeholder="Llanogas" />
             </div>
             <div class="form-group">
-              <label class="form-label">NIT</label>
-              <input type="text" class="form-input" value="900.123.456-7" />
+              <label class="form-label" for="companyEmail">Email</label>
+              <input id="companyEmail" type="email" class="form-input" placeholder="contacto@llanogas.com" />
             </div>
             <div class="form-group">
-              <label class="form-label">Dirección</label>
-              <input type="text" class="form-input" value="Calle 100 #15-50, Bogotá" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Teléfono</label>
-              <input type="text" class="form-input" value="+57 (1) 234 5678" />
+              <label class="form-label" for="companyPhone">Teléfono</label>
+              <input id="companyPhone" type="text" class="form-input" placeholder="+57" />
             </div>
             <div class="form-group full-width">
-              <label class="form-label">Email de contacto</label>
-              <input type="email" class="form-input" value="contacto@llanogas.com" />
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h3 class="section-title">Preferencias del Sistema</h3>
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Zona horaria</span>
-                <span class="setting-description">Configura la zona horaria predeterminada del sistema</span>
-              </div>
-              <select class="form-select">
-                <option value="america_bogota" selected>América/Bogotá (UTC-5)</option>
-                <option value="utc">UTC</option>
-              </select>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Formato de fecha</span>
-                <span class="setting-description">Define cómo se muestran las fechas en la plataforma</span>
-              </div>
-              <select class="form-select">
-                <option value="dd_mm_yyyy" selected>DD/MM/YYYY</option>
-                <option value="mm_dd_yyyy">MM/DD/YYYY</option>
-                <option value="yyyy_mm_dd">YYYY-MM-DD</option>
-              </select>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Idioma del sistema</span>
-                <span class="setting-description">Idioma predeterminado para todos los usuarios</span>
-              </div>
-              <select class="form-select">
-                <option value="es" selected>Español</option>
-                <option value="en">English</option>
-              </select>
+              <label class="form-label" for="companyAddress">Dirección</label>
+              <input id="companyAddress" type="text" class="form-input" placeholder="Dirección" />
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Sección Notificaciones -->
       <section class="config-section hidden" id="tab-notificaciones">
         <div class="section-card">
-          <h3 class="section-title">Canales de Notificación</h3>
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Notificaciones por email</span>
-                <span class="setting-description">Enviar alertas y recordatorios por correo electrónico</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Notificaciones en plataforma</span>
-                <span class="setting-description">Mostrar notificaciones dentro de la aplicación</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Notificaciones SMS</span>
-                <span class="setting-description">Enviar alertas críticas por mensaje de texto</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" />
-                <span class="toggle-slider"></span>
-              </label>
+          <div class="section-header">
+            <h3 class="section-title">SMTP</h3>
+            <div class="section-actions">
+              <span class="badge badge-env" id="smtpEnvBadge" hidden>Usando valores por defecto (ENV)</span>
+              <button class="btn-link" id="unlockSmtpBtn">Editar SMTP</button>
             </div>
           </div>
-        </div>
-
-        <div class="section-card">
-          <h3 class="section-title">Configuración de Email</h3>
+          <p class="section-hint">Los campos quedan bloqueados si vienen de variables de entorno. Al sobrescribir se invalidará cache y se requerirá prueba SMTP.</p>
           <div class="form-grid">
             <div class="form-group">
-              <label class="form-label">Servidor SMTP</label>
-              <input type="text" class="form-input" value="smtp.llanogas.com" />
+              <label class="form-label" for="smtpHost">Servidor SMTP</label>
+              <input id="smtpHost" type="text" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">Puerto</label>
-              <input type="text" class="form-input" value="587" />
+              <label class="form-label" for="smtpPort">Puerto</label>
+              <input id="smtpPort" type="number" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">Usuario SMTP</label>
-              <input type="text" class="form-input" value="notificaciones@llanogas.com" />
+              <label class="form-label" for="smtpUsername">Usuario</label>
+              <input id="smtpUsername" type="email" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">Contraseña</label>
-              <input type="password" class="form-input" value="********" />
+              <label class="form-label" for="smtpPassword">Contraseña</label>
+              <input id="smtpPassword" type="password" class="form-input" placeholder="********" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="smtpFromEmail">Email remitente</label>
+              <input id="smtpFromEmail" type="email" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="smtpFromName">Nombre remitente</label>
+              <input id="smtpFromName" type="text" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">SMTP habilitado</label>
+              <label class="toggle-switch">
+                <input id="smtpEnabled" type="checkbox" />
+                <span class="toggle-slider"></span>
+              </label>
             </div>
           </div>
-          <button class="btn-secondary mt-4">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            Probar conexión
-          </button>
+          <div class="smtp-actions">
+            <button class="btn-secondary" id="testSmtpBtn">
+              <span class="spinner" id="smtpSpinner" hidden></span>
+              Probar conexión
+            </button>
+            <div class="status" id="smtpStatus"></div>
+          </div>
         </div>
       </section>
 
-      <!-- Sección Alertas -->
       <section class="config-section hidden" id="tab-alertas">
         <div class="section-card">
-          <h3 class="section-title">Recordatorios de Vencimiento</h3>
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Primera alerta</span>
-                <span class="setting-description">Días antes del vencimiento para la primera alerta</span>
-              </div>
-              <div class="input-with-suffix">
-                <input type="number" class="form-input small" value="7" />
-                <span class="suffix">días</span>
-              </div>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Segunda alerta</span>
-                <span class="setting-description">Días antes del vencimiento para recordatorio urgente</span>
-              </div>
-              <div class="input-with-suffix">
-                <input type="number" class="form-input small" value="3" />
-                <span class="suffix">días</span>
-              </div>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Alerta crítica</span>
-                <span class="setting-description">Días antes del vencimiento para alerta crítica</span>
-              </div>
-              <div class="input-with-suffix">
-                <input type="number" class="form-input small" value="1" />
-                <span class="suffix">días</span>
-              </div>
-            </div>
+          <div class="section-header">
+            <h3 class="section-title">Reglas de alertas</h3>
+            <span class="section-hint">Lectura con cache 5 min; invalidación al procesar</span>
           </div>
-        </div>
-
-        <div class="section-card">
-          <h3 class="section-title">Notificar a</h3>
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Responsable del reporte</span>
-                <span class="setting-description">Enviar alertas al usuario asignado al reporte</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Supervisor</span>
-                <span class="setting-description">Incluir al supervisor en alertas importantes</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Administradores</span>
-                <span class="setting-description">Notificar a admins en alertas críticas</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+          <div id="rulesSummary" class="status"></div>
+          <div id="rulesList" class="rules-list"></div>
+          <div class="actions-row">
+            <button class="btn-secondary" id="refreshRulesBtn">Refrescar</button>
+            <button class="btn-primary ghost" id="processAlertsBtn">Procesar alertas manual</button>
+            <span class="status" id="processAlertsStatus"></span>
           </div>
         </div>
       </section>
 
-      <!-- Sección Integraciones -->
-      <section class="config-section hidden" id="tab-integraciones">
-        <div class="section-card">
-          <h3 class="section-title">Integraciones Activas</h3>
-          <div class="integrations-grid">
-            <div class="integration-card active">
-              <div class="integration-logo">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </div>
-              <div class="integration-info">
-                <h4 class="integration-name">Email SMTP</h4>
-                <span class="integration-status connected">Conectado</span>
-              </div>
-              <button class="btn-link">Configurar</button>
-            </div>
-
-            <div class="integration-card">
-              <div class="integration-logo">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                </svg>
-              </div>
-              <div class="integration-info">
-                <h4 class="integration-name">API Entidades</h4>
-                <span class="integration-status pending">Sin configurar</span>
-              </div>
-              <button class="btn-link">Configurar</button>
-            </div>
-
-            <div class="integration-card active">
-              <div class="integration-logo">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-              </div>
-              <div class="integration-info">
-                <h4 class="integration-name">Almacenamiento</h4>
-                <span class="integration-status connected">AWS S3</span>
-              </div>
-              <button class="btn-link">Configurar</button>
-            </div>
-
-            <div class="integration-card">
-              <div class="integration-logo">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                  <line x1="12" y1="18" x2="12.01" y2="18"/>
-                </svg>
-              </div>
-              <div class="integration-info">
-                <h4 class="integration-name">SMS Gateway</h4>
-                <span class="integration-status pending">Sin configurar</span>
-              </div>
-              <button class="btn-link">Configurar</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Sección Seguridad -->
       <section class="config-section hidden" id="tab-seguridad">
         <div class="section-card">
-          <h3 class="section-title">Políticas de Contraseñas</h3>
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Longitud mínima</span>
-                <span class="setting-description">Número mínimo de caracteres requeridos</span>
-              </div>
-              <div class="input-with-suffix">
-                <input type="number" class="form-input small" value="8" min="6" max="32" />
-                <span class="suffix">caracteres</span>
-              </div>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Requerir mayúsculas</span>
-                <span class="setting-description">La contraseña debe incluir letras mayúsculas</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Requerir números</span>
-                <span class="setting-description">La contraseña debe incluir al menos un número</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Requerir caracteres especiales</span>
-                <span class="setting-description">Incluir símbolos como @, #, $, etc.</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+          <div class="section-header">
+            <h3 class="section-title">Sesiones</h3>
+            <span class="section-hint">Valores validados en backend</span>
           </div>
-        </div>
-
-        <div class="section-card">
-          <h3 class="section-title">Sesiones y Acceso</h3>
           <div class="settings-list">
             <div class="setting-item">
               <div class="setting-info">
                 <span class="setting-name">Expiración de sesión</span>
-                <span class="setting-description">Tiempo de inactividad antes de cerrar sesión automáticamente</span>
+                <span class="setting-description">Minutos de inactividad antes de cerrar sesión</span>
               </div>
               <div class="input-with-suffix">
-                <input type="number" class="form-input small" value="60" />
-                <span class="suffix">minutos</span>
+                <input id="sessionTimeout" type="number" class="form-input small" min="15" max="480" />
+                <span class="suffix">min</span>
               </div>
             </div>
             <div class="setting-item">
               <div class="setting-info">
-                <span class="setting-name">Intentos de login fallidos</span>
-                <span class="setting-description">Bloquear cuenta después de intentos fallidos</span>
+                <span class="setting-name">Intentos máximos</span>
+                <span class="setting-description">Bloqueo por intentos fallidos</span>
               </div>
               <div class="input-with-suffix">
-                <input type="number" class="form-input small" value="5" />
+                <input id="maxAttempts" type="number" class="form-input small" min="3" max="10" />
                 <span class="suffix">intentos</span>
               </div>
-            </div>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-name">Autenticación de dos factores</span>
-                <span class="setting-description">Requerir 2FA para administradores</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" />
-                <span class="toggle-slider"></span>
-              </label>
             </div>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- Footer con botones -->
     <div class="config-footer">
-      <button class="btn-secondary">Cancelar cambios</button>
-      <button class="btn-primary">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-          <polyline points="17 21 17 13 7 13 7 21"/>
-          <polyline points="7 3 7 8 15 8"/>
-        </svg>
-        Guardar Configuración
-      </button>
+      <div class="status" id="saveStatus"></div>
+      <div class="actions-row">
+        <button class="btn-secondary" id="cancelBtn">Restaurar desde cache</button>
+        <button class="btn-primary" id="saveBtn" disabled>Guardar configuración</button>
+      </div>
     </div>
   </div>
 </AdminLayout>
 
 <style>
-  .configuracion-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--neutral-900);
-    margin: 0;
-  }
-
-  .page-description {
-    font-size: 0.875rem;
-    color: var(--neutral-500);
-    margin: 0.25rem 0 0;
-  }
-
-  /* Tabs */
-  .config-tabs {
-    display: flex;
-    gap: 0.5rem;
-    background: white;
-    padding: 0.5rem;
-    border-radius: 12px;
-    box-shadow: var(--shadow-card);
-    overflow-x: auto;
-  }
-
-  .tab-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--neutral-600);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .tab-btn:hover {
-    background: var(--neutral-100);
-    color: var(--neutral-800);
-  }
-
-  .tab-btn.active {
-    background: var(--color-primary-600);
-    color: white;
-  }
-
-  /* Config Content */
-  .config-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .config-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .config-section.hidden {
-    display: none;
-  }
-
-  .section-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: var(--shadow-card);
-    padding: 1.5rem;
-  }
-
-  .section-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--neutral-800);
-    margin: 0 0 1.25rem;
-  }
-
-  /* Form Grid */
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .form-group.full-width {
-    grid-column: span 2;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--neutral-700);
-  }
-
-  .form-input,
-  .form-select {
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--neutral-200);
-    border-radius: 8px;
-    font-size: 0.875rem;
-    transition: border-color 0.2s;
-  }
-
-  .form-input:focus,
-  .form-select:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
-  }
-
-  .form-input.small {
-    width: 80px;
-    text-align: center;
-  }
-
-  /* Settings List */
-  .settings-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--neutral-50);
-    border-radius: 8px;
-  }
-
-  .setting-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .setting-name {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--neutral-800);
-  }
-
-  .setting-description {
-    font-size: 0.8125rem;
-    color: var(--neutral-500);
-  }
-
-  /* Toggle Switch */
-  .toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 48px;
-    height: 24px;
-  }
-
-  .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--neutral-300);
-    transition: 0.3s;
-    border-radius: 24px;
-  }
-
-  .toggle-slider::before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: 0.3s;
-    border-radius: 50%;
-  }
-
-  .toggle-switch input:checked + .toggle-slider {
-    background-color: var(--color-primary-600);
-  }
-
-  .toggle-switch input:checked + .toggle-slider::before {
-    transform: translateX(24px);
-  }
-
-  /* Input with suffix */
-  .input-with-suffix {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .suffix {
-    font-size: 0.875rem;
-    color: var(--neutral-500);
-  }
-
-  /* Integrations */
-  .integrations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
-  }
-
-  .integration-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--neutral-50);
-    border: 2px solid var(--neutral-200);
-    border-radius: 10px;
-    transition: all 0.2s;
-  }
-
-  .integration-card.active {
-    border-color: var(--success-green-300);
-    background: var(--success-green-50);
-  }
-
-  .integration-logo {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--neutral-600);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .integration-card.active .integration-logo {
-    color: var(--success-green-600);
-  }
-
-  .integration-info {
-    flex: 1;
-  }
-
-  .integration-name {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--neutral-800);
-    margin: 0;
-  }
-
-  .integration-status {
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .integration-status.connected {
-    color: var(--success-green-600);
-  }
-
-  .integration-status.pending {
-    color: var(--neutral-500);
-  }
-
-  .btn-link {
-    background: none;
-    border: none;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--color-primary-600);
-    cursor: pointer;
-  }
-
-  .btn-link:hover {
-    text-decoration: underline;
-  }
-
-  /* Footer */
-  .config-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 1.5rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: var(--shadow-card);
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-primary {
-    background: var(--color-primary-600);
-    color: white;
-    border: none;
-  }
-
-  .btn-primary:hover {
-    background: var(--color-primary-700);
-  }
-
-  .btn-secondary {
-    background: white;
-    color: var(--neutral-600);
-    border: 1px solid var(--neutral-200);
-  }
-
-  .btn-secondary:hover {
-    background: var(--neutral-100);
-  }
-
-  .mt-4 {
-    margin-top: 1rem;
-  }
-
-  @media (max-width: 768px) {
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .form-group.full-width {
-      grid-column: span 1;
-    }
-
-    .setting-item {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-  }
+  .configuracion-page { display: flex; flex-direction: column; gap: 1.5rem; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; }
+  .page-title { font-size: 1.5rem; font-weight: 700; color: var(--neutral-900); margin: 0; }
+  .page-description { font-size: 0.875rem; color: var(--neutral-500); margin: 0.25rem 0 0; }
+  .badge { background: var(--neutral-100); color: var(--neutral-700); padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.75rem; }
+  .badge-env { background: var(--warning-100); color: var(--warning-700); }
+  .config-tabs { display: flex; gap: 0.5rem; background: white; padding: 0.5rem; border-radius: 12px; box-shadow: var(--shadow-card); overflow-x: auto; }
+  .tab-btn { padding: 0.65rem 1.1rem; border: none; border-radius: 8px; background: transparent; font-size: 0.875rem; font-weight: 600; color: var(--neutral-600); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .tab-btn.active { background: var(--color-primary-600); color: white; }
+  .config-content { display: flex; flex-direction: column; gap: 1.5rem; }
+  .config-section { display: flex; flex-direction: column; gap: 1rem; }
+  .config-section.hidden { display: none; }
+  .section-card { background: white; border-radius: 12px; box-shadow: var(--shadow-card); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .section-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--neutral-800); }
+  .section-hint { color: var(--neutral-500); font-size: 0.85rem; }
+  .section-actions { display: flex; align-items: center; gap: 0.75rem; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-group.full-width { grid-column: 1 / -1; }
+  .form-label { font-size: 0.875rem; font-weight: 600; color: var(--neutral-700); }
+  .form-input { padding: 0.75rem 1rem; border: 1px solid var(--neutral-200); border-radius: 8px; font-size: 0.9rem; }
+  .form-input:focus { outline: none; border-color: var(--color-primary-500); }
+  .form-input[disabled] { background: var(--neutral-50); color: var(--neutral-500); }
+  .settings-list { display: flex; flex-direction: column; gap: 1rem; }
+  .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--neutral-50); border-radius: 10px; }
+  .setting-info { display: flex; flex-direction: column; gap: 0.2rem; }
+  .setting-name { font-weight: 700; color: var(--neutral-800); }
+  .setting-description { color: var(--neutral-500); font-size: 0.85rem; }
+  .toggle-switch { position: relative; display: inline-block; width: 48px; height: 24px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--neutral-300); transition: 0.3s; border-radius: 24px; }
+  .toggle-slider::before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: 0.3s; border-radius: 50%; }
+  .toggle-switch input:checked + .toggle-slider { background-color: var(--color-primary-600); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(24px); }
+  .input-with-suffix { display: flex; align-items: center; gap: 0.5rem; }
+  .suffix { color: var(--neutral-500); font-size: 0.85rem; }
+  .config-footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.25rem; background: white; border-radius: 12px; box-shadow: var(--shadow-card); }
+  .btn-primary, .btn-secondary, .btn-link { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--color-primary-600); color: white; border: none; padding: 0.85rem 1.2rem; }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-secondary { background: white; color: var(--neutral-700); border: 1px solid var(--neutral-200); padding: 0.8rem 1.1rem; }
+  .btn-link { background: none; border: none; color: var(--color-primary-600); padding: 0; }
+  .actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+  .status { font-size: 0.9rem; color: var(--neutral-600); }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--neutral-300); border-top-color: var(--color-primary-600); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .rules-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .rule-card { padding: 0.75rem 0.9rem; border: 1px solid var(--neutral-200); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .rule-meta { display: flex; flex-direction: column; gap: 0.15rem; }
+  .badge-small { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; background: var(--neutral-100); color: var(--neutral-700); }
+  .badge-success { background: var(--success-green-100); color: var(--success-green-700); }
+  .badge-error { background: var(--danger-100); color: var(--danger-700); }
+  .ghost { background: transparent; color: var(--color-primary-700); border: 1px dashed var(--color-primary-200); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 768px) { .config-footer { flex-direction: column; align-items: flex-start; } .setting-item { flex-direction: column; align-items: flex-start; gap: 0.6rem; } }
 </style>
 
-<script>
-  // Tab switching
-  const tabs = document.querySelectorAll<HTMLElement>('.tab-btn');
-  const sections = document.querySelectorAll('.config-section');
+<script type="module">
+  import api from '../../../lib/api';
+  import { fetchCached, invalidateCache } from '../../../lib/fetcher';
 
-  tabs.forEach(tab => {
+  const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+  const sections = Array.from(document.querySelectorAll('.config-section'));
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const saveStatus = document.getElementById('saveStatus');
+  const smtpStatus = document.getElementById('smtpStatus');
+  const smtpSpinner = document.getElementById('smtpSpinner');
+  const smtpEnvBadge = document.getElementById('smtpEnvBadge');
+  const unlockSmtpBtn = document.getElementById('unlockSmtpBtn');
+  const testSmtpBtn = document.getElementById('testSmtpBtn');
+  const processAlertsBtn = document.getElementById('processAlertsBtn');
+  const processAlertsStatus = document.getElementById('processAlertsStatus');
+  const rulesList = document.getElementById('rulesList');
+  const rulesSummary = document.getElementById('rulesSummary');
+  const refreshRulesBtn = document.getElementById('refreshRulesBtn');
+
+  const form = {
+    companyName: document.getElementById('companyName'),
+    companyEmail: document.getElementById('companyEmail'),
+    companyPhone: document.getElementById('companyPhone'),
+    companyAddress: document.getElementById('companyAddress'),
+    smtpHost: document.getElementById('smtpHost'),
+    smtpPort: document.getElementById('smtpPort'),
+    smtpUsername: document.getElementById('smtpUsername'),
+    smtpPassword: document.getElementById('smtpPassword'),
+    smtpFromEmail: document.getElementById('smtpFromEmail'),
+    smtpFromName: document.getElementById('smtpFromName'),
+    smtpEnabled: document.getElementById('smtpEnabled'),
+    sessionTimeout: document.getElementById('sessionTimeout'),
+    maxAttempts: document.getElementById('maxAttempts'),
+  };
+
+  const state = {
+    settings: null,
+    smtpSource: null,
+    smtpTestOk: false,
+    smtpLocked: true,
+    rules: [],
+  };
+
+  tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const targetId = `tab-${tab.dataset.tab}`;
-      
-      // Update active tab
-      tabs.forEach(t => t.classList.remove('active'));
+      tabs.forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
-      
-      // Show target section
-      sections.forEach(section => {
-        if (section.id === targetId) {
-          section.classList.remove('hidden');
-        } else {
-          section.classList.add('hidden');
+      sections.forEach((section) => section.classList.toggle('hidden', section.id !== targetId));
+    });
+  });
+
+  function setValue(input: HTMLInputElement, value: string | number | null | undefined) {
+    input.value = value ?? '';
+  }
+
+  function toggleSmtpFields(disabled: boolean) {
+    form.smtpHost.disabled = disabled;
+    form.smtpPort.disabled = disabled;
+    form.smtpUsername.disabled = disabled;
+    form.smtpPassword.disabled = disabled;
+    form.smtpFromEmail.disabled = disabled;
+    form.smtpFromName.disabled = disabled;
+    form.smtpEnabled.disabled = disabled;
+    state.smtpLocked = disabled;
+  }
+
+  async function loadSettings() {
+    saveStatus.textContent = 'Cargando...';
+    try {
+      const [settings, smtpSource, rules] = await Promise.all([
+        fetchCached('systemSettings', '/api/admin/settings/system'),
+        api.get('/api/admin/settings/smtp/source').then((r) => r.data),
+        fetchCached('alertRules', '/api/admin/settings/alerts/rules').catch(() => []),
+      ]);
+      state.settings = settings;
+      state.smtpSource = smtpSource;
+      state.rules = Array.isArray(rules) ? rules : [];
+      hydrateForm();
+      renderRules();
+      saveStatus.textContent = 'Listo (usando cache si aplica)';
+    } catch (err) {
+      console.error(err);
+      saveStatus.textContent = 'Error al cargar configuraciones';
+    }
+  }
+
+  function hydrateForm() {
+    const s = state.settings || {};
+    setValue(form.companyName, s.companyName);
+    setValue(form.companyEmail, s.companyEmail);
+    setValue(form.companyPhone, s.companyPhone);
+    setValue(form.companyAddress, s.companyAddress);
+    setValue(form.smtpHost, s.smtpHost);
+    setValue(form.smtpPort, s.smtpPort);
+    setValue(form.smtpUsername, s.smtpUsername);
+    form.smtpPassword.value = '********';
+    setValue(form.smtpFromEmail, s.smtpFromEmail);
+    setValue(form.smtpFromName, s.smtpFromName);
+    form.smtpEnabled.checked = !!s.smtpEnabled;
+    setValue(form.sessionTimeout, s.sessionTimeoutMinutes);
+    setValue(form.maxAttempts, s.maxLoginAttempts);
+
+    const source = state.smtpSource?.source;
+    if (source === 'environment') {
+      smtpEnvBadge.hidden = false;
+      toggleSmtpFields(true);
+    } else {
+      smtpEnvBadge.hidden = true;
+      toggleSmtpFields(false);
+    }
+    state.smtpTestOk = false;
+    saveBtn.disabled = true;
+    smtpStatus.textContent = source === 'environment' ? 'Valores cargados desde ENV. Pulsa "Editar SMTP" para sobrescribir.' : '';
+  }
+
+  function readPayload() {
+    return {
+      companyName: form.companyName.value,
+      companyEmail: form.companyEmail.value,
+      companyPhone: form.companyPhone.value,
+      companyAddress: form.companyAddress.value,
+      smtpHost: form.smtpHost.value,
+      smtpPort: Number(form.smtpPort.value),
+      smtpUsername: form.smtpUsername.value,
+      smtpPassword: form.smtpPassword.value || '********',
+      smtpFromEmail: form.smtpFromEmail.value,
+      smtpFromName: form.smtpFromName.value,
+      smtpEnabled: form.smtpEnabled.checked,
+      sessionTimeoutMinutes: Number(form.sessionTimeout.value),
+      maxLoginAttempts: Number(form.maxAttempts.value),
+    };
+  }
+
+  async function testSmtp() {
+    smtpSpinner.hidden = false;
+    smtpStatus.textContent = 'Probando...';
+    state.smtpTestOk = false;
+    saveBtn.disabled = true;
+    try {
+      const payload = {
+        host: form.smtpHost.value,
+        port: Number(form.smtpPort.value),
+        username: form.smtpUsername.value,
+        password: form.smtpPassword.value,
+      };
+      const res = await api.post('/api/admin/settings/smtp/test', payload);
+      const ok = !!res.data?.success;
+      state.smtpTestOk = ok;
+      smtpStatus.textContent = ok ? 'Conexión SMTP validada. Ahora puedes guardar.' : res.data?.message || 'No se pudo validar SMTP';
+      if (ok) saveBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      const message = err?.response?.data?.message || err?.message || 'Error al probar SMTP';
+      smtpStatus.textContent = message;
+    } finally {
+      smtpSpinner.hidden = true;
+    }
+  }
+
+  async function saveSettings() {
+    if (!state.smtpTestOk) {
+      saveStatus.textContent = 'Ejecuta primero la prueba SMTP';
+      return;
+    }
+    saveBtn.disabled = true;
+    saveStatus.textContent = 'Guardando...';
+    try {
+      const payload = readPayload();
+      const res = await api.put('/api/admin/settings/system', payload);
+      state.settings = res.data?.data || payload;
+      invalidateCache(['systemSettings']);
+      saveStatus.textContent = 'Configuración guardada. Cache invalidada.';
+      state.smtpTestOk = false;
+    } catch (err) {
+      console.error(err);
+      const message = err?.response?.data?.message || err?.message || 'No se pudo guardar';
+      saveStatus.textContent = message;
+    } finally {
+      saveBtn.disabled = true;
+    }
+  }
+
+  function renderRules() {
+    if (!state.rules.length) {
+      rulesList.innerHTML = '<p class="status">No hay reglas registradas.</p>';
+      rulesSummary.textContent = '';
+      return;
+    }
+    const active = state.rules.filter((r) => r.activo).length;
+    rulesSummary.textContent = `${active} activas / ${state.rules.length - active} inactivas (cache 5 min)`;
+    rulesList.innerHTML = state.rules.map((rule) => {
+      const badge = rule.activo ? 'badge-success' : 'badge-error';
+      return `<div class="rule-card">
+        <div class="rule-meta">
+          <strong>Reporte ${rule.reporteId}</strong>
+          <span class="status">Primera alerta: ${rule.diasAntesPrimeraAlerta ?? '-'} días</span>
+        </div>
+        <div class="actions-row">
+          <span class="badge-small ${badge}">${rule.activo ? 'Activo' : 'Inactivo'}</span>
+          <button class="btn-link" data-toggle="${rule.reporteId}" data-active="${!rule.activo}">${rule.activo ? 'Desactivar' : 'Activar'}</button>
+        </div>
+      </div>`;
+    }).join('');
+    rulesList.querySelectorAll('[data-toggle]').forEach((btn) => {
+      btn.addEventListener('click', async (event) => {
+        const target = event.currentTarget;
+        const id = target.getAttribute('data-toggle');
+        const active = target.getAttribute('data-active') === 'true';
+        if (!id) return;
+        target.textContent = 'Procesando...';
+        try {
+          await api.put(`/api/admin/settings/alerts/rules/${id}/toggle?active=${active}`);
+          invalidateCache(['alertRules']);
+          state.rules = await fetchCached('alertRules', '/api/admin/settings/alerts/rules');
+          renderRules();
+        } catch (err) {
+          console.error(err);
+          target.textContent = 'Error';
         }
       });
     });
+  }
+
+  async function refreshRules() {
+    invalidateCache(['alertRules']);
+    rulesSummary.textContent = 'Actualizando...';
+    state.rules = await fetchCached('alertRules', '/api/admin/settings/alerts/rules').catch(() => []);
+    renderRules();
+  }
+
+  async function processAlerts() {
+    processAlertsStatus.textContent = 'Ejecutando...';
+    try {
+      const res = await api.post('/api/admin/settings/alerts/process');
+      processAlertsStatus.textContent = res.data?.message || 'Procesado';
+      invalidateCache(['alertRules']);
+      await refreshRules();
+    } catch (err) {
+      console.error(err);
+      processAlertsStatus.textContent = 'Error al procesar';
+    }
+  }
+
+  unlockSmtpBtn.addEventListener('click', () => {
+    toggleSmtpFields(false);
+    smtpEnvBadge.hidden = true;
+    smtpStatus.textContent = 'Sobrescribir valores por defecto. Prueba SMTP obligatoria antes de guardar.';
   });
+
+  testSmtpBtn.addEventListener('click', testSmtp);
+  saveBtn.addEventListener('click', saveSettings);
+  cancelBtn.addEventListener('click', () => hydrateForm());
+  refreshRulesBtn.addEventListener('click', refreshRules);
+  processAlertsBtn.addEventListener('click', processAlerts);
+
+  loadSettings();
 </script>
 
