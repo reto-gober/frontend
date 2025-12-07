@@ -47,7 +47,11 @@ export default function CalendarioResponsableClient() {
           "pendiente";
 
         // Determinar tipo de evento
-        if (periodo.estado === "ENVIADO" || periodo.estado === "APROBADO") {
+        if (
+          periodo.estado === "enviado_a_tiempo" ||
+          periodo.estado === "enviado_tarde" ||
+          periodo.estado === "aprobado"
+        ) {
           tipo = "enviado";
         } else if (fechaVenc < now) {
           tipo = "vencido";
@@ -236,7 +240,7 @@ export default function CalendarioResponsableClient() {
   };
 
   const getAccionTexto = (tipo: string, estado: string) => {
-    if (estado === "REQUIERE_CORRECCION") return "Reenviar corrección";
+    if (estado === "requiere_correccion") return "Reenviar corrección";
     if (tipo === "enviado") return "En revisión";
     if (tipo === "vencido") return "Completar (Vencido)";
     if (tipo === "porVencer") return "Completar urgente";

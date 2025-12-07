@@ -3,6 +3,8 @@ import { TarjetaPeriodo } from "../flujo/TarjetaPeriodo";
 import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
+import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
+import { esEstadoPendiente, esEstadoEnviado } from "../../lib/utils/estados";
 
 type FilterType =
   | "todos"
@@ -53,11 +55,42 @@ export default function MisReportesClient() {
   const loadPeriodos = async () => {
     try {
       setLoading(true);
-      let response;
+
+      console.log(
+        "🔄 [MisReportes] Cargando periodos, filtro activo:",
+        activeFilter
+      );
 
       // Cargar todos los periodos primero para obtener contadores
       const allResponse = await flujoReportesService.misPeriodos(0, 1000);
+
+      console.log("✅ [MisReportes] Respuesta recibida:", allResponse);
+
+      if (!allResponse || !allResponse.content) {
+        throw new Error(
+          "La respuesta del servidor no tiene el formato esperado"
+        );
+      }
+
       const allPeriodos = allResponse.content;
+      console.log("📊 [MisReportes] Total de periodos:", allPeriodos.length);
+
+      // Si no hay periodos, mostrar estado vacío
+      if (allPeriodos.length === 0) {
+        console.warn("⚠️ [MisReportes] No hay periodos asignados al usuario");
+        setPeriodos([]);
+        setCounts({
+          todos: 0,
+          pendientes: 0,
+          enviados: 0,
+          vencidos: 0,
+          porVencer: 0,
+        });
+        setTotalElements(0);
+        setTotalPages(0);
+        setLoading(false);
+        return;
+      }
 
       // Calcular contadores
       const now = new Date();
@@ -67,33 +100,20 @@ export default function MisReportesClient() {
 
       const newCounts = {
         todos: allPeriodos.length,
-        pendientes: allPeriodos.filter(
-          (p) =>
-            p.estado === "NO_INICIADO" ||
-            p.estado === "PENDIENTE_ENVIO" ||
-            p.estado === "REQUIERE_CORRECCION"
-        ).length,
-        enviados: allPeriodos.filter(
-          (p) => p.estado === "ENVIADO" || p.estado === "APROBADO"
-        ).length,
+        pendientes: allPeriodos.filter((p) => esEstadoPendiente(p.estado))
+          .length,
+        enviados: allPeriodos.filter((p) => esEstadoEnviado(p.estado)).length,
         vencidos: allPeriodos.filter((p) => {
           if (!p.fechaVencimientoCalculada) return false;
-          const vencimiento = new Date(p.fechaVencimientoCalculada);
           return (
-            vencimiento < now &&
-            p.estado !== "APROBADO" &&
-            p.estado !== "ENVIADO"
+            esFechaVencida(p.fechaVencimientoCalculada) &&
+            !esEstadoEnviado(p.estado)
           );
         }).length,
         porVencer: allPeriodos.filter((p) => {
           if (!p.fechaVencimientoCalculada) return false;
-          const vencimiento = new Date(p.fechaVencimientoCalculada);
-          return (
-            vencimiento >= now &&
-            vencimiento <= threeDaysFromNow &&
-            p.estado !== "APROBADO" &&
-            p.estado !== "ENVIADO"
-          );
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
         }).length,
       };
 
@@ -104,40 +124,31 @@ export default function MisReportesClient() {
 
       switch (activeFilter) {
         case "pendientes":
-          filteredPeriodos = allPeriodos.filter(
-            (p) =>
-              p.estado === "NO_INICIADO" ||
-              p.estado === "PENDIENTE_ENVIO" ||
-              p.estado === "REQUIERE_CORRECCION"
+          filteredPeriodos = allPeriodos.filter((p) =>
+            esEstadoPendiente(p.estado)
           );
           break;
         case "enviados":
-          filteredPeriodos = allPeriodos.filter(
-            (p) => p.estado === "ENVIADO" || p.estado === "APROBADO"
+          filteredPeriodos = allPeriodos.filter((p) =>
+            esEstadoEnviado(p.estado)
           );
           break;
         case "vencidos":
           filteredPeriodos = allPeriodos.filter((p) => {
             if (!p.fechaVencimientoCalculada) return false;
-            const vencimiento = new Date(p.fechaVencimientoCalculada);
             return (
-              vencimiento < now &&
-              p.estado !== "APROBADO" &&
-              p.estado !== "ENVIADO"
+              esFechaVencida(p.fechaVencimientoCalculada) &&
+              !esEstadoEnviado(p.estado)
             );
           });
           break;
         case "porVencer":
           filteredPeriodos = allPeriodos.filter((p) => {
             if (!p.fechaVencimientoCalculada) return false;
-            const vencimiento = new Date(p.fechaVencimientoCalculada);
-            return (
-              vencimiento >= now &&
-              vencimiento <= threeDaysFromNow &&
-              p.estado !== "APROBADO" &&
-              p.estado !== "ENVIADO"
-            );
+            const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+            return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
           });
+          break;
           break;
         case "todos":
         default:
@@ -152,9 +163,26 @@ export default function MisReportesClient() {
       setPeriodos(paginatedPeriodos);
       setTotalElements(filteredPeriodos.length);
       setTotalPages(Math.ceil(filteredPeriodos.length / 10));
+
+      console.log("✅ [MisReportes] Datos cargados exitosamente");
+      console.log("📈 [MisReportes] Contadores:", newCounts);
+      console.log(
+        "📋 [MisReportes] Periodos filtrados:",
+        filteredPeriodos.length
+      );
     } catch (err: any) {
-      error(err.response?.data?.message || "Error al cargar reportes");
-      console.error("Error cargando periodos:", err);
+      console.error("❌ [MisReportes] Error cargando periodos:", err);
+      console.error(
+        "❌ [MisReportes] Respuesta del error:",
+        err.response?.data
+      );
+      console.error("❌ [MisReportes] Status del error:", err.response?.status);
+
+      const mensajeError =
+        err.response?.data?.message ||
+        err.message ||
+        "Error al cargar reportes";
+      error(mensajeError);
     } finally {
       setLoading(false);
     }

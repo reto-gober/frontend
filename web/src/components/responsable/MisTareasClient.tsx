@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
+import {
+  calcularDiasRestantes,
+  obtenerTextoVencimiento,
+} from "../../lib/utils/fechas";
+import {
+  esEstadoCompletado,
+  esEstadoRequiereCorreccion,
+  normalizarEstado,
+} from "../../lib/utils/estados";
 
 type FiltroTarea = "todas" | "pendientes" | "completadas" | "vencidas";
 
 export default function MisTareasClient() {
   const [tareas, setTareas] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filtroActivo, setFiltroActivo] = useState<FiltroTarea>("todas");
   const [tareasMarcadas, setTareasMarcadas] = useState<Set<string>>(new Set());
 
@@ -16,57 +26,84 @@ export default function MisTareasClient() {
   const loadTareas = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log("🔍 [MisTareasClient] Iniciando carga de tareas...");
+      console.log(
+        "🔍 [MisTareasClient] Token en localStorage:",
+        localStorage.getItem("token") ? "✅ Presente" : "❌ No encontrado"
+      );
+
       const response = await flujoReportesService.misPeriodos(0, 100);
+
+      console.log("🔍 [MisTareasClient] Respuesta completa:", response);
+      console.log(
+        "🔍 [MisTareasClient] Cantidad de periodos:",
+        response?.content?.length || 0
+      );
+
+      if (response?.content && response.content.length > 0) {
+        console.log(
+          "🔍 [MisTareasClient] Primer periodo:",
+          response.content[0]
+        );
+        console.log(
+          "🔍 [MisTareasClient] Estados de todos los periodos:",
+          response.content.map((p) => ({ id: p.periodoId, estado: p.estado }))
+        );
+      }
+
       setTareas(response.content);
-    } catch (err) {
-      console.error("Error al cargar tareas:", err);
+      console.log(
+        "✅ [MisTareasClient] Tareas cargadas exitosamente:",
+        response.content.length
+      );
+    } catch (err: any) {
+      console.error("❌ [MisTareasClient] Error al cargar tareas:", err);
+      console.error(
+        "❌ [MisTareasClient] Respuesta del error:",
+        err.response?.data
+      );
+      console.error(
+        "❌ [MisTareasClient] Status del error:",
+        err.response?.status
+      );
+      console.error("❌ [MisTareasClient] URL llamada:", err.config?.url);
+      setError("Error al cargar las tareas. Por favor, intente nuevamente.");
     } finally {
       setLoading(false);
     }
   };
 
   const getPrioridad = (periodo: ReportePeriodo): "high" | "medium" | "low" => {
-    const diasRestantes = getDiasRestantes(
-      new Date(periodo.fechaVencimientoCalculada)
+    const diasRestantes = calcularDiasRestantes(
+      periodo.fechaVencimientoCalculada
     );
-    if (diasRestantes < 0 || periodo.estado === "REQUIERE_CORRECCION")
+    if (diasRestantes < 0 || esEstadoRequiereCorreccion(periodo.estado))
       return "high";
     if (diasRestantes <= 3) return "medium";
     return "low";
   };
 
-  const getDiasRestantes = (fecha: Date): number => {
-    const now = new Date();
-    const diff = fecha.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-
   const esVencida = (periodo: ReportePeriodo): boolean => {
     return (
-      getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) < 0 &&
-      periodo.estado !== "ENVIADO" &&
-      periodo.estado !== "APROBADO"
+      calcularDiasRestantes(periodo.fechaVencimientoCalculada) < 0 &&
+      !esEstadoCompletado(periodo.estado)
     );
   };
 
   const esParaHoy = (periodo: ReportePeriodo): boolean => {
     return (
-      getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) === 0 &&
-      periodo.estado !== "ENVIADO" &&
-      periodo.estado !== "APROBADO"
+      calcularDiasRestantes(periodo.fechaVencimientoCalculada) === 0 &&
+      !esEstadoCompletado(periodo.estado)
     );
   };
 
   const esPendiente = (periodo: ReportePeriodo): boolean => {
-    return (
-      periodo.estado !== "ENVIADO" &&
-      periodo.estado !== "APROBADO" &&
-      !esVencida(periodo)
-    );
+    return !esEstadoCompletado(periodo.estado) && !esVencida(periodo);
   };
 
   const esCompletada = (periodo: ReportePeriodo): boolean => {
-    return periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
+    return esEstadoCompletado(periodo.estado);
   };
 
   const tareasFiltradas = tareas.filter((tarea) => {
@@ -81,6 +118,10 @@ export default function MisTareasClient() {
         return true;
     }
   });
+
+  console.log("📊 [MisTareasClient] Tareas totales:", tareas.length);
+  console.log("📊 [MisTareasClient] Filtro activo:", filtroActivo);
+  console.log("📊 [MisTareasClient] Tareas filtradas:", tareasFiltradas.length);
 
   const tareasVencidas = tareasFiltradas.filter(esVencida);
   const tareasParaHoy = tareasFiltradas.filter(esParaHoy);
@@ -97,6 +138,11 @@ export default function MisTareasClient() {
     paraHoy: tareas.filter(esParaHoy).length,
   };
 
+  console.log("📊 [MisTareasClient] Contadores:", contadores);
+  console.log("📊 [MisTareasClient] Vencidas:", tareasVencidas.length);
+  console.log("📊 [MisTareasClient] Para hoy:", tareasParaHoy.length);
+  console.log("📊 [MisTareasClient] Completadas:", tareasCompletadas.length);
+
   const toggleTareaMarcada = (periodoId: string) => {
     setTareasMarcadas((prev) => {
       const nuevas = new Set(prev);
@@ -110,32 +156,32 @@ export default function MisTareasClient() {
   };
 
   const getTextoFechaVencimiento = (periodo: ReportePeriodo): string => {
-    const diasRestantes = getDiasRestantes(
-      new Date(periodo.fechaVencimientoCalculada)
-    );
-    if (diasRestantes < 0) {
-      return `Venció hace ${Math.abs(diasRestantes)} día${Math.abs(diasRestantes) !== 1 ? "s" : ""}`;
-    } else if (diasRestantes === 0) {
-      return "Vence hoy";
-    } else if (diasRestantes === 1) {
-      return "Vence mañana";
-    } else {
-      return `Vence en ${diasRestantes} días`;
-    }
+    return obtenerTextoVencimiento(periodo.fechaVencimientoCalculada);
   };
 
   const getDescripcionTarea = (periodo: ReportePeriodo): string => {
-    if (periodo.estado === "REQUIERE_CORRECCION") {
+    const estado = normalizarEstado(periodo.estado);
+    if (estado === "requiere_correccion") {
       return `Requiere corrección${periodo.comentarios ? ": " + periodo.comentarios : ""}`;
     }
-    if (periodo.estado === "PENDIENTE") {
+    if (estado === "pendiente") {
       return `Completar y enviar reporte de ${periodo.periodoTipo}`;
     }
-    if (periodo.estado === "ENVIADO") {
+    if (estado === "en_elaboracion") {
+      return `En elaboración - ${periodo.periodoTipo}`;
+    }
+    if (
+      estado === "enviado_a_tiempo" ||
+      estado === "enviado_tarde" ||
+      estado === "en_revision"
+    ) {
       return "Reporte enviado, en proceso de revisión";
     }
-    if (periodo.estado === "APROBADO") {
+    if (estado === "aprobado") {
       return "Reporte aprobado";
+    }
+    if (estado === "vencido") {
+      return "Reporte vencido - fecha límite superada";
     }
     return periodo.estadoDescripcion || "Sin descripción";
   };
@@ -165,6 +211,81 @@ export default function MisTareasClient() {
             animation: "spin 1s linear infinite",
           }}
         />
+      </div>
+    );
+  }
+
+  // Mensaje de error
+  if (error) {
+    return (
+      <div className="mis-tareas-page">
+        <div className="page-header">
+          <h1 className="page-title">Mis Tareas</h1>
+        </div>
+        <div
+          style={{
+            padding: "2rem",
+            textAlign: "center",
+            backgroundColor: "#fee2e2",
+            borderRadius: "8px",
+            color: "#dc2626",
+            marginTop: "2rem",
+          }}
+        >
+          <h3>❌ Error al cargar datos</h3>
+          <p>{error}</p>
+          <p style={{ fontSize: "0.875rem", marginTop: "1rem" }}>
+            Por favor, verifica la consola del navegador (F12) para más
+            detalles.
+          </p>
+          <button
+            onClick={loadTareas}
+            style={{
+              marginTop: "1rem",
+              padding: "0.5rem 1rem",
+              backgroundColor: "#dc2626",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Mensaje cuando no hay datos
+  if (tareas.length === 0) {
+    return (
+      <div className="mis-tareas-page">
+        <div className="page-header">
+          <h1 className="page-title">Mis Tareas</h1>
+        </div>
+        <div
+          style={{
+            padding: "2rem",
+            textAlign: "center",
+            backgroundColor: "#f3f4f6",
+            borderRadius: "8px",
+            marginTop: "2rem",
+          }}
+        >
+          <h3>📋 No hay tareas asignadas</h3>
+          <p>No se encontraron periodos de reportes asignados a tu usuario.</p>
+          <p
+            style={{
+              fontSize: "0.875rem",
+              marginTop: "1rem",
+              color: "#6b7280",
+            }}
+          >
+            Verifica la consola del navegador (F12) para ver los logs
+            detallados.
+          </p>
+        </div>
       </div>
     );
   }

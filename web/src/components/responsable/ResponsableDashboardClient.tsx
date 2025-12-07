@@ -3,6 +3,16 @@ import {
   flujoReportesService,
   type ReportePeriodo,
 } from "../../lib/services";
+import {
+  calcularDiasRestantes,
+  esFechaVencida,
+  formatearFecha,
+} from "../../lib/utils/fechas";
+import {
+  esEstadoPendiente,
+  esEstadoEnviado,
+  normalizarEstado,
+} from "../../lib/utils/estados";
 
 export default function ResponsableDashboardClient() {
   const [loading, setLoading] = useState(true);
@@ -33,39 +43,81 @@ export default function ResponsableDashboardClient() {
       setLoading(true);
       setError(null);
 
-      // Cargar MIS periodos (periodos asignados al usuario autenticado)
-      const periodosData = await flujoReportesService.misPeriodos(0, 1000);
-      const periodos = periodosData.content;
+      console.log("🔄 [Dashboard] Iniciando carga de datos del responsable...");
+
+      // Verificar que hay token
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error(
+          "No hay sesión activa. Por favor, inicia sesión nuevamente."
+        );
+      }
+
+      console.log("🔐 [Dashboard] Token presente, consultando periodos...");
+
+      // Obtener mis periodos desde el flujo de reportes
+      const periodosResponse = await flujoReportesService.misPeriodos(0, 1000);
+
+      console.log("✅ [Dashboard] Respuesta recibida:", periodosResponse);
+      console.log(
+        "📊 [Dashboard] Total de periodos:",
+        periodosResponse?.content?.length || 0
+      );
+
+      if (!periodosResponse || !periodosResponse.content) {
+        throw new Error(
+          "La respuesta del servidor no tiene el formato esperado"
+        );
+      }
+
+      const periodos = periodosResponse.content;
+
+      // Verificar si hay periodos asignados
+      if (periodos.length === 0) {
+        console.warn("⚠️ [Dashboard] No hay periodos asignados al usuario");
+        setKpis({ pendientes: 0, enviados: 0, vencidos: 0, porVencer: 0 });
+        setEstadoReportes({
+          pendientes: 0,
+          enProceso: 0,
+          enviados: 0,
+          total: 0,
+        });
+        setProximosVencimientos([]);
+        setLoading(false);
+        return;
+      }
+
       const ahora = new Date();
       const tresDias = new Date(ahora.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-      // Calcular KPIs basados en periodos
-      const pendientes = periodos.filter(
-        (p) => p.estado === "pendiente" || p.estado === "NO_INICIADO" || p.estado === "PENDIENTE_ENVIO"
+      const pendientes = periodos.filter((p) =>
+        esEstadoPendiente(p.estado)
       ).length;
 
-      const enviados = periodos.filter(
-        (p) => p.estado === "enviado_a_tiempo" || p.estado === "enviado_tarde" || p.estado === "ENVIADO" || p.estado === "APROBADO"
-      ).length;
+      const enviados = periodos.filter((p) => esEstadoEnviado(p.estado)).length;
 
       const vencidos = periodos.filter((p) => {
-        if (!p.fechaVencimientoCalculada) return false;
-        const fechaVenc = new Date(p.fechaVencimientoCalculada);
-        return fechaVenc < ahora && p.estado !== "enviado_a_tiempo" && p.estado !== "enviado_tarde" && p.estado !== "APROBADO";
+        if (p.fechaVencimientoCalculada && !esEstadoEnviado(p.estado)) {
+          return esFechaVencida(p.fechaVencimientoCalculada);
+        }
+        return false;
       }).length;
 
       const porVencer = periodos.filter((p) => {
-        if (!p.fechaVencimientoCalculada) return false;
-        const fechaVenc = new Date(p.fechaVencimientoCalculada);
-        return fechaVenc >= ahora && fechaVenc <= tresDias && p.estado !== "enviado_a_tiempo" && p.estado !== "enviado_tarde" && p.estado !== "APROBADO";
+        if (p.fechaVencimientoCalculada && !esEstadoEnviado(p.estado)) {
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3;
+        }
+        return false;
       }).length;
 
       setKpis({ pendientes, enviados, vencidos, porVencer });
 
-      // Estado de reportes para gráfica
-      const enProceso = periodos.filter(
-        (p) => p.estado === "en_elaboracion" || p.estado === "en_revision" || p.estado === "EN_REVISION"
-      ).length;
+      // Estado de reportes para gráfica basado en periodos
+      const enProceso = periodos.filter((p) => {
+        const estado = normalizarEstado(p.estado);
+        return estado === "en_elaboracion" || estado === "en_revision";
+      }).length;
 
       setEstadoReportes({
         pendientes,
@@ -76,17 +128,18 @@ export default function ResponsableDashboardClient() {
 
       // Próximos vencimientos (ordenar por fecha más cercana)
       const periodosConVencimiento = periodos
-        .filter((p) => p.fechaVencimientoCalculada && p.estado !== "enviado_a_tiempo" && p.estado !== "enviado_tarde" && p.estado !== "APROBADO")
+        .filter(
+          (p) => p.fechaVencimientoCalculada && !esEstadoEnviado(p.estado)
+        )
         .map((p) => {
-          const fechaVenc = new Date(p.fechaVencimientoCalculada!);
-          const diasRestantes = Math.ceil(
-            (fechaVenc.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24)
+          const diasRestantes = calcularDiasRestantes(
+            p.fechaVencimientoCalculada
           );
 
           return {
             codigo: `PER-${p.periodoId.slice(0, 8)}`,
-            nombre: p.reporteNombre || `Periodo ${p.numeroPeriodo}`,
-            entidad: p.entidadNombre || 'N/A',
+            nombre: p.reporteNombre,
+            entidad: p.entidadNombre,
             fechaVencimiento: p.fechaVencimientoCalculada,
             diasRestantes: diasRestantes > 0 ? diasRestantes : 0,
             progreso: 0,
@@ -96,20 +149,38 @@ export default function ResponsableDashboardClient() {
         .slice(0, 5);
 
       setProximosVencimientos(periodosConVencimiento);
-    } catch (err) {
-      console.error("Error al cargar datos del responsable:", err);
-      setError("Error al cargar los datos");
+
+      console.log("✅ [Dashboard] Datos cargados exitosamente");
+      console.log("📈 [Dashboard] KPIs:", {
+        pendientes,
+        enviados,
+        vencidos,
+        porVencer,
+      });
+      console.log(
+        "📋 [Dashboard] Próximos vencimientos:",
+        periodosConVencimiento.length
+      );
+    } catch (err: any) {
+      console.error(
+        "❌ [Dashboard] Error al cargar datos del responsable:",
+        err
+      );
+      console.error("❌ [Dashboard] Respuesta del error:", err.response?.data);
+      console.error("❌ [Dashboard] Status del error:", err.response?.status);
+
+      const mensajeError =
+        err.response?.data?.message ||
+        err.message ||
+        "Error al cargar los datos";
+      setError(mensajeError);
     } finally {
       setLoading(false);
     }
   };
 
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    return formatearFecha(fecha);
   };
 
   const handleKpiClick = (filtro: string) => {
@@ -130,7 +201,28 @@ export default function ResponsableDashboardClient() {
   if (error) {
     return (
       <div style={{ textAlign: "center", padding: "4rem" }}>
-        <p style={{ color: "var(--error-red-600)" }}>{error}</p>
+        <svg
+          viewBox="0 0 24 24"
+          width="48"
+          height="48"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          style={{ margin: "0 auto", color: "var(--error-red-600)" }}
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <p
+          style={{
+            color: "var(--error-red-600)",
+            marginTop: "1rem",
+            fontSize: "1.125rem",
+          }}
+        >
+          {error}
+        </p>
         <button
           onClick={cargarDatos}
           className="btn-primary"
