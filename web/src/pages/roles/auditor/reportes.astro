@@ -1,399 +1,13 @@
 ---
 import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
+import AuditorReportesClient from '../../../components/auditor/AuditorReportesClient';
 ---
 
 <AuditorLayout title="Reportes - Vista General">
-  <div class="reportes-page">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-info">
-        <h1 class="page-title">Reportes - Vista General</h1>
-        <p class="page-description">Consulta consolidada de todos los reportes regulatorios</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn-export">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7,10 12,15 17,10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exportar Lista
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters Section -->
-    <div class="filters-section">
-      <div class="search-box">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="text" placeholder="Buscar por código, título o responsable..." class="search-input" />
-      </div>
-      <div class="filters">
-        <select class="filter-select">
-          <option value="">Entidad</option>
-          <option>SUI</option>
-          <option>CREG</option>
-          <option>ANH</option>
-          <option>SSPD</option>
-          <option>MinEnergía</option>
-        </select>
-        <select class="filter-select">
-          <option value="">Estado</option>
-          <option>Enviado</option>
-          <option>En Revisión</option>
-          <option>Pendiente</option>
-          <option>Atrasado</option>
-        </select>
-        <select class="filter-select">
-          <option value="">Período</option>
-          <option>Febrero 2025</option>
-          <option>Enero 2025</option>
-          <option>Diciembre 2024</option>
-        </select>
-        <select class="filter-select">
-          <option value="">Equipo</option>
-          <option>Equipo Comercial</option>
-          <option>Equipo Técnico</option>
-          <option>Equipo Operaciones</option>
-          <option>Equipo HSE</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="table-container">
-      <div class="table-wrapper">
-        <table class="reports-table">
-          <thead>
-            <tr>
-              <th>
-                <span class="th-content">
-                  Código
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M7 15l5 5 5-5"/>
-                    <path d="M7 9l5-5 5 5"/>
-                  </svg>
-                </span>
-              </th>
-              <th>Título del Reporte</th>
-              <th>Entidad</th>
-              <th>Responsable</th>
-              <th>Supervisor</th>
-              <th>
-                <span class="th-content">
-                  Fecha Vencimiento
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M7 15l5 5 5-5"/>
-                    <path d="M7 9l5-5 5 5"/>
-                  </svg>
-                </span>
-              </th>
-              <th>Estado</th>
-              <th>Fecha Envío</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Urgente - Vence hoy -->
-            <tr class="urgent">
-              <td><span class="code">SUI-001</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Informe Comercial de Gas Natural</span>
-                  <span class="subtitle">Formato mensual comercial</span>
-                </div>
-              </td>
-              <td><span class="entity-badge sui">SUI</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">María López</span>
-                  <span class="user-team">Equipo Comercial</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">Carlos Mendoza</span>
-              </td>
-              <td>
-                <span class="date urgent">12 Feb 2025</span>
-                <span class="date-label urgent">Hoy</span>
-              </td>
-              <td><span class="status-badge pending">Pendiente</span></td>
-              <td><span class="date-na">—</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <!-- Warning - Próximo -->
-            <tr class="warning">
-              <td><span class="code">CREG-045</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Resolución Tarifaria</span>
-                  <span class="subtitle">Formato regulación precios</span>
-                </div>
-              </td>
-              <td><span class="entity-badge creg">CREG</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">Juan Rodríguez</span>
-                  <span class="user-team">Equipo Técnico</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">Ana Martínez</span>
-              </td>
-              <td>
-                <span class="date warning">13 Feb 2025</span>
-                <span class="date-label warning">Mañana</span>
-              </td>
-              <td><span class="status-badge review">En Revisión</span></td>
-              <td><span class="date-na">—</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <!-- Atrasado -->
-            <tr class="overdue">
-              <td><span class="code">ANH-012</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Informe de Producción</span>
-                  <span class="subtitle">Reporte mensual producción</span>
-                </div>
-              </td>
-              <td><span class="entity-badge anh">ANH</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">Ana García</span>
-                  <span class="user-team">Equipo HSE</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">María Gómez</span>
-              </td>
-              <td>
-                <span class="date overdue">10 Feb 2025</span>
-                <span class="date-label overdue">2 días atraso</span>
-              </td>
-              <td><span class="status-badge observations">Con Obs.</span></td>
-              <td><span class="date-na">—</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <!-- Normal -->
-            <tr>
-              <td><span class="code">SSPD-023</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Balance de Usuarios</span>
-                  <span class="subtitle">Informe trimestral usuarios</span>
-                </div>
-              </td>
-              <td><span class="entity-badge sspd">SSPD</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">Carlos Pérez</span>
-                  <span class="user-team">Equipo Operaciones</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">Luis Torres</span>
-              </td>
-              <td>
-                <span class="date">17 Feb 2025</span>
-                <span class="date-label">5 días</span>
-              </td>
-              <td><span class="status-badge review">En Revisión</span></td>
-              <td><span class="date-na">—</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <!-- Enviado -->
-            <tr class="sent">
-              <td><span class="code">SUI-008</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Calidad del Servicio</span>
-                  <span class="subtitle">Indicadores de calidad</span>
-                </div>
-              </td>
-              <td><span class="entity-badge sui">SUI</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">María López</span>
-                  <span class="user-team">Equipo Comercial</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">Carlos Mendoza</span>
-              </td>
-              <td>
-                <span class="date">10 Feb 2025</span>
-              </td>
-              <td><span class="status-badge sent">Enviado</span></td>
-              <td><span class="date sent">10 Feb 2025</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <tr class="sent">
-              <td><span class="code">CREG-102</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Balance Energético Mensual</span>
-                  <span class="subtitle">Balance producción/consumo</span>
-                </div>
-              </td>
-              <td><span class="entity-badge creg">CREG</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">Juan Rodríguez</span>
-                  <span class="user-team">Equipo Técnico</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">Ana Martínez</span>
-              </td>
-              <td>
-                <span class="date">8 Feb 2025</span>
-              </td>
-              <td><span class="status-badge sent">Enviado</span></td>
-              <td><span class="date sent">8 Feb 2025</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <tr class="sent">
-              <td><span class="code">MIN-007</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Informe Reservas Certificadas</span>
-                  <span class="subtitle">Certificación anual reservas</span>
-                </div>
-              </td>
-              <td><span class="entity-badge minenergia">MinEnergía</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">Laura Sánchez</span>
-                  <span class="user-team">Equipo HSE</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">María Gómez</span>
-              </td>
-              <td>
-                <span class="date">5 Feb 2025</span>
-              </td>
-              <td><span class="status-badge sent">Enviado</span></td>
-              <td><span class="date sent">3 Feb 2025</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-            <tr class="sent">
-              <td><span class="code">SSPD-019</span></td>
-              <td>
-                <div class="report-title">
-                  <span class="title">Indicadores Gestión Comercial</span>
-                  <span class="subtitle">Reporte trimestral gestión</span>
-                </div>
-              </td>
-              <td><span class="entity-badge sspd">SSPD</span></td>
-              <td>
-                <div class="user-info">
-                  <span class="user-name">Carlos Pérez</span>
-                  <span class="user-team">Equipo Operaciones</span>
-                </div>
-              </td>
-              <td>
-                <span class="supervisor">Luis Torres</span>
-              </td>
-              <td>
-                <span class="date">1 Feb 2025</span>
-              </td>
-              <td><span class="status-badge sent">Enviado</span></td>
-              <td><span class="date sent">31 Ene 2025</span></td>
-              <td>
-                <button class="btn-action" title="Ver detalle">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="table-footer">
-        <div class="showing-info">
-          Mostrando 1-8 de 156 reportes
-        </div>
-        <div class="pagination">
-          <button class="page-btn disabled">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-          <button class="page-btn active">1</button>
-          <button class="page-btn">2</button>
-          <button class="page-btn">3</button>
-          <span class="page-dots">...</span>
-          <button class="page-btn">20</button>
-          <button class="page-btn">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <AuditorReportesClient client:load />
 </AuditorLayout>
 
-<style>
+<style is:global>
   .reportes-page {
     display: flex;
     flex-direction: column;
@@ -482,13 +96,14 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
   }
 
   .filter-select {
-    padding: 0.625rem 1rem;
+    padding: 0.625rem 0.875rem;
     border: 1px solid var(--neutral-200);
     border-radius: 8px;
-    font-size: 0.875rem;
     background: white;
+    color: var(--neutral-600);
+    font-size: 0.875rem;
+    min-width: 140px;
     cursor: pointer;
-    min-width: 120px;
   }
 
   /* Table */
@@ -496,7 +111,6 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     background: white;
     border-radius: 12px;
     box-shadow: var(--shadow-card);
-    overflow: hidden;
   }
 
   .table-wrapper {
@@ -506,97 +120,58 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
   .reports-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1100px;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding: 1rem 1.25rem;
+    text-align: left;
+  }
+
+  .reports-table thead {
+    background: var(--neutral-50);
   }
 
   .reports-table th {
-    padding: 0.875rem 1rem;
-    text-align: left;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--neutral-500);
-    background: var(--neutral-50);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    white-space: nowrap;
   }
 
-  .th-content {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    cursor: pointer;
+  .reports-table tbody tr {
+    border-bottom: 1px solid var(--neutral-100);
   }
 
-  .th-content svg {
-    opacity: 0.5;
+  .reports-table tbody tr:hover {
+    background: var(--neutral-50);
   }
 
-  .th-content:hover svg {
-    opacity: 1;
-  }
-
-  .reports-table td {
-    padding: 0.875rem 1rem;
-    font-size: 0.8125rem;
+  .reports-table .code {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--neutral-100);
+    border-radius: 6px;
+    font-weight: 700;
     color: var(--neutral-700);
-    border-top: 1px solid var(--neutral-100);
-    vertical-align: middle;
-  }
-
-  .reports-table tr.urgent td {
-    background: var(--error-red-50);
-  }
-
-  .reports-table tr.warning td {
-    background: var(--warning-yellow-50);
-  }
-
-  .reports-table tr.overdue td {
-    background: rgba(239, 68, 68, 0.08);
-  }
-
-  .reports-table tr.sent td {
-    opacity: 0.8;
-  }
-
-  .code {
-    font-family: monospace;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    color: var(--neutral-600);
   }
 
   .report-title {
     display: flex;
     flex-direction: column;
+    gap: 0.25rem;
   }
 
   .report-title .title {
-    font-weight: 500;
-    color: var(--neutral-800);
+    font-weight: 700;
+    color: var(--neutral-900);
   }
 
   .report-title .subtitle {
-    font-size: 0.6875rem;
-    color: var(--neutral-400);
-    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
   }
-
-  .entity-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: white;
-  }
-
-  .entity-badge.sui { background: #3b82f6; }
-  .entity-badge.creg { background: #8b5cf6; }
-  .entity-badge.anh { background: #f59e0b; }
-  .entity-badge.sspd { background: #ef4444; }
-  .entity-badge.minenergia { background: #22c55e; }
 
   .user-info {
     display: flex;
@@ -604,71 +179,44 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
   }
 
   .user-name {
-    font-weight: 500;
-    color: var(--neutral-700);
+    font-weight: 600;
+    color: var(--neutral-800);
   }
 
   .user-team {
-    font-size: 0.6875rem;
-    color: var(--neutral-400);
-    margin-top: 0.125rem;
-  }
-
-  .supervisor {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--neutral-500);
   }
 
+  .supervisor {
+    color: var(--neutral-700);
+    font-weight: 600;
+  }
+
   .date {
-    font-weight: 500;
-    display: block;
-  }
-
-  .date.urgent {
-    color: var(--error-red-600);
-  }
-
-  .date.warning {
-    color: var(--warning-yellow-700);
-  }
-
-  .date.overdue {
-    color: var(--error-red-600);
-  }
-
-  .date.sent {
-    color: var(--success-green-600);
+    color: var(--neutral-700);
+    font-weight: 600;
   }
 
   .date-label {
-    display: block;
-    font-size: 0.625rem;
-    font-weight: 600;
-    margin-top: 0.125rem;
-  }
-
-  .date-label.urgent {
-    color: var(--error-red-600);
-  }
-
-  .date-label.warning {
-    color: var(--warning-yellow-700);
-  }
-
-  .date-label.overdue {
-    color: var(--error-red-600);
-  }
-
-  .date-na {
-    color: var(--neutral-300);
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--neutral-100);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: var(--neutral-500);
   }
 
   .status-badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border-radius: 12px;
-    font-size: 0.6875rem;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .status-badge.pending {
@@ -682,8 +230,8 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
   }
 
   .status-badge.observations {
-    background: var(--error-red-100);
-    color: var(--error-red-700);
+    background: var(--accent-orange-100);
+    color: var(--accent-orange-700);
   }
 
   .status-badge.sent {
@@ -691,26 +239,53 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     color: var(--success-green-700);
   }
 
+  .status-badge.error {
+    background: var(--error-red-100);
+    color: var(--error-red-700);
+  }
+
+  .date-na {
+    color: var(--neutral-400);
+    font-weight: 600;
+  }
+
   .btn-action {
     width: 32px;
     height: 32px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     background: var(--neutral-100);
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--neutral-500);
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .btn-action:hover {
-    background: var(--role-accent);
-    color: white;
+    background: var(--neutral-200);
+    color: var(--neutral-700);
   }
 
-  /* Table Footer */
+  /* Row states */
+  .reports-table tr.urgent {
+    background: var(--warning-yellow-50);
+  }
+
+  .reports-table tr.warning {
+    background: var(--accent-orange-50);
+  }
+
+  .reports-table tr.overdue {
+    background: var(--error-red-50);
+  }
+
+  .reports-table tr.sent {
+    background: var(--success-green-50);
+  }
+
+  /* Pagination */
   .table-footer {
     display: flex;
     justify-content: space-between;
@@ -720,33 +295,33 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
   }
 
   .showing-info {
-    font-size: 0.8125rem;
     color: var(--neutral-500);
+    font-size: 0.875rem;
   }
 
   .pagination {
     display: flex;
+    gap: 0.5rem;
     align-items: center;
-    gap: 0.375rem;
   }
 
   .page-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--neutral-200);
-    border-radius: 6px;
     background: white;
-    font-size: 0.8125rem;
+    border: 1px solid var(--neutral-200);
+    border-radius: 8px;
     color: var(--neutral-600);
     cursor: pointer;
     transition: all 0.2s;
   }
 
-  .page-btn:hover:not(.disabled):not(.active) {
-    background: var(--neutral-100);
+  .page-btn:hover {
+    border-color: var(--neutral-300);
+    color: var(--neutral-800);
   }
 
   .page-btn.active {
@@ -765,6 +340,23 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     padding: 0 0.25rem;
   }
 
+  @media (max-width: 1024px) {
+    .filters-section {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filters {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .filter-select {
+      flex: 1;
+      min-width: 160px;
+    }
+  }
+
   @media (max-width: 768px) {
     .page-header {
       flex-direction: column;
@@ -772,12 +364,7 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     }
 
     .filters-section {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .search-box {
-      max-width: 100%;
+      gap: 0.75rem;
     }
 
     .filters {
@@ -787,11 +374,5 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     .filter-select {
       width: 100%;
     }
-
-    .table-footer {
-      flex-direction: column;
-      gap: 1rem;
-    }
   }
 </style>
-

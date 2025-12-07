@@ -134,6 +134,146 @@ export interface DashboardResponse {
   tasaCumplimiento: number;
 }
 
+// ==================== DASHBOARD AUDITOR ====================
+
+export interface ResumenEjecutivoAuditor {
+  mes: number;
+  anio: number;
+  nombreMes: string;
+  totalObligaciones: number;
+  cumplidas: number;
+  pendientes: number;
+  vencidas: number;
+  porcentajeCumplimiento: number;
+  porcentajeMesAnterior?: number;
+  variacionMensual?: number;
+  porcentajeAnioAnterior?: number;
+  variacionAnual?: number;
+  nivelDesempeno?: string;
+  promedioTiempoEntrega?: number;
+}
+
+export interface AnalisisTendenciasAuditor {
+  meses: string[];
+  porcentajesCumplimiento: number[];
+  totalObligaciones: number[];
+  cumplidas: number[];
+  vencidas: number[];
+  trimestres?: string[];
+  porcentajesTrimestre?: number[];
+  tendenciaProyectada?: number;
+  direccionTendencia?: string;
+}
+
+export interface CumplimientoEntidadAuditor {
+  entidadId: string;
+  entidad: string;
+  tipoEntidad?: string;
+  totalObligaciones: number;
+  cumplidas: number;
+  pendientes: number;
+  vencidas: number;
+  porcentaje: number;
+  ranking?: string;
+  variacionVsMesAnterior?: number;
+}
+
+export interface CumplimientoObligacionAuditor {
+  obligacionId: string;
+  obligacion: string;
+  entidadReguladora: string;
+  periodicidad: string;
+  totalReportes: number;
+  cumplidos: number;
+  vencidos: number;
+  porcentaje: number;
+  promedioTiempoEntrega?: number;
+}
+
+export interface RegistroHistoricoAuditor {
+  anio: number;
+  mes: number;
+  periodo: string;
+  total: number;
+  cumplidas: number;
+  vencidas: number;
+  porcentaje: number;
+}
+
+export interface HistorialAuditor {
+  registros: RegistroHistoricoAuditor[];
+  anioActual: number;
+  porcentajeAnual: number;
+  totalAnual: number;
+  cumplidasAnual: number;
+}
+
+export interface ReporteConsultaAuditor {
+  id: string;
+  obligacion: string;
+  entidad: string;
+  responsable: string;
+  estado: string;
+  fechaVencimiento: string | null;
+  fechaEnvio: string | null;
+  dentroDelTiempo?: boolean;
+  diasAnticipacion?: number | null;
+  tieneEvidencia?: boolean;
+  urlEvidencia?: string;
+  nombreArchivo?: string;
+}
+
+export interface EventoCalendarioAuditor {
+  eventoId: string;
+  reporteId: string;
+  titulo: string;
+  startDate: string;
+  endDate: string;
+  fechaVencimiento: string;
+  tipo: string;
+  estado: string;
+  entidad: string;
+  color: string;
+  descripcion?: string;
+}
+
+export interface CalendarioAuditor {
+  eventos: EventoCalendarioAuditor[];
+  resumenMes?: {
+    totalEventos: number;
+    cumplidos: number;
+    pendientes: number;
+    vencidos: number;
+  };
+}
+
+export interface AlertaLecturaAuditor {
+  id: string;
+  mensaje: string;
+  tipo: string;
+  entidad: string;
+  obligacion: string;
+  fechaVencimiento: string | null;
+  fechaCreacion: string;
+}
+
+export interface AlertasAuditor {
+  alertas: AlertaLecturaAuditor[];
+  totalAlertas?: number;
+  alertasCriticas?: number;
+}
+
+export interface DashboardAuditor {
+  resumenEjecutivo?: ResumenEjecutivoAuditor;
+  analisisTendencias?: AnalisisTendenciasAuditor;
+  cumplimientoPorEntidad?: CumplimientoEntidadAuditor[];
+  cumplimientoPorObligacion?: CumplimientoObligacionAuditor[];
+  historialCumplimiento?: HistorialAuditor;
+  reportesEnviados?: ReporteConsultaAuditor[];
+  calendarioConsulta?: CalendarioAuditor;
+  alertasGlobales?: AlertasAuditor;
+}
+
 // ==================== DASHBOARD SUPERVISOR ====================
 
 export interface KpisSupervisor {
@@ -560,8 +700,64 @@ export const dashboardService = {
     return response.data;
   },
 
-  async dashboardAuditor(): Promise<any> {
+  async dashboardAuditor(): Promise<DashboardAuditor> {
     const response = await api.get('/api/dashboard/auditor');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async resumenAuditor(): Promise<ResumenEjecutivoAuditor> {
+    const response = await api.get('/api/dashboard/auditor/resumen-ejecutivo');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async tendenciasAuditor(): Promise<AnalisisTendenciasAuditor> {
+    const response = await api.get('/api/dashboard/auditor/tendencias');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async cumplimientoEntidadAuditor(): Promise<CumplimientoEntidadAuditor[]> {
+    const response = await api.get('/api/dashboard/auditor/cumplimiento-entidad');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async cumplimientoObligacionAuditor(): Promise<CumplimientoObligacionAuditor[]> {
+    const response = await api.get('/api/dashboard/auditor/cumplimiento-obligacion');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async historialAuditor(): Promise<HistorialAuditor> {
+    const response = await api.get('/api/dashboard/auditor/historial');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async reportesAuditor(): Promise<ReporteConsultaAuditor[]> {
+    const response = await api.get('/api/dashboard/auditor/reportes');
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async calendarioAuditor(): Promise<CalendarioAuditor> {
+    const response = await api.get('/api/dashboard/auditor/calendario');
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }
