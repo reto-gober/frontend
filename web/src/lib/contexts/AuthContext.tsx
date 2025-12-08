@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { api } from '../api';
 import { fetchCached, invalidateCache } from '../fetcher';
 import type { ConfiguracionRolResponse, PermisosConfig, LoginRequest } from '../types/auth';

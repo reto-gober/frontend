@@ -7,6 +7,7 @@ export default function AdminCalendarioClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mesActual, setMesActual] = useState(new Date());
+  const [diaSeleccionado, setDiaSeleccionado] = useState<number | null>(null);
   
   // Modal de resumen
   const [showModal, setShowModal] = useState(false);
@@ -224,9 +225,14 @@ export default function AdminCalendarioClient() {
           const dia = i + 1;
           const eventosDelDia = getEventosDelDia(dia);
           const esHoy = new Date().toDateString() === new Date(mesActual.getFullYear(), mesActual.getMonth(), dia).toDateString();
+          const seleccionado = diaSeleccionado === dia;
           
           return (
-            <div key={dia} className={`calendar-day ${esHoy ? 'today' : ''}`}>
+            <div 
+              key={dia} 
+              className={`calendar-day ${esHoy ? 'today' : ''} ${seleccionado ? 'selected' : ''} ${eventosDelDia.length > 0 ? 'has-events' : ''}`}
+              onClick={() => setDiaSeleccionado(dia)}
+            >
               <div className="day-number">{dia}</div>
               {eventosDelDia.length > 0 && (
                 <div className="day-events">
@@ -247,10 +253,8 @@ export default function AdminCalendarioClient() {
                         className={`event-item ${esPeriodo ? 'event-periodo' : 'event-vencimiento'}`}
                         style={{ 
                           borderLeftColor: evento.color,
-                          backgroundColor: esPeriodo ? `${evento.color}20` : 'transparent',
-                          cursor: 'pointer'
+                          backgroundColor: esPeriodo ? `${evento.color}20` : 'transparent'
                         }}
-                        onClick={() => handleEventoClick(evento)}
                         title={`${evento.titulo}\n${evento.descripcion || ''}\n${esVencimiento ? '⏰ VENCIMIENTO' : esPeriodo ? '📊 PERIODO' : 'Evento'}`}
                       >
                         <div className="event-title">
@@ -273,6 +277,40 @@ export default function AdminCalendarioClient() {
           );
         })}
       </div>
+
+      {/* Detalle del día seleccionado */}
+      {diaSeleccionado && getEventosDelDia(diaSeleccionado).length > 0 && (
+        <div className="selected-day-details">
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--color-primary-900)' }}>
+            Eventos del {diaSeleccionado} de {monthName.split(' ')[0]}
+          </h3>
+          <div className="eventos-detail-list">
+            {getEventosDelDia(diaSeleccionado).map((evento, idx) => (
+              <div 
+                key={idx} 
+                className="evento-detail" 
+                style={{ borderLeftColor: evento.color, cursor: 'pointer' }}
+                onClick={() => handleEventoClick(evento)}
+              >
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  {evento.titulo}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--neutral-600)' }}>
+                  {evento.tipo} - <span style={{ color: evento.color, fontWeight: 500 }}>{evento.estado}</span>
+                </div>
+                {evento.descripcion && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
+                    {evento.descripcion}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--neutral-500)', textAlign: 'center' }}>
+            Haz clic en un evento para ver más detalles
+          </div>
+        </div>
+      )}
 
       {/* Leyenda */}
       <div className="calendar-legend">

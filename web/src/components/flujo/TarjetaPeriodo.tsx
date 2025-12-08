@@ -1,19 +1,49 @@
 import type { ReportePeriodo } from '../../lib/services';
 import { EstadoBadge } from './EstadoBadge';
 import { DiasHastaVencimiento } from './DiasHastaVencimiento';
+import FilesList from '../reportes/FilesList';
+import FileViewer from '../reportes/FileViewer';
+import { useState } from 'react';
+
+interface ArchivoDTO {
+  archivoId: string;
+  tipoArchivo: string;
+  nombreOriginal: string;
+  tamanoBytes: number;
+  mimeType: string;
+  subidoPor: string;
+  subidoPorEmail: string;
+  subidoEn: string;
+  urlPublica: string | null;
+}
 
 interface TarjetaPeriodoProps {
   periodo: ReportePeriodo;
   onAccion?: (accion: string, periodoId: string) => void;
   mostrarResponsables?: boolean;
+  archivos?: ArchivoDTO[];
 }
 
-export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false }: TarjetaPeriodoProps) {
+export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false, archivos = [] }: TarjetaPeriodoProps) {
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState<ArchivoDTO | null>(null);
+  
   const formatearFecha = (fecha: string) => {
     return new Date(fecha + 'T00:00:00').toLocaleDateString('es-CO', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
+    });
+  };
+
+  const formatearFechaHora = (fechaHora: string) => {
+    // Si la fecha ya incluye timestamp, usarla directamente
+    const date = fechaHora.includes('T') ? new Date(fechaHora) : new Date(fechaHora + 'T00:00:00');
+    return date.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -24,6 +54,7 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
   };
 
   return (
+    <>
     <div className="card" style={{
       padding: '1.5rem',
       marginBottom: '1rem',
@@ -134,18 +165,29 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
               fontWeight: 600,
               color: 'var(--color-text)'
             }}>
-              {formatearFecha(periodo.fechaEnvioReal)}
+              {formatearFechaHora(periodo.fechaEnvioReal)}
             </div>
-            {periodo.diasDesviacion !== null && (
+            {periodo.diasDesviacion !== null && periodo.diasDesviacion !== 0 && (
               <div style={{
                 fontSize: '0.75rem',
                 color: periodo.diasDesviacion > 0 ? 'var(--color-danger)' : 'var(--color-success)',
-                marginTop: '0.25rem'
+                marginTop: '0.25rem',
+                fontWeight: 500
               }}>
                 {periodo.diasDesviacion > 0 
                   ? `${periodo.diasDesviacion} día${periodo.diasDesviacion !== 1 ? 's' : ''} de retraso`
                   : `${Math.abs(periodo.diasDesviacion)} día${Math.abs(periodo.diasDesviacion) !== 1 ? 's' : ''} de anticipación`
                 }
+              </div>
+            )}
+            {periodo.diasDesviacion === 0 && (
+              <div style={{
+                fontSize: '0.75rem',
+                color: 'var(--color-success)',
+                marginTop: '0.25rem',
+                fontWeight: 500
+              }}>
+                ✓ Enviado justo a tiempo
               </div>
             )}
           </div>
@@ -249,6 +291,32 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
         </div>
       )}
 
+      {/* Archivos Adjuntos */}
+      {archivos && archivos.length > 0 && (
+        <div style={{
+          marginBottom: '1rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid var(--color-border)'
+        }}>
+          <div style={{
+            fontSize: '0.75rem',
+            color: 'var(--color-text-light)',
+            fontWeight: 500,
+            marginBottom: '0.5rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            Archivos Adjuntos ({archivos.length})
+          </div>
+          <FilesList 
+            periodoId={periodo.periodoId}
+            archivos={archivos}
+            onViewFile={setArchivoSeleccionado}
+            compact={true}
+          />
+        </div>
+      )}
+
       {/* Acciones */}
       {onAccion && (
         <div style={{
@@ -256,6 +324,19 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
           gap: '0.75rem',
           flexWrap: 'wrap'
         }}>
+          {/* Botón Ver Detalle - Siempre disponible */}
+          <button
+            className="btn btn-secondary btn-with-icon"
+            onClick={() => onAccion('ver', periodo.periodoId)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Ver Detalle
+          </button>
+
+          {/* Acciones del Responsable */}
           {periodo.puedeEnviar && (
             <button
               className="btn btn-primary btn-with-icon"
@@ -280,7 +361,9 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
               Corregir y Reenviar
             </button>
           )}
-          {periodo.puedeAprobar && (
+
+          {/* Acciones del Supervisor - NO mostrar si mostrarResponsables es false */}
+          {mostrarResponsables && periodo.puedeAprobar && (
             <button
               className="btn btn-success btn-with-icon"
               onClick={() => onAccion('aprobar', periodo.periodoId)}
@@ -291,7 +374,7 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
               Aprobar
             </button>
           )}
-          {periodo.puedeRechazar && (
+          {mostrarResponsables && periodo.puedeRechazar && (
             <button
               className="btn btn-danger btn-with-icon"
               onClick={() => onAccion('rechazar', periodo.periodoId)}
@@ -303,18 +386,18 @@ export function TarjetaPeriodo({ periodo, onAccion, mostrarResponsables = false 
               Rechazar
             </button>
           )}
-          <button
-            className="btn btn-secondary btn-with-icon"
-            onClick={() => onAccion('ver', periodo.periodoId)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Ver Detalle
-          </button>
         </div>
       )}
     </div>
+
+    {/* Modal de visualización */}
+    {archivoSeleccionado && (
+      <FileViewer
+        archivo={archivoSeleccionado}
+        periodoId={periodo.periodoId}
+        onClose={() => setArchivoSeleccionado(null)}
+      />
+    )}
+    </>
   );
 }

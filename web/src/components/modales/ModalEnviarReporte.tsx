@@ -28,21 +28,14 @@ export function ModalEnviarReporte({
   const [archivos, setArchivos] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [reporteId, setReporteId] = useState<string>("");
 
   useEffect(() => {
-    if (isOpen && periodoId) {
-      // Obtener el reporteId del periodo
-      flujoReportesService
-        .obtenerPeriodo(periodoId)
-        .then((periodo) => {
-          setReporteId(periodo.reporteId);
-        })
-        .catch((err) => {
-          console.error("Error al obtener periodo:", err);
-        });
+    // Limpiar el estado al abrir/cerrar
+    if (isOpen) {
+      setComentarios("");
+      setArchivos([]);
     }
-  }, [isOpen, periodoId]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -57,13 +50,13 @@ export function ModalEnviarReporte({
     setEnviando(true);
 
     try {
-      // Subir archivos primero usando reporteId
+      // Subir archivos primero usando periodoId directamente
       let evidenciasIds: string[] = [];
 
-      if (archivos.length > 0 && reporteId) {
+      if (archivos.length > 0) {
         setUploading(true);
         const uploadPromises = archivos.map(async (archivo) => {
-          const response = await evidenciasService.subir(reporteId, archivo);
+          const response = await evidenciasService.subirPorPeriodo(periodoId, archivo);
           return response.id;
         });
 

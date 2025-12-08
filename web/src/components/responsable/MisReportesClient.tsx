@@ -6,6 +6,18 @@ import { useToast, ToastContainer } from "../Toast";
 import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
 import { esEstadoPendiente, esEstadoEnviado } from "../../lib/utils/estados";
 
+interface ArchivoDTO {
+  archivoId: string;
+  tipoArchivo: string;
+  nombreOriginal: string;
+  tamanoBytes: number;
+  mimeType: string;
+  subidoPor: string;
+  subidoPorEmail: string;
+  subidoEn: string;
+  urlPublica: string | null;
+}
+
 type FilterType =
   | "todos"
   | "pendientes"
@@ -18,6 +30,7 @@ type FilterType =
 export default function MisReportesClient() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
+  const [archivosMap, setArchivosMap] = useState<Map<string, ArchivoDTO[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -164,6 +177,9 @@ export default function MisReportesClient() {
       setTotalElements(filteredPeriodos.length);
       setTotalPages(Math.ceil(filteredPeriodos.length / 10));
 
+      // Cargar archivos para los periodos paginados
+      await loadArchivos(paginatedPeriodos);
+
       console.log("✅ [MisReportes] Datos cargados exitosamente");
       console.log("📈 [MisReportes] Contadores:", newCounts);
       console.log(
@@ -186,6 +202,43 @@ export default function MisReportesClient() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadArchivos = async (periodosToLoad: ReportePeriodo[]) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const newArchivosMap = new Map<string, ArchivoDTO[]>();
+
+    // Cargar archivos para cada periodo
+    await Promise.all(
+      periodosToLoad.map(async (periodo) => {
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/periodos/${periodo.periodoId}/archivos`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            newArchivosMap.set(periodo.periodoId, data.data.archivos || []);
+          } else {
+            console.warn(`No se pudieron cargar archivos para periodo ${periodo.periodoId}`);
+            newArchivosMap.set(periodo.periodoId, []);
+          }
+        } catch (err) {
+          console.error(`Error cargando archivos para periodo ${periodo.periodoId}:`, err);
+          newArchivosMap.set(periodo.periodoId, []);
+        }
+      })
+    );
+
+    setArchivosMap(newArchivosMap);
   };
 
   const handleFilterChange = (filter: FilterType) => {
@@ -368,6 +421,7 @@ export default function MisReportesClient() {
                   periodo={periodo}
                   onAccion={handleAccion}
                   mostrarResponsables={false}
+                  archivos={archivosMap.get(periodo.periodoId) || []}
                 />
               ))}
             </div>

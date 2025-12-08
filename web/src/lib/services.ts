@@ -671,6 +671,27 @@ export const evidenciasService = {
     return response.data;
   },
 
+  async subirPorPeriodo(periodoId: string, file: File): Promise<EvidenciaResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post(
+      `/api/evidencias/periodo/${periodoId}`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
   async listarPorReporte(reporteId: string): Promise<EvidenciaResponse[]> {
     const response = await api.get(`/api/evidencias/reporte/${reporteId}`);
     if (
@@ -698,6 +719,15 @@ export const evidenciasService = {
     a.download = match?.[1] || `evidencia-${id}`;
     a.click();
     window.URL.revokeObjectURL(url);
+  },
+
+  async obtenerBlob(id: string): Promise<Blob> {
+    const response = await api.get(`/api/evidencias/${id}/descargar`, {
+      responseType: "blob",
+    });
+    return new Blob([response.data], {
+      type: response.headers["content-type"] || "application/octet-stream",
+    });
   },
 
   async eliminar(id: string): Promise<{ mensaje: string }> {
@@ -923,27 +953,27 @@ export const usuariosService = {
     return response.data;
   },
 
-  // Cambiar rol de usuario (usando PUT con workaround)
+  // Cambiar rol de usuario (usando PATCH)
   async cambiarRol(
     documentNumber: string,
     nuevoRol: string
   ): Promise<UsuarioResponse> {
-    // Primero obtenemos los datos actuales del usuario
-    const usuarioActual = await this.obtener(documentNumber);
-
-    // Actualizamos solo el rol, manteniendo los demás campos
-    const dataActualizada: UsuarioRequest = {
-      documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || "CC",
-      email: usuarioActual.email,
-      firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || "",
-      firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || "",
-      roles: [nuevoRol],
-    };
-
-    return this.actualizar(documentNumber, dataActualizada);
+    const response = await api.patch(
+      `/usuarios/${documentNumber}/rol`,
+      null,
+      {
+        params: { rolCodigo: nuevoRol }
+      }
+    );
+    
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
   },
 
   // Desactivar usuario (usando nuevo endpoint PATCH)

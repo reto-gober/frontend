@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { evidenciasSupervisorService, type EvidenciaSupervisor, type Page } from '../../lib/services';
 import notifications from '../../lib/notifications';
+import FileViewer from '../reportes/FileViewer';
 
 type ViewMode = 'grid' | 'list';
 
 interface ResponsableOption {
   id: string;
   nombre: string;
+}
+
+// Interface para archivo compatible con FileViewer
+interface ArchivoViewer {
+  archivoId: string;
+  tipoArchivo: string;
+  nombreOriginal: string;
+  tamanoBytes: number;
+  mimeType: string;
+  subidoPor: string;
+  subidoPorEmail: string;
+  subidoEn: string;
+  urlPublica: string | null;
 }
 
 export default function SupervisorEvidenciasClient() {
@@ -16,6 +30,9 @@ export default function SupervisorEvidenciasClient() {
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
   const [size] = useState(12);
+  
+  // Visualización de archivo
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState<ArchivoViewer | null>(null);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,6 +111,28 @@ export default function SupervisorEvidenciasClient() {
     } catch (err: any) {
       notifications.error(err.response?.data?.message || 'Error al descargar el archivo');
     }
+  };
+
+  const handleVisualizarArchivo = (evidencia: EvidenciaSupervisor) => {
+    // Convertir EvidenciaSupervisor a formato compatible con FileViewer
+    const archivoViewer: ArchivoViewer = {
+      archivoId: evidencia.id,
+      tipoArchivo: evidencia.tipoArchivo,
+      nombreOriginal: evidencia.nombreArchivo,
+      tamanoBytes: evidencia.tamanioBytes,
+      mimeType: evidencia.tipoArchivo,
+      subidoPor: evidencia.responsableCarga?.nombreCompleto || 'Desconocido',
+      subidoPorEmail: evidencia.responsableCarga?.email || '',
+      subidoEn: evidencia.fechaCarga,
+      urlPublica: null
+    };
+    setArchivoSeleccionado(archivoViewer);
+  };
+
+  const esVisualizable = (mimeType: string): boolean => {
+    return mimeType.startsWith('image/') || 
+           mimeType === 'application/pdf' ||
+           mimeType.includes('pdf');
   };
 
   const formatearTamano = (bytes: number): string => {
@@ -349,8 +388,20 @@ export default function SupervisorEvidenciasClient() {
                       </p>
                     </div>
                     <div className="file-actions">
+                      {esVisualizable(evidencia.tipoArchivo) && (
+                        <button 
+                          className="btn-icon btn-icon-view"
+                          onClick={() => handleVisualizarArchivo(evidencia)}
+                          title="Ver archivo"
+                        >
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                      )}
                       <button 
-                        className="btn-icon"
+                        className="btn-icon btn-icon-download"
                         onClick={() => handleDescargar(evidencia.id)}
                         title="Descargar"
                       >
@@ -394,17 +445,31 @@ export default function SupervisorEvidenciasClient() {
                         <td>{formatearTamano(evidencia.tamanioBytes)}</td>
                         <td>{formatearFecha(evidencia.fechaCarga)}</td>
                         <td>
-                          <button 
-                            className="btn-icon"
-                            onClick={() => handleDescargar(evidencia.id)}
-                            title="Descargar"
-                          >
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7,10 12,15 17,10"/>
-                              <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            {esVisualizable(evidencia.tipoArchivo) && (
+                              <button 
+                                className="btn-icon btn-icon-view"
+                                onClick={() => handleVisualizarArchivo(evidencia)}
+                                title="Ver archivo"
+                              >
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                              </button>
+                            )}
+                            <button 
+                              className="btn-icon btn-icon-download"
+                              onClick={() => handleDescargar(evidencia.id)}
+                              title="Descargar"
+                            >
+                              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -437,6 +502,15 @@ export default function SupervisorEvidenciasClient() {
             </div>
           )}
         </>
+      )}
+
+      {/* Modal de visualización */}
+      {archivoSeleccionado && (
+        <FileViewer
+          archivo={archivoSeleccionado}
+          periodoId="" 
+          onClose={() => setArchivoSeleccionado(null)}
+        />
       )}
 
       <style>{`
@@ -635,21 +709,43 @@ export default function SupervisorEvidenciasClient() {
 
         .file-actions {
           margin-top: 1rem;
+          display: flex;
+          gap: 0.5rem;
+          justify-content: center;
         }
 
         .btn-icon {
           padding: 0.5rem;
-          background: var(--neutral-100);
-          border: none;
-          border-radius: 8px;
+          background: transparent;
+          border: 1px solid var(--neutral-200);
+          border-radius: 6px;
           cursor: pointer;
-          color: var(--neutral-600);
           transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        .btn-icon:hover {
-          background: var(--role-accent, #10b981);
-          color: white;
+        .btn-icon-view {
+          color: #3b82f6;
+          border-color: #3b82f6;
+        }
+
+        .btn-icon-view:hover {
+          background: #eff6ff;
+          border-color: #2563eb;
+          color: #2563eb;
+        }
+
+        .btn-icon-download {
+          color: #16a34a;
+          border-color: #16a34a;
+        }
+
+        .btn-icon-download:hover {
+          background: #f0fdf4;
+          border-color: #15803d;
+          color: #15803d;
         }
 
         .files-list {
