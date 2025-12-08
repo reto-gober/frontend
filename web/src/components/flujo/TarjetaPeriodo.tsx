@@ -4,6 +4,7 @@ import { DiasHastaVencimiento } from "./DiasHastaVencimiento";
 import FilesList from '../reportes/FilesList';
 import FileViewer from '../reportes/FileViewer';
 import { useState } from 'react';
+import { useAuth } from '../../lib/contexts/AuthContext';
 
 interface ArchivoDTO {
   archivoId: string;
@@ -31,7 +32,13 @@ export function TarjetaPeriodo({
   mostrarResponsables = false, archivos = [],
   resaltar = false,
 }: TarjetaPeriodoProps) {
+  const { hasRole } = useAuth();
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<ArchivoDTO | null>(null);
+  
+  // Admin puede enviar/corregir cualquier reporte
+  const esAdmin = hasRole('admin');
+  const puedeEnviar = periodo.puedeEnviar || esAdmin;
+  const puedeCorregir = periodo.puedeCorregir || esAdmin;
   
   const formatearFecha = (fecha: string) => {
     return new Date(fecha + "T00:00:00").toLocaleDateString("es-CO", {
@@ -426,7 +433,7 @@ export function TarjetaPeriodo({
           </button>
 
           {/* Acciones del Responsable */}
-          {periodo.puedeEnviar && (
+          {puedeEnviar && (
             <button
               className="btn btn-primary btn-with-icon"
               onClick={() => onAccion("enviar", periodo.periodoId)}
@@ -445,7 +452,7 @@ export function TarjetaPeriodo({
               Enviar Reporte
             </button>
           )}
-          {periodo.puedeCorregir && (
+          {puedeCorregir && (
             <button
               className="btn btn-warning btn-with-icon"
               onClick={() => onAccion("corregir", periodo.periodoId)}

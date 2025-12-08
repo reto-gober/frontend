@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   reportesService,
   entidadesService,
-  usuariosService,
   flujoReportesService,
   type ReporteResponse,
   type EntidadResponse,
@@ -11,8 +10,6 @@ import {
 import ReporteForm from '../ReporteForm';
 import { ModalEnviarReporte } from '../modales/ModalEnviarReporte';
 import notifications from '../../lib/notifications';
-import AdminReportesEnviados from './AdminReportesEnviados';
-import { evidenciasService, type EvidenciaResponse } from '../../lib/services';
 
 type PeriodoDecorado = ReportePeriodo & {
   estadoTemporal: 'enviado' | 'activo' | 'futuro' | 'vencido';
@@ -20,7 +17,6 @@ type PeriodoDecorado = ReportePeriodo & {
 };
 
 export default function AdminReportesClient() {
-  const [activeView, setActiveView] = useState<'gestion' | 'enviados'>('gestion');
   const [reportes, setReportes] = useState<ReporteResponse[]>([]);
   const [filteredReportes, setFilteredReportes] = useState<ReporteResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,9 +28,6 @@ export default function AdminReportesClient() {
   const [filterEstado, setFilterEstado] = useState('');
 
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
-  const [usuarios, setUsuarios] = useState<any[]>([]);
-  const [searchResponsableElaboracion, setSearchResponsableElaboracion] = useState('');
-  const [searchResponsableSupervision, setSearchResponsableSupervision] = useState('');
   const [estadisticas, setEstadisticas] = useState({
     todos: 0,
     pendientes: 0,
@@ -62,19 +55,19 @@ export default function AdminReportesClient() {
     periodoId: '',
     reporteNombre: '',
     esCorreccion: false,
+    periodoInicio: '',
+    periodoFin: '',
+    frecuencia: '',
   });
 
-  const [detalleReporte, setDetalleReporte] = useState({
+  // Modal para seleccionar período al ver detalle
+  const [modalSeleccionPeriodo, setModalSeleccionPeriodo] = useState({
     open: false,
-    reporte: null as ReporteResponse | null,
-    periodos: [] as ReportePeriodo[],
     loading: false,
-    error: '' as string | null,
+    reporteNombre: '',
+    periodos: [] as PeriodoDecorado[],
+    seleccionado: '' as string,
   });
-
-  const [periodoExpandido, setPeriodoExpandido] = useState<string | null>(null);
-  const [evidenciasPorPeriodo, setEvidenciasPorPeriodo] = useState<Record<string, EvidenciaResponse[]>>({});
-  const [cargandoEvidencias, setCargandoEvidencias] = useState<Record<string, boolean>>({});
 
   const frecuenciaLabel = (frecuencia?: string) => {
     const map: Record<string, string> = {
@@ -185,20 +178,14 @@ export default function AdminReportesClient() {
       setLoading(true);
       setError(null);
       
-      const [reportesData, entidadesData, usuariosData] = await Promise.all([
+      const [reportesData, entidadesData] = await Promise.all([
         reportesService.listar(0, 1000),
-        entidadesService.listar(0, 100),
-        usuariosService.listar(0, 100)
+        entidadesService.listar(0, 100)
       ]);
 
       setReportes(reportesData.content);
       setFilteredReportes(reportesData.content);
       setEntidades(entidadesData.content);
-      setUsuarios(usuariosData.content);
-      
-      console.log('Usuarios cargados:', usuariosData.content);
-      console.log('Responsables:', usuariosData.content.filter(u => u.roles?.includes('RESPONSABLE')));
-      console.log('Supervisores:', usuariosData.content.filter(u => u.roles?.includes('SUPERVISOR')));
     } catch (err) {
       console.error('Error al cargar reportes:', err);
       setError('Error al cargar los reportes');
@@ -300,6 +287,43 @@ export default function AdminReportesClient() {
     }
   };
 
+  const abrirDetalleReporte = async (reporte: ReporteResponse) => {
+    try {
+      setModalSeleccionPeriodo((prev) => ({ ...prev, open: true, loading: true, reporteNombre: reporte.nombre }));
+      const periodosPage = await flujoReportesService.periodosPorReporte(reporte.reporteId, 0, 200);
+      const periodosBase = periodosPage.content || [];
+      const periodosOrdenados = [...periodosBase].sort(
+        (a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime()
+      );
+
+      const periodosDecorados: PeriodoDecorado[] = periodosOrdenados.map((p) => ({
+        ...p,
+        estadoTemporal: obtenerEstadoTemporal(p),
+        label: construirLabelPeriodo(p, reporte.nombre),
+      }));
+
+      if (periodosDecorados.length === 0) {
+        notifications.info('Este reporte no tiene períodos disponibles para mostrar.');
+        setModalSeleccionPeriodo({ open: false, loading: false, reporteNombre: '', periodos: [], seleccionado: '' });
+        return;
+      }
+
+      // Seleccionar el período más reciente por defecto
+      const seleccionado = periodosDecorados[0]?.periodoId || '';
+
+      setModalSeleccionPeriodo((prev) => ({
+        ...prev,
+        loading: false,
+        periodos: periodosDecorados,
+        seleccionado,
+      }));
+    } catch (err) {
+      console.error('Error abriendo detalle del reporte', err);
+      notifications.error('No se pudo abrir el detalle del reporte');
+      setModalSeleccionPeriodo({ open: false, loading: false, reporteNombre: '', periodos: [], seleccionado: '' });
+    }
+  };
+
   const abrirPanelCarga = async (reporteId: string, reporteNombre: string, preseleccion?: string) => {
     try {
       setPanelCarga((prev) => ({ ...prev, open: true, loading: true, reporteId, reporteNombre }));
@@ -334,64 +358,31 @@ export default function AdminReportesClient() {
     }
   };
 
-  const abrirPanelCargaDesdePeriodo = (periodo: ReportePeriodo) => {
-    if (!periodo.reporteId || !periodo.reporteNombre) {
-      notifications.error('No se pudo identificar el reporte para intervenir');
-      return;
-    }
-    abrirPanelCarga(periodo.reporteId, periodo.reporteNombre, periodo.periodoId);
-  };
-
-  const abrirDetalleReporte = async (reporte: ReporteResponse) => {
-    setDetalleReporte({ open: true, reporte, periodos: [], loading: true, error: null });
-    setPeriodoExpandido(null);
-    setEvidenciasPorPeriodo({});
-    setCargandoEvidencias({});
-    try {
-      const res = await flujoReportesService.periodosPorReporte(reporte.reporteId, 0, 500);
-      const periodos = (res.content || []).sort(
-        (a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime()
-      );
-      setDetalleReporte({ open: true, reporte, periodos, loading: false, error: null });
-    } catch (err: any) {
-      setDetalleReporte({ open: true, reporte, periodos: [], loading: false, error: err?.message || 'Error al cargar periodos' });
-    }
-  };
-
-  const togglePeriodoDetalle = async (periodo: ReportePeriodo) => {
-    if (periodoExpandido === periodo.periodoId) {
-      setPeriodoExpandido(null);
-      return;
-    }
-
-    setPeriodoExpandido(periodo.periodoId);
-
-    if (evidenciasPorPeriodo[periodo.periodoId]) return;
-
-    setCargandoEvidencias((prev) => ({ ...prev, [periodo.periodoId]: true }));
-    try {
-      const lista = await evidenciasService.listarPorReporte(periodo.reporteId);
-      const filtradas = Array.isArray(lista)
-        ? lista.filter((ev: any) => !ev.periodoId || ev.periodoId === periodo.periodoId)
-        : [];
-      setEvidenciasPorPeriodo((prev) => ({ ...prev, [periodo.periodoId]: filtradas }));
-    } catch (err) {
-      console.error('Error cargando evidencias del periodo', err);
-      notifications.error('No se pudieron cargar las evidencias de este periodo');
-    } finally {
-      setCargandoEvidencias((prev) => ({ ...prev, [periodo.periodoId]: false }));
-    }
-  };
-
-  const cerrarDetalleReporteVista = () => {
-    setDetalleReporte({ open: false, reporte: null, periodos: [], loading: false, error: null });
-    setPeriodoExpandido(null);
-    setEvidenciasPorPeriodo({});
-    setCargandoEvidencias({});
-  };
-
   const cerrarPanelCarga = () => {
     setPanelCarga({ open: false, loading: false, reporteId: '', reporteNombre: '', periodos: [], seleccionado: '' });
+  };
+
+  const cerrarModalSeleccionPeriodo = () => {
+    setModalSeleccionPeriodo({ open: false, loading: false, reporteNombre: '', periodos: [], seleccionado: '' });
+  };
+
+  const navegarAPeriodoSeleccionado = () => {
+    if (!modalSeleccionPeriodo.seleccionado) {
+      notifications.info('Selecciona un período para ver su detalle');
+      return;
+    }
+    
+    // Detectar el rol actual desde la URL
+    const currentPath = window.location.pathname;
+    const isAdmin = currentPath.includes('/roles/admin/');
+    const isSupervisor = currentPath.includes('/roles/supervisor/');
+    
+    let basePath = '/roles/admin/reportes';
+    if (isSupervisor) {
+      basePath = '/roles/supervisor/reportes';
+    }
+    
+    window.location.href = `${basePath}/${modalSeleccionPeriodo.seleccionado}`;
   };
 
   const lanzarEnvio = () => {
@@ -400,11 +391,16 @@ export default function AdminReportesClient() {
       notifications.info('Selecciona un periodo válido para cargar el reporte');
       return;
     }
+    // Cerrar panel lateral antes de abrir el modal para evitar superposición
+    setPanelCarga((prev) => ({ ...prev, open: false }));
     setModalEnviar({
       isOpen: true,
       periodoId: periodoSeleccionado.periodoId,
       reporteNombre: panelCarga.reporteNombre,
       esCorreccion: false,
+      periodoInicio: periodoSeleccionado.periodoInicio,
+      periodoFin: periodoSeleccionado.periodoFin,
+      frecuencia: periodoSeleccionado.frecuencia || periodoSeleccionado.periodoTipo || '',
     });
   };
 
@@ -457,398 +453,170 @@ export default function AdminReportesClient() {
 
   return (
     <div className="reportes-page">
-      {/* Header con tabs */}
+      {/* Header */}
       <div className="page-header">
         <div className="header-info">
           <h1 className="page-title">Gestión de Reportes</h1>
           <p className="page-description">Vista global de todos los reportes del sistema</p>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-            <button
-              className={`chip-estado ${activeView === 'gestion' ? 'active' : ''}`}
-              onClick={() => setActiveView('gestion')}
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              Gestión
-            </button>
-            <button
-              className={`chip-estado ${activeView === 'enviados' ? 'active' : ''}`}
-              onClick={() => setActiveView('enviados')}
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              Reportes Enviados
-            </button>
-          </div>
         </div>
-        {activeView === 'gestion' && (
-          <div className="header-actions">
-            <button className="btn-secondary" onClick={handleExportar}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7,10 12,15 17,10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Exportar
-            </button>
-            <button className="btn-primary" onClick={handleNuevoReporte}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="12" y1="11" x2="12" y2="17"/>
-                <line x1="9" y1="14" x2="15" y2="14"/>
-              </svg>
-              Nuevo Reporte
-            </button>
-          </div>
-        )}
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={handleExportar}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7,10 12,15 17,10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar
+          </button>
+          <button className="btn-primary" onClick={handleNuevoReporte}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="11" x2="12" y2="17"/>
+              <line x1="9" y1="14" x2="15" y2="14"/>
+            </svg>
+            Nuevo Reporte
+          </button>
+        </div>
       </div>
 
-      {activeView === 'gestion' ? (
-        detalleReporte.open ? (
-          <div className="detalle-reporte-page">
-            <div className="detalle-top-bar">
-              <button className="btn-volver" onClick={cerrarDetalleReporteVista}>
-                ← Volver a Gestión de Reportes
-              </button>
-            </div>
+      {/* Stats */}
+      <div className="status-stats">
+        <div className="status-card all active">
+          <span className="status-count">{estadisticas.todos}</span>
+          <span className="status-label">Todos</span>
+        </div>
+        <div className="status-card pending">
+          <span className="status-count">{estadisticas.pendientes}</span>
+          <span className="status-label">Sin Configurar</span>
+        </div>
+        <div className="status-card progress">
+          <span className="status-count">{estadisticas.enProgreso}</span>
+          <span className="status-label">Activos</span>
+        </div>
+        <div className="status-card sent">
+          <span className="status-count">{estadisticas.completados}</span>
+          <span className="status-label">Configurados</span>
+        </div>
+        <div className="status-card overdue">
+          <span className="status-count">{estadisticas.vencidos}</span>
+          <span className="status-label">Inactivos</span>
+        </div>
+      </div>
 
-            <div className="detalle-encabezado">
-              <div>
-                <p className="detalle-overline">Reporte</p>
-                <h2 className="detalle-titulo">{detalleReporte.reporte?.nombre}</h2>
-                <div className="detalle-meta">
-                  <span>{detalleReporte.reporte?.entidadNombre}</span>
-                  <span className="meta-separador">•</span>
-                  <span>{detalleReporte.reporte?.frecuencia}</span>
-                </div>
-              </div>
-              <div className="detalle-resumen">
-                <div>
-                  <p className="detalle-label">Supervisor</p>
-                  <p className="detalle-value">{detalleReporte.periodos[0]?.responsableSupervision?.nombreCompleto || 'Sin asignar'}</p>
-                </div>
-                <div>
-                  <p className="detalle-label">Responsable</p>
-                  <p className="detalle-value">{detalleReporte.periodos[0]?.responsableElaboracion?.nombreCompleto || 'Sin asignar'}</p>
-                </div>
-                <div>
-                  <p className="detalle-label">Entidad</p>
-                  <p className="detalle-value">{detalleReporte.reporte?.entidadNombre}</p>
-                </div>
-                <div>
-                  <p className="detalle-label">Estado</p>
-                  <span className={`badge-estado-mejorado ${getEstadoBadgeClass(detalleReporte.reporte?.estado || '')}`}>
-                    {detalleReporte.reporte?.estado || '—'}
-                  </span>
-                </div>
-              </div>
-            </div>
+      {/* Filtros */}
+      <div className="filters-bar">
+        <div className="search-box">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar reportes..."
+            className="search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="filter-group">
+          <select className="filter-select" value={filterEntidad} onChange={(e) => setFilterEntidad(e.target.value)}>
+            <option value="">Todas las entidades</option>
+            {entidades.map(e => (
+              <option key={e.entidadId} value={e.entidadId}>{e.nombre}</option>
+            ))}
+          </select>
+          <select className="filter-select" value={filterFrecuencia} onChange={(e) => setFilterFrecuencia(e.target.value)}>
+            <option value="">Frecuencia</option>
+            <option value="MENSUAL">Mensual</option>
+            <option value="TRIMESTRAL">Trimestral</option>
+            <option value="SEMESTRAL">Semestral</option>
+            <option value="ANUAL">Anual</option>
+          </select>
+          <select className="filter-select" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="suspendido">Suspendido</option>
+          </select>
+        </div>
+      </div>
 
-            {detalleReporte.loading && (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <div className="loading-spinner" style={{ margin: '0 auto' }} />
-                <p style={{ color: 'var(--neutral-600)' }}>Cargando periodos...</p>
-              </div>
-            )}
-
-            {detalleReporte.error && (
-              <div className="alert-error">{detalleReporte.error}</div>
-            )}
-
-            {!detalleReporte.loading && (
-              <div className="lista-periodos-grid">
-                {detalleReporte.periodos.map((p) => {
-                  const estado = (p.estado || '').toLowerCase();
-                  const esTarde = typeof p.diasDesviacion === 'number' && p.diasDesviacion > 0;
-                  const badgeClass = esTarde
-                    ? 'warning'
-                    : estado.includes('aprobado')
-                    ? 'success'
-                    : estado.includes('correccion')
-                    ? 'danger'
-                    : estado.includes('enviado')
-                    ? 'sent'
-                    : estado.includes('pendiente')
-                    ? 'pending'
-                    : 'neutral';
-                  const badgeText = esTarde
-                    ? 'Enviado tarde'
-                    : estado.includes('aprobado')
-                    ? 'Aprobado'
-                    : estado.includes('correccion')
-                    ? 'Con Observaciones'
-                    : estado.includes('enviado')
-                    ? 'Enviado'
-                    : estado.includes('pendiente')
-                    ? 'Pendiente'
-                    : p.estado;
-
-                  return (
-                    <div key={p.periodoId} className="periodo-card">
-                      <div className={`card-barra-estado ${badgeClass}`} />
-                      <div className="periodo-card-header">
-                        <div>
-                          <p className="periodo-overline">{p.periodoTipo}</p>
-                          <h3 className="periodo-titulo">{formatFechaCorta(p.periodoInicio)} → {formatFechaCorta(p.periodoFin)}</h3>
-                          <div className="card-meta-superior">
-                            <span className="meta-frecuencia">Vence {formatFechaCorta(p.fechaVencimientoCalculada)}</span>
-                            {typeof p.diasDesviacion === 'number' && (
-                              <>
-                                <span className="meta-separador">•</span>
-                                <span className={`meta-vencimiento ${esTarde ? 'vencido' : 'proximo'}`}>
-                                  {esTarde ? `+${p.diasDesviacion}d` : `${p.diasDesviacion}d`}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <span className={`badge-estado-mejorado ${badgeClass}`}>{badgeText}</span>
+      {/* Tabla */}
+      <div className="table-container">
+        <table className="reportes-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Entidad</th>
+              <th>Frecuencia</th>
+              <th>Vencimiento</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredReportes.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-500)' }}>
+                  No se encontraron reportes
+                </td>
+              </tr>
+            ) : (
+              filteredReportes.map(reporte => (
+                <tr key={reporte.reporteId}>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{reporte.nombre}</div>
+                    {reporte.descripcion && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
+                        {reporte.descripcion.substring(0, 60)}...
                       </div>
-
-                      <div className="periodo-resumen">
-                        <div>
-                          <p className="detalle-label">Fecha envío</p>
-                          <p className="detalle-value">{p.fechaEnvioReal ? formatFechaCorta(p.fechaEnvioReal) : 'No enviado'}</p>
-                        </div>
-                        <div>
-                          <p className="detalle-label">Retraso</p>
-                          <p className="detalle-value">{typeof p.diasDesviacion === 'number' ? (p.diasDesviacion > 0 ? `+${p.diasDesviacion} días` : 'A tiempo') : '—'}</p>
-                        </div>
-                        <div>
-                          <p className="detalle-label">Evidencias</p>
-                          <p className="detalle-value">{p.cantidadArchivos || 0}</p>
-                        </div>
-                        <div>
-                          <p className="detalle-label">Estado</p>
-                          <p className="detalle-value">{p.estadoDescripcion || p.estado}</p>
-                        </div>
-                      </div>
-
-                      <div className="acciones-card">
-                        <button className="btn-detalle-mejorado" onClick={() => togglePeriodoDetalle(p)}>
-                          {periodoExpandido === p.periodoId ? 'Cerrar periodo' : 'Abrir periodo'}
-                        </button>
-                        <button className="btn-detalle-mejorado" onClick={() => abrirPanelCarga(p.reporteId, detalleReporte.reporte!.nombre, p.periodoId)}>
-                          Intervenir / Cargar
-                        </button>
-                      </div>
-
-                      {periodoExpandido === p.periodoId && (
-                        <div className="periodo-detalle-expansion">
-                          <div className="detalle-columns">
-                            <div className="detalle-tarjeta">
-                              <h4>Fechas del período</h4>
-                              <div className="dato-fila"><span className="dato-label">Inicio</span><span className="dato-value">{formatFechaCorta(p.periodoInicio)}</span></div>
-                              <div className="dato-fila"><span className="dato-label">Fin</span><span className="dato-value">{formatFechaCorta(p.periodoFin)}</span></div>
-                              <div className="dato-fila"><span className="dato-label">Vencimiento</span><span className="dato-value destaque-naranja">{formatFechaCorta(p.fechaVencimientoCalculada)}</span></div>
-                              <div className="dato-fila"><span className="dato-label">Envío real</span><span className="dato-value destaque-verde">{p.fechaEnvioReal ? formatFechaCorta(p.fechaEnvioReal) : 'No enviado'}</span></div>
-                              <div className="dato-fila"><span className="dato-label">Desviación</span><span className={`dato-value ${p.diasDesviacion && p.diasDesviacion > 0 ? 'destaque-rojo' : 'destaque-verde'}`}>
-                                {typeof p.diasDesviacion === 'number' ? (p.diasDesviacion > 0 ? `+${p.diasDesviacion} días` : 'Enviado a tiempo') : 'Sin dato'}
-                              </span></div>
-                            </div>
-
-                            <div className="detalle-tarjeta">
-                              <h4>Equipo responsable</h4>
-                              <div className="responsable-item"><div className="responsable-rol">Elabora</div><div className="responsable-nombre">{p.responsableElaboracion?.nombreCompleto || 'Sin asignar'}</div></div>
-                              <div className="responsable-item"><div className="responsable-rol">Supervisa</div><div className="responsable-nombre">{p.responsableSupervision?.nombreCompleto || 'Sin asignar'}</div></div>
-                              {p.entidadNombre && (
-                                <div className="responsable-item"><div className="responsable-rol">Entidad</div><div className="responsable-nombre">{p.entidadNombre}</div></div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="detalle-tarjeta">
-                            <h4>Evidencias</h4>
-                            {cargandoEvidencias[p.periodoId] && <p style={{ color: 'var(--neutral-600)' }}>Cargando evidencias...</p>}
-                            {!cargandoEvidencias[p.periodoId] && (evidenciasPorPeriodo[p.periodoId]?.length || 0) === 0 && (
-                              <p style={{ color: 'var(--neutral-600)' }}>No hay evidencias adjuntas</p>
-                            )}
-                            {!cargandoEvidencias[p.periodoId] && (evidenciasPorPeriodo[p.periodoId]?.length || 0) > 0 && (
-                              <div className="evidencias-lista">
-                                {evidenciasPorPeriodo[p.periodoId].map((ev) => (
-                                  <div key={ev.id} className="evidencia-item">
-                                    <div>
-                                      <div className="evidencia-nombre">{ev.nombreArchivo}</div>
-                                      <div className="evidencia-meta">{((ev.tamano || 0) / 1024).toFixed(0)} KB · {new Date(ev.creadoEn).toLocaleDateString('es-CO')}</div>
-                                    </div>
-                                    <button className="btn-detalle-mejorado" onClick={() => evidenciasService.descargar(ev.id)}>Descargar</button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="detalle-tarjeta">
-                            <h4>Historial de comentarios</h4>
-                            {p.comentarios ? (
-                              <div className="comentario-item">
-                                <div className="comentario-header">Sistema · {new Date(p.updatedAt).toLocaleString('es-CO')}</div>
-                                <div className="comentario-texto">{p.comentarios}</div>
-                              </div>
-                            ) : (
-                              <p style={{ color: 'var(--neutral-600)' }}>Sin comentarios registrados</p>
-                            )}
-                          </div>
-
-                          <div className="detalle-tarjeta acciones">
-                            <h4>Acciones del Administrador</h4>
-                            <div className="acciones-flex">
-                              <button className="btn-detalle-mejorado" onClick={() => abrirPanelCarga(p.reporteId, detalleReporte.reporte!.nombre, p.periodoId)}>Intervenir / Cargar</button>
-                              <button className="btn-detalle-mejorado" onClick={() => notifications.info('Función pendiente de implementación')}>Añadir comentario</button>
-                              <button className="btn-detalle-mejorado" onClick={() => notifications.info('Notificación reenviada (simulado)')}>Reenviar notificación</button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                    )}
+                  </td>
+                  <td>{reporte.entidadNombre || 'N/A'}</td>
+                  <td>{reporte.frecuencia}</td>
+                  <td>{formatFechaVencimiento(reporte.fechaVencimiento)}</td>
+                  <td>
+                    <span className={`status-badge ${getEstadoBadgeClass(reporte.estado)}`}>
+                      {reporte.estado}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="btn-icon" title="Editar" onClick={() => handleEditReporte(reporte)}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                      <button className="btn-icon danger" title="Eliminar" onClick={() => handleDeleteReporte(reporte.reporteId)}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                      <button className="btn-icon" title="Ver detalle" onClick={() => abrirDetalleReporte(reporte)}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="12" y1="8" x2="12" y2="12"/>
+                          <line x1="12" y1="16" x2="12" y2="16"/>
+                        </svg>
+                      </button>
+                      <button className="btn-icon" title="Intervenir / Cargar" onClick={() => abrirPanelCarga(reporte.reporteId, reporte.nombre)}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 19V6"/>
+                          <polyline points="7 11 12 6 17 11"/>
+                          <path d="M5 19h14"/>
+                        </svg>
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  </td>
+                </tr>
+              ))
             )}
-          </div>
-        ) : (
-          <>
-            {/* Stats */}
-            <div className="status-stats">
-              <div className="status-card all active">
-                <span className="status-count">{estadisticas.todos}</span>
-                <span className="status-label">Todos</span>
-              </div>
-              <div className="status-card pending">
-                <span className="status-count">{estadisticas.pendientes}</span>
-                <span className="status-label">Sin Configurar</span>
-              </div>
-              <div className="status-card progress">
-                <span className="status-count">{estadisticas.enProgreso}</span>
-                <span className="status-label">Activos</span>
-              </div>
-              <div className="status-card sent">
-                <span className="status-count">{estadisticas.completados}</span>
-                <span className="status-label">Configurados</span>
-              </div>
-              <div className="status-card overdue">
-                <span className="status-count">{estadisticas.vencidos}</span>
-                <span className="status-label">Inactivos</span>
-              </div>
-            </div>
-
-            {/* Filtros */}
-            <div className="filters-bar">
-              <div className="search-box">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="M21 21l-4.35-4.35"/>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Buscar reportes..."
-                  className="search-input"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="filter-group">
-                <select className="filter-select" value={filterEntidad} onChange={(e) => setFilterEntidad(e.target.value)}>
-                  <option value="">Todas las entidades</option>
-                  {entidades.map(e => (
-                    <option key={e.entidadId} value={e.entidadId}>{e.nombre}</option>
-                  ))}
-                </select>
-                <select className="filter-select" value={filterFrecuencia} onChange={(e) => setFilterFrecuencia(e.target.value)}>
-                  <option value="">Frecuencia</option>
-                  <option value="MENSUAL">Mensual</option>
-                  <option value="TRIMESTRAL">Trimestral</option>
-                  <option value="SEMESTRAL">Semestral</option>
-                  <option value="ANUAL">Anual</option>
-                </select>
-                <select className="filter-select" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
-                  <option value="">Todos los estados</option>
-                  <option value="activo">Activo</option>
-                  <option value="cancelado">Cancelado</option>
-                  <option value="suspendido">Suspendido</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="table-container">
-              <table className="reportes-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Entidad</th>
-                    <th>Frecuencia</th>
-                    <th>Vencimiento</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredReportes.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-500)' }}>
-                        No se encontraron reportes
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredReportes.map(reporte => (
-                      <tr key={reporte.reporteId}>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{reporte.nombre}</div>
-                          {reporte.descripcion && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)', marginTop: '0.25rem' }}>
-                              {reporte.descripcion.substring(0, 60)}...
-                            </div>
-                          )}
-                        </td>
-                        <td>{reporte.entidadNombre || 'N/A'}</td>
-                        <td>{reporte.frecuencia}</td>
-                        <td>{formatFechaVencimiento(reporte.fechaVencimiento)}</td>
-                        <td>
-                          <span className={`status-badge ${getEstadoBadgeClass(reporte.estado)}`}>
-                            {reporte.estado}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button className="btn-icon" title="Editar" onClick={() => handleEditReporte(reporte)}>
-                              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                              </svg>
-                            </button>
-                            <button className="btn-icon danger" title="Eliminar" onClick={() => handleDeleteReporte(reporte.reporteId)}>
-                              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M3 6h18"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                              </svg>
-                            </button>
-                            <button className="btn-icon" title="Ver detalle" onClick={() => abrirDetalleReporte(reporte)}>
-                              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="8" x2="12" y2="12"/>
-                                <line x1="12" y1="16" x2="12" y2="16"/>
-                              </svg>
-                            </button>
-                            <button className="btn-icon" title="Intervenir / Cargar" onClick={() => abrirPanelCarga(reporte.reporteId, reporte.nombre)}>
-                              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 19V6"/>
-                                <polyline points="7 11 12 6 17 11"/>
-                                <path d="M5 19h14"/>
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )
-      ) : (
-        <AdminReportesEnviados onIntervenir={abrirPanelCargaDesdePeriodo} />
-      )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Modal */}
       {showModal && (
@@ -869,13 +637,21 @@ export default function AdminReportesClient() {
       )}
 
       {/* Panel lateral de carga manual */}
-      {panelCarga.open && (
+      {panelCarga.open && !modalEnviar.isOpen && (
         <div className="side-panel-overlay" onClick={cerrarPanelCarga}>
           <aside className="side-panel" onClick={(e) => e.stopPropagation()}>
             <div className="side-panel-header">
               <div>
                 <p className="side-panel-overline">Intervención manual</p>
                 <h3 className="side-panel-title">{panelCarga.reporteNombre}</h3>
+                {panelCarga.seleccionado && (
+                  <div className="side-panel-meta">
+                    <span className="chip-estado info">{panelCarga.periodos.find(p => p.periodoId === panelCarga.seleccionado)?.frecuencia || panelCarga.periodos.find(p => p.periodoId === panelCarga.seleccionado)?.periodoTipo}</span>
+                    <span className="side-panel-periodo">
+                      {formatFechaCorta(panelCarga.periodos.find(p => p.periodoId === panelCarga.seleccionado)?.periodoInicio || '')} → {formatFechaCorta(panelCarga.periodos.find(p => p.periodoId === panelCarga.seleccionado)?.periodoFin || '')}
+                    </span>
+                  </div>
+                )}
               </div>
               <button className="btn-icon" onClick={cerrarPanelCarga} aria-label="Cerrar">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
@@ -936,6 +712,9 @@ export default function AdminReportesClient() {
       <ModalEnviarReporte
         periodoId={modalEnviar.periodoId}
         reporteNombre={modalEnviar.reporteNombre}
+        periodoInicio={modalEnviar.periodoInicio}
+        periodoFin={modalEnviar.periodoFin}
+        frecuencia={modalEnviar.frecuencia}
         isOpen={modalEnviar.isOpen}
         esCorreccion={modalEnviar.esCorreccion}
         onClose={() => setModalEnviar((prev) => ({ ...prev, isOpen: false }))}
@@ -947,61 +726,144 @@ export default function AdminReportesClient() {
         onError={(msg) => notifications.error(msg)}
       />
 
-      <style>{`
-        .detalle-reporte-page { padding: 0.5rem 0 2rem 0; display: flex; flex-direction: column; gap: 1rem; }
-        .detalle-top-bar { display: flex; justify-content: space-between; align-items: center; }
-        .btn-volver { background: #eef2ff; color: #312e81; border: 1px solid #c7d2fe; border-radius: 10px; padding: 0.55rem 0.9rem; cursor: pointer; font-weight: 700; }
-        .detalle-encabezado { background: #fff; border-radius: 16px; padding: 1.25rem 1.5rem; box-shadow: 0 12px 30px rgba(15,23,42,0.08); display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
-        .detalle-overline { text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-size: 0.75rem; margin: 0 0 0.25rem 0; }
-        .detalle-titulo { margin: 0; font-size: 1.4rem; font-weight: 800; color: #0f172a; }
-        .detalle-meta { display: flex; gap: 0.35rem; color: #475569; align-items: center; }
-        .detalle-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; text-align: left; }
-        .detalle-label { margin: 0; color: #64748b; font-weight: 700; font-size: 0.85rem; }
-        .detalle-value { margin: 0; color: #0f172a; font-weight: 700; }
-        .lista-periodos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem; }
-        .periodo-card { position: relative; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem; background: #fff; box-shadow: 0 10px 28px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 0.75rem; }
-        .card-barra-estado { position: absolute; left: 0; top: 0; width: 6px; height: 100%; border-radius: 16px 0 0 16px; background: #e2e8f0; }
-        .card-barra-estado.success { background: #22c55e; }
-        .card-barra-estado.danger { background: #ef4444; }
-        .card-barra-estado.sent { background: #06b6d4; }
-        .card-barra-estado.warning { background: #f97316; }
-        .card-barra-estado.pending { background: #eab308; }
-        .periodo-card-header { display: flex; justify-content: space-between; gap: 0.75rem; align-items: flex-start; }
-        .periodo-overline { margin: 0; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.78rem; }
-        .periodo-titulo { margin: 0.1rem 0 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
-        .badge-estado-mejorado { padding: 0.35rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; text-transform: capitalize; }
-        .badge-estado-mejorado.success { background: #dcfce7; color: #15803d; }
-        .badge-estado-mejorado.pending { background: #fef9c3; color: #a16207; }
-        .badge-estado-mejorado.danger { background: #fee2e2; color: #b91c1c; }
-        .badge-estado-mejorado.sent { background: #cffafe; color: #0e7490; }
-        .badge-estado-mejorado.warning { background: #ffedd5; color: #c2410c; }
-        .periodo-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 12px; padding: 0.75rem; }
-        .acciones-card { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .btn-detalle-mejorado { background: #eef2ff; color: #312e81; border: 1px solid #c7d2fe; border-radius: 10px; padding: 0.55rem 0.9rem; cursor: pointer; font-weight: 700; }
-        .btn-detalle-mejorado:hover { background: #e0e7ff; }
-        .periodo-detalle-expansion { border-top: 1px solid #e2e8f0; padding-top: 0.75rem; animation: expand 0.25s ease-in-out; display: flex; flex-direction: column; gap: 0.75rem; }
-        @keyframes expand { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-        .detalle-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; }
-        .detalle-tarjeta { border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.85rem; background: #f8fafc; }
-        .detalle-tarjeta h4 { margin: 0 0 0.35rem 0; font-size: 1rem; font-weight: 700; color: #0f172a; }
-        .dato-fila { display: flex; justify-content: space-between; font-size: 0.95rem; color: #475569; padding: 0.2rem 0; }
-        .dato-label { font-weight: 700; }
-        .dato-value { font-weight: 700; }
-        .destaque-naranja { color: #c2410c; }
-        .destaque-verde { color: #15803d; }
-        .destaque-rojo { color: #b91c1c; }
-        .responsable-item { display: flex; justify-content: space-between; padding: 0.25rem 0; font-weight: 600; color: #0f172a; }
-        .responsable-rol { color: #64748b; font-weight: 700; }
-        .evidencias-lista { display: flex; flex-direction: column; gap: 0.5rem; }
-        .evidencia-item { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
-        .evidencia-nombre { font-weight: 700; color: #0f172a; }
-        .evidencia-meta { color: #64748b; font-size: 0.85rem; }
-        .comentario-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.65rem; }
-        .comentario-header { font-weight: 700; color: #475569; margin-bottom: 0.25rem; }
-        .comentario-texto { color: #0f172a; white-space: pre-wrap; }
-        .acciones-flex { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .alert-error { padding: 0.85rem 1rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fecdd3; border-radius: 10px; }
-      `}</style>
+      {/* Modal de selección de período para ver detalle */}
+      {modalSeleccionPeriodo.open && (
+        <div className="modal-overlay-fullscreen" onClick={cerrarModalSeleccionPeriodo}>
+          <div className="modal-selector-periodo" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header del Modal */}
+            <div className="modal-selector-header">
+              <div className="modal-selector-header-content">
+                <h2 className="modal-selector-title">Seleccionar Período</h2>
+                <p className="modal-selector-subtitle">{modalSeleccionPeriodo.reporteNombre}</p>
+                <span className="modal-selector-count">
+                  {modalSeleccionPeriodo.periodos.length} período{modalSeleccionPeriodo.periodos.length !== 1 ? 's' : ''} disponible{modalSeleccionPeriodo.periodos.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <button className="modal-selector-close" onClick={cerrarModalSeleccionPeriodo} aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Divisor */}
+            <div className="modal-selector-divider"></div>
+
+            {modalSeleccionPeriodo.loading ? (
+              <div className="modal-selector-loading">
+                <div className="loading-spinner" />
+                <p>Cargando períodos...</p>
+              </div>
+            ) : modalSeleccionPeriodo.periodos.length === 0 ? (
+              <div className="modal-selector-empty">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <p>No hay períodos disponibles para este reporte.</p>
+              </div>
+            ) : (
+              <>
+                {/* Lista de Períodos con Scroll */}
+                <div className="modal-selector-body">
+                  <div className="periodos-lista-scroll">
+                    {modalSeleccionPeriodo.periodos.map((p) => {
+                      const isSelected = modalSeleccionPeriodo.seleccionado === p.periodoId;
+                      
+                      // Determinar estado y estilo
+                      let estadoLabel = '';
+                      let estadoClass = '';
+                      
+                      if (p.estadoTemporal === 'enviado') {
+                        estadoLabel = 'ENVIADO';
+                        estadoClass = 'estado-enviado';
+                      } else if (p.estadoTemporal === 'futuro') {
+                        estadoLabel = 'PRÓXIMO';
+                        estadoClass = 'estado-proximo';
+                      } else if (p.estadoTemporal === 'activo') {
+                        estadoLabel = 'PENDIENTE';
+                        estadoClass = 'estado-pendiente';
+                      } else {
+                        estadoLabel = 'VENCIDO';
+                        estadoClass = 'estado-vencido';
+                      }
+                      
+                      return (
+                        <div
+                          key={p.periodoId}
+                          className={`periodo-card-selector ${isSelected ? 'periodo-selected' : ''}`}
+                          onClick={() => setModalSeleccionPeriodo((prev) => ({ ...prev, seleccionado: p.periodoId }))}
+                        >
+                          {/* Radio Button */}
+                          <div className="periodo-radio">
+                            <div className={`radio-button ${isSelected ? 'radio-checked' : ''}`}>
+                              {isSelected && <div className="radio-inner" />}
+                            </div>
+                          </div>
+
+                          {/* Contenido del Período */}
+                          <div className="periodo-content">
+                            {/* Primera línea: Tipo y Estado */}
+                            <div className="periodo-header-line">
+                              <span className="periodo-tipo">{frecuenciaLabel(p.frecuencia || p.periodoTipo)}</span>
+                              <span className={`periodo-estado-chip ${estadoClass}`}>
+                                {estadoLabel}
+                              </span>
+                            </div>
+
+                            {/* Segunda línea: Fechas del período */}
+                            <div className="periodo-fechas-line">
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                              </svg>
+                              <span>{formatFechaCorta(p.periodoInicio)} → {formatFechaCorta(p.periodoFin)}</span>
+                            </div>
+
+                            {/* Tercera línea: Fecha de vencimiento (si existe) */}
+                            {p.fechaVencimientoCalculada && (
+                              <div className="periodo-vencimiento-line">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="12" cy="12" r="10"/>
+                                  <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                <span>Vence: {formatFechaCorta(p.fechaVencimientoCalculada)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Footer con botones */}
+                <div className="modal-selector-footer">
+                  <button className="btn-secondary" onClick={cerrarModalSeleccionPeriodo}>
+                    Cancelar
+                  </button>
+                  <button
+                    className="btn-primary btn-with-icon"
+                    onClick={navegarAPeriodoSeleccionado}
+                    disabled={!modalSeleccionPeriodo.seleccionado}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Ver Detalle del Período
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
