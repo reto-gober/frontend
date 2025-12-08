@@ -9,14 +9,7 @@ import {
   normalizarEstado,
 } from "../../lib/utils/estados";
 
-type FilterType =
-  | "todos"
-  | "pendientes"
-  | "enviados"
-  | "enProgreso"
-  | "enRevision"
-  | "vencidos"
-  | "porVencer";
+type FilterType = "todos" | "activos" | "inactivos";
 
 type EstadoGeneral = {
   code: string;
@@ -47,6 +40,53 @@ const formatearFechaCorta = (fecha?: string | null): string => {
     month: "short",
     year: "numeric",
   });
+};
+
+const normalizarFecha = (fecha?: string | null) => {
+  if (!fecha) return null;
+  const d = new Date(fecha);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const obtenerRangoVigencia = (items: ReportePeriodo[]) => {
+  const vigenciaInicio = items.reduce<string | null>((acc, p) => {
+    const inicio =
+      (p as any).fechaInicioVigencia ||
+      (p as any).vigenciaInicio ||
+      p.periodoInicio ||
+      null;
+    if (!inicio) return acc;
+    if (!acc) return inicio;
+    return new Date(inicio) < new Date(acc) ? inicio : acc;
+  }, null);
+
+  const vigenciaFin = items.reduce<string | null>((acc, p) => {
+    const fin =
+      (p as any).fechaFinVigencia ||
+      (p as any).vigenciaFin ||
+      p.periodoFin ||
+      null;
+    if (!fin) return acc;
+    if (!acc) return fin;
+    return new Date(fin) > new Date(acc) ? fin : acc;
+  }, null);
+
+  return { vigenciaInicio, vigenciaFin };
+};
+
+const esVigenciaActiva = (
+  vigenciaInicio: string | null,
+  vigenciaFin: string | null
+) => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const inicio = normalizarFecha(vigenciaInicio);
+  const fin = normalizarFecha(vigenciaFin);
+
+  if (inicio && hoy < inicio) return false;
+  if (fin && hoy > fin) return false;
+  return true;
 };
 
 const calcularResumenPeriodos = (items: ReportePeriodo[]) => {
@@ -222,6 +262,8 @@ export default function MisReportesClient() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 6;
   const [pendingEntrega, setPendingEntrega] = useState<{
     periodoId: string;
     reporteId?: string;
@@ -241,17 +283,16 @@ export default function MisReportesClient() {
   // Contadores por estado
   const [counts, setCounts] = useState({
     todos: 0,
-    pendientes: 0,
-    enviados: 0,
-    vencidos: 0,
-    porVencer: 0,
+    activos: 0,
+    inactivos: 0,
   });
 
   useEffect(() => {
     // Leer filtro de URL al cargar
     const params = new URLSearchParams(window.location.search);
     const filtroParam = params.get("filtro");
-    if (filtroParam) {
+    const validFilters: FilterType[] = ["todos", "activos", "inactivos"];
+    if (filtroParam && validFilters.includes(filtroParam as FilterType)) {
       setActiveFilter(filtroParam as FilterType);
     }
 
@@ -344,10 +385,8 @@ export default function MisReportesClient() {
         setPeriodos([]);
         setCounts({
           todos: 0,
-          pendientes: 0,
-          enviados: 0,
-          vencidos: 0,
-          porVencer: 0,
+          activos: 0,
+          inactivos: 0,
         });
         setLoading(false);
         return;
@@ -355,30 +394,19 @@ export default function MisReportesClient() {
 
       const gruposCompletos = agruparPorReporteVigencia(allPeriodos);
 
+      const activos = gruposCompletos.filter((g) => {
+        const { vigenciaInicio, vigenciaFin } = obtenerRangoVigencia(
+          g.periodos
+        );
+        return esVigenciaActiva(vigenciaInicio, vigenciaFin);
+      }).length;
+
+      const inactivos = gruposCompletos.length - activos;
+
       const newCounts = {
         todos: gruposCompletos.length,
-        pendientes: gruposCompletos.filter((g) =>
-          g.periodos.some((p) => esEstadoPendiente(p.estado))
-        ).length,
-        enviados: gruposCompletos.filter((g) =>
-          g.periodos.some((p) => esEstadoEnviado(p.estado))
-        ).length,
-        vencidos: gruposCompletos.filter((g) =>
-          g.periodos.some((p) => {
-            if (!p.fechaVencimientoCalculada) return false;
-            return (
-              esFechaVencida(p.fechaVencimientoCalculada) &&
-              !esEstadoEnviado(p.estado)
-            );
-          })
-        ).length,
-        porVencer: gruposCompletos.filter((g) =>
-          g.periodos.some((p) => {
-            if (!p.fechaVencimientoCalculada) return false;
-            const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
-            return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
-          })
-        ).length,
+        activos,
+        inactivos,
       };
 
       setCounts(newCounts);
@@ -426,49 +454,25 @@ export default function MisReportesClient() {
   const filters = [
     { id: "todos" as FilterType, label: "Todos", count: counts.todos },
     {
-      id: "pendientes" as FilterType,
-      label: "Pendientes",
-      count: counts.pendientes,
+      id: "activos" as FilterType,
+      label: "Activos",
+      count: counts.activos,
     },
     {
-      id: "vencidos" as FilterType,
-      label: "Vencidos",
-      count: counts.vencidos,
+      id: "inactivos" as FilterType,
+      label: "Inactivos",
+      count: counts.inactivos,
     },
-    {
-      id: "porVencer" as FilterType,
-      label: "Por Vencer (3 días)",
-      count: counts.porVencer,
-    },
-    { id: "enviados" as FilterType, label: "Enviados", count: counts.enviados },
   ];
 
   const grupos = useMemo(() => {
     const agrupados = agruparPorReporteVigencia(periodos).map((grupo) => {
       const resumen = calcularResumenPeriodos(grupo.periodos);
-      const estadoGeneral = determinarEstadoGeneral(grupo.periodos);
       const periodoReferencia = obtenerPeriodoReferencia(grupo.periodos);
-      const vigenciaInicio = grupo.periodos.reduce<string | null>((acc, p) => {
-        const inicio =
-          (p as any).fechaInicioVigencia ||
-          (p as any).vigenciaInicio ||
-          p.periodoInicio ||
-          null;
-        if (!inicio) return acc;
-        if (!acc) return inicio;
-        return new Date(inicio) < new Date(acc) ? inicio : acc;
-      }, null);
-
-      const vigenciaFin = grupo.periodos.reduce<string | null>((acc, p) => {
-        const fin =
-          (p as any).fechaFinVigencia ||
-          (p as any).vigenciaFin ||
-          p.periodoFin ||
-          null;
-        if (!fin) return acc;
-        if (!acc) return fin;
-        return new Date(fin) > new Date(acc) ? fin : acc;
-      }, null);
+      const { vigenciaInicio, vigenciaFin } = obtenerRangoVigencia(
+        grupo.periodos
+      );
+      const activo = esVigenciaActiva(vigenciaInicio, vigenciaFin);
 
       const resaltarId =
         highlightPeriodoId &&
@@ -479,24 +483,20 @@ export default function MisReportesClient() {
       return {
         ...grupo,
         resumen,
-        estadoGeneral,
         periodoReferencia,
         vigenciaInicio,
         vigenciaFin,
+        activo,
         resaltarId,
       };
     });
 
     const filtrados = agrupados.filter((grupo) => {
       switch (activeFilter) {
-        case "pendientes":
-          return grupo.resumen.pendientes > 0;
-        case "enviados":
-          return grupo.resumen.enviados > 0;
-        case "vencidos":
-          return grupo.resumen.vencidos > 0;
-        case "porVencer":
-          return grupo.resumen.porVencer > 0;
+        case "activos":
+          return grupo.activo;
+        case "inactivos":
+          return !grupo.activo;
         case "todos":
         default:
           return true;
@@ -509,6 +509,28 @@ export default function MisReportesClient() {
       return a.vigencia.localeCompare(b.vigencia);
     });
   }, [periodos, activeFilter, highlightPeriodoId]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [activeFilter]);
+
+  const totalPages = useMemo(
+    () => Math.max(0, Math.ceil(grupos.length / PAGE_SIZE)),
+    [grupos.length]
+  );
+
+  const currentPage = Math.min(page, Math.max(0, totalPages - 1));
+
+  const gruposPagina = useMemo(() => {
+    const start = currentPage * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return grupos.slice(start, end);
+  }, [grupos, currentPage]);
+
+  const handlePageChange = (nextPage: number) => {
+    const bounded = Math.max(0, Math.min(nextPage, Math.max(0, totalPages - 1)));
+    setPage(bounded);
+  };
 
   return (
     <>
@@ -599,111 +621,136 @@ export default function MisReportesClient() {
               }}
             >
               {activeFilter === "todos" && "No tienes reportes asignados"}
-              {activeFilter === "pendientes" && "No hay reportes pendientes"}
-              {activeFilter === "enviados" && "No hay reportes enviados"}
-              {activeFilter === "vencidos" && "No hay reportes vencidos"}
-              {activeFilter === "porVencer" && "No hay reportes por vencer"}
+              {activeFilter === "activos" && "No hay reportes activos"}
+              {activeFilter === "inactivos" && "No hay reportes inactivos"}
             </h3>
             <p style={{ fontSize: "0.875rem", color: "var(--neutral-500)" }}>
               {activeFilter === "todos" &&
                 "Cuando se te asignen reportes, aparecerán aquí"}
-              {activeFilter === "pendientes" &&
-                "Todos tus reportes están al día"}
-              {activeFilter === "enviados" &&
-                "Aún no has enviado ningún reporte"}
-              {activeFilter === "vencidos" &&
-                "¡Excelente! Todos tus reportes están al día"}
-              {activeFilter === "porVencer" &&
-                "No tienes reportes próximos a vencer en los próximos 3 días"}
+              {activeFilter === "activos" &&
+                "No hay reportes dentro de una vigencia activa"}
+              {activeFilter === "inactivos" &&
+                "Todos los reportes están dentro de una vigencia activa"}
             </p>
           </div>
         ) : (
-          <div className="reportes-list">
-            {grupos.map((grupo) => (
-              <div
-                key={grupo.key}
-                id={
-                  grupo.resaltarId ? `periodo-${grupo.resaltarId}` : undefined
-                }
-                className={`reporte-agrupado ${grupo.resaltarId ? "periodo-resaltado" : ""}`}
-              >
-                <div className="agrupado-top">
-                  <div>
-                    <h2 className="grupo-title">{grupo.nombre}</h2>
-                    {grupo.entidad && (
-                      <p className="grupo-entidad">{grupo.entidad}</p>
-                    )}
-                  </div>
-                  <span
-                    className={`estado-chip ${grupo.estadoGeneral.badgeClass}`}
-                  >
-                    {grupo.estadoGeneral.label}
-                  </span>
-                </div>
-
-                <div className="agrupado-meta">
-                  <div>
-                    <span className="meta-label">Vigencia</span>
-                    <span className="meta-value">{`${formatearFechaCorta(grupo.vigenciaInicio)} - ${formatearFechaCorta(grupo.vigenciaFin)}`}</span>
-                    <span className="meta-subvalue">{grupo.vigencia}</span>
-                  </div>
-                  <div>
-                    <span className="meta-label">Periodicidad</span>
-                    <span className="meta-value">
-                      {grupo.periodoTipo || "—"}
+          <>
+            <div className="reportes-list">
+              {gruposPagina.map((grupo) => (
+                <div
+                  key={grupo.key}
+                  id={
+                    grupo.resaltarId ? `periodo-${grupo.resaltarId}` : undefined
+                  }
+                  className={`reporte-agrupado ${grupo.resaltarId ? "periodo-resaltado" : ""}`}
+                >
+                  <div className="agrupado-top">
+                    <div>
+                      <h2 className="grupo-title">{grupo.nombre}</h2>
+                      {grupo.entidad && (
+                        <p className="grupo-entidad">{grupo.entidad}</p>
+                      )}
+                    </div>
+                    <span
+                      className={`estado-chip ${grupo.activo ? "activo" : "inactivo"}`}
+                    >
+                      {grupo.activo ? "ACTIVO" : "INACTIVO"}
                     </span>
                   </div>
-                  <div>
-                    <span className="meta-label">Periodos</span>
-                    <span className="meta-value">{grupo.resumen.total}</span>
-                  </div>
-                </div>
 
-                <div className="agrupado-resumen">
-                  <div>
-                    <strong>{grupo.resumen.pendientes}</strong>
-                    <span>Pendientes</span>
+                  <div className="agrupado-meta">
+                    <div>
+                      <span className="meta-label">Vigencia</span>
+                      <span className="meta-value">{`${formatearFechaCorta(grupo.vigenciaInicio)} - ${formatearFechaCorta(grupo.vigenciaFin)}`}</span>
+                      <span className="meta-subvalue">{grupo.vigencia}</span>
+                    </div>
+                    <div>
+                      <span className="meta-label">Periodicidad</span>
+                      <span className="meta-value">
+                        {grupo.periodoTipo || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="meta-label">Periodos</span>
+                      <span className="meta-value">{grupo.resumen.total}</span>
+                    </div>
                   </div>
-                  <div>
-                    <strong>{grupo.resumen.vencidos}</strong>
-                    <span>Vencidos</span>
-                  </div>
-                  <div>
-                    <strong>{grupo.resumen.porVencer}</strong>
-                    <span>Por vencer (3 días)</span>
-                  </div>
-                  <div>
-                    <strong>{grupo.resumen.enviados}</strong>
-                    <span>Enviados</span>
-                  </div>
-                </div>
 
-                {grupo.periodoReferencia && (
-                  <div className="agrupado-actions">
-                    <button
-                      className="btn btn-secondary btn-with-icon"
-                      onClick={() =>
-                        handleVerReporte(grupo.periodoReferencia?.periodoId)
-                      }
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                  <div className="agrupado-resumen">
+                    <div>
+                      <strong>{grupo.resumen.pendientes}</strong>
+                      <span>Pendientes</span>
+                    </div>
+                    <div>
+                      <strong>{grupo.resumen.vencidos}</strong>
+                      <span>Vencidos</span>
+                    </div>
+                    <div>
+                      <strong>{grupo.resumen.porVencer}</strong>
+                      <span>Por vencer (3 días)</span>
+                    </div>
+                    <div>
+                      <strong>{grupo.resumen.enviados}</strong>
+                      <span>Enviados</span>
+                    </div>
+                  </div>
+
+                  {grupo.periodoReferencia && (
+                    <div className="agrupado-actions">
+                      <button
+                        className="btn btn-secondary btn-with-icon"
+                        onClick={() =>
+                          handleVerReporte(grupo.periodoReferencia?.periodoId)
+                        }
                       >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      Ver detalle
-                    </button>
-                  </div>
-                )}
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        Ver detalle
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="page-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
+                  aria-label="Página anterior"
+                >
+                  «
+                </button>
+                {Array.from({ length: totalPages }, (_, idx) => (
+                  <button
+                    key={idx}
+                    className={`page-number ${idx === currentPage ? "active" : ""}`}
+                    onClick={() => handlePageChange(idx)}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+                <button
+                  className="page-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages - 1}
+                  aria-label="Página siguiente"
+                >
+                  »
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
@@ -737,6 +784,47 @@ export default function MisReportesClient() {
           font-size: 0.875rem;
           color: var(--neutral-500);
           margin: 0.25rem 0 0;
+        }
+
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.35rem;
+          margin-top: 1.5rem;
+          flex-wrap: wrap;
+        }
+
+        .page-btn,
+        .page-number {
+          min-width: 36px;
+          height: 36px;
+          padding: 0 0.75rem;
+          border: 1px solid var(--neutral-300);
+          border-radius: 8px;
+          background: white;
+          color: var(--neutral-800);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .page-btn:disabled,
+        .page-number:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .page-number.active {
+          background: var(--role-accent);
+          color: var(--neutral-900);
+          border-color: var(--neutral-400);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .page-btn:not(:disabled):hover,
+        .page-number:not(.active):not(:disabled):hover {
+          background: var(--neutral-50);
         }
 
         /* Status Tabs */

@@ -12,10 +12,19 @@ type FilterType =
   | "vencidos"
   | "porVencer";
 
+const PAGE_SIZE = 10;
+
 export default function MisTareasClient() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [pageMeta, setPageMeta] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    size: PAGE_SIZE,
+    number: 0,
+  });
   const { toasts, removeToast, success, error } = useToast();
 
   const [counts, setCounts] = useState({
@@ -36,6 +45,7 @@ export default function MisTareasClient() {
 
   useEffect(() => {
     loadPeriodos();
+    setPage(0);
   }, [activeFilter]);
 
   const loadPeriodos = async () => {
@@ -50,6 +60,12 @@ export default function MisTareasClient() {
       }
 
       const all = response.content;
+      setPageMeta({
+        totalPages: response.totalPages ?? 0,
+        totalElements: response.totalElements ?? all.length,
+        size: response.size ?? PAGE_SIZE,
+        number: response.number ?? 0,
+      });
 
       const newCounts = {
         todos: all.length,
@@ -71,36 +87,7 @@ export default function MisTareasClient() {
 
       setCounts(newCounts);
 
-      let filtered = all;
-      switch (activeFilter) {
-        case "pendientes":
-          filtered = all.filter((p) => esEstadoPendiente(p.estado));
-          break;
-        case "enviados":
-          filtered = all.filter((p) => esEstadoEnviado(p.estado));
-          break;
-        case "vencidos":
-          filtered = all.filter((p) => {
-            if (!p.fechaVencimientoCalculada) return false;
-            return (
-              esFechaVencida(p.fechaVencimientoCalculada) &&
-              !esEstadoEnviado(p.estado)
-            );
-          });
-          break;
-        case "porVencer":
-          filtered = all.filter((p) => {
-            if (!p.fechaVencimientoCalculada) return false;
-            const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
-            return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
-          });
-          break;
-        case "todos":
-        default:
-          break;
-      }
-
-      setPeriodos(filtered);
+      setPeriodos(all);
     } catch (err: any) {
       console.error("❌ [MisTareas] Error cargando periodos:", err);
       error(
@@ -155,8 +142,37 @@ export default function MisTareasClient() {
     { id: "enviados" as FilterType, label: "Enviados", count: counts.enviados },
   ];
 
-  const periodosOrdenados = useMemo(() => {
-    return [...periodos].sort((a, b) => {
+  const periodosFiltrados = useMemo(() => {
+    let filtered = periodos;
+    switch (activeFilter) {
+      case "pendientes":
+        filtered = periodos.filter((p) => esEstadoPendiente(p.estado));
+        break;
+      case "enviados":
+        filtered = periodos.filter((p) => esEstadoEnviado(p.estado));
+        break;
+      case "vencidos":
+        filtered = periodos.filter((p) => {
+          if (!p.fechaVencimientoCalculada) return false;
+          return (
+            esFechaVencida(p.fechaVencimientoCalculada) &&
+            !esEstadoEnviado(p.estado)
+          );
+        });
+        break;
+      case "porVencer":
+        filtered = periodos.filter((p) => {
+          if (!p.fechaVencimientoCalculada) return false;
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
+        });
+        break;
+      case "todos":
+      default:
+        break;
+    }
+
+    return [...filtered].sort((a, b) => {
       const fa = a.fechaVencimientoCalculada
         ? new Date(a.fechaVencimientoCalculada).getTime()
         : 0;
@@ -165,7 +181,27 @@ export default function MisTareasClient() {
         : 0;
       return fa - fb;
     });
-  }, [periodos]);
+  }, [periodos, activeFilter]);
+
+  const totalPagesUi = useMemo(() => {
+    return Math.max(0, Math.ceil(periodosFiltrados.length / PAGE_SIZE));
+  }, [periodosFiltrados.length]);
+
+  const currentPage = Math.min(page, Math.max(0, totalPagesUi - 1));
+
+  const periodosPagina = useMemo(() => {
+    const start = currentPage * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return periodosFiltrados.slice(start, end);
+  }, [periodosFiltrados, currentPage]);
+
+  const handlePageChange = (nextPage: number) => {
+    const bounded = Math.max(
+      0,
+      Math.min(nextPage, Math.max(0, totalPagesUi - 1))
+    );
+    setPage(bounded);
+  };
 
   return (
     <div className="mis-tareas-page">
@@ -197,7 +233,7 @@ export default function MisTareasClient() {
         <div className="loader-wrapper">
           <div className="loader" />
         </div>
-      ) : periodosOrdenados.length === 0 ? (
+      ) : periodosFiltrados.length === 0 ? (
         <div className="empty-state">
           <svg
             style={{ margin: "0 auto 1rem", color: "var(--neutral-400)" }}
@@ -230,7 +266,7 @@ export default function MisTareasClient() {
         </div>
       ) : (
         <div className="tareas-list">
-          {periodosOrdenados.map((periodo) => (
+          {periodosPagina.map((periodo) => (
             <TarjetaPeriodo
               key={periodo.periodoId}
               periodo={periodo}
@@ -238,6 +274,36 @@ export default function MisTareasClient() {
               mostrarResponsables={false}
             />
           ))}
+        </div>
+      )}
+
+      {!loading && periodosFiltrados.length > 0 && totalPagesUi > 1 && (
+        <div className="pagination">
+          <button
+            className="page-btn"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 0}
+            aria-label="Página anterior"
+          >
+            «
+          </button>
+          {Array.from({ length: totalPagesUi }, (_, idx) => (
+            <button
+              key={idx}
+              className={`page-number ${idx === currentPage ? "active" : ""}`}
+              onClick={() => handlePageChange(idx)}
+            >
+              {idx + 1}
+            </button>
+          ))}
+          <button
+            className="page-btn"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPagesUi - 1}
+            aria-label="Página siguiente"
+          >
+            »
+          </button>
         </div>
       )}
 
@@ -355,6 +421,47 @@ export default function MisTareasClient() {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+        }
+
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.35rem;
+          margin-top: 1.5rem;
+          flex-wrap: wrap;
+        }
+
+        .page-btn,
+        .page-number {
+          min-width: 36px;
+          height: 36px;
+          padding: 0 0.75rem;
+          border: 1px solid var(--neutral-300);
+          border-radius: 8px;
+          background: white;
+          color: var(--neutral-800);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .page-btn:disabled,
+        .page-number:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .page-number.active {
+          background: var(--role-accent);
+          color: var(--neutral-900);
+          border-color: var(--neutral-400);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .page-btn:not(:disabled):hover,
+        .page-number:not(.active):not(:disabled):hover {
+          background: var(--neutral-50);
         }
       `}</style>
     </div>
