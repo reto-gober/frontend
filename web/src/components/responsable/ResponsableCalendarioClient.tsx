@@ -142,16 +142,26 @@ export default function ResponsableCalendarioClient() {
     if (!calendario) return [];
 
     const hoy = new Date();
+    const limiteNoventaDias = new Date(hoy);
+    limiteNoventaDias.setDate(limiteNoventaDias.getDate() + 90);
     return calendario.eventos
       .filter((evento) => {
         // Para eventos de vencimiento, usar date o fechaVencimiento
         if (evento.tipo === "vencimiento" || evento.tipo === "VENCIMIENTO") {
           const fechaEvento = evento.date || evento.fechaVencimiento;
-          return fechaEvento && new Date(fechaEvento) >= hoy;
+          return (
+            fechaEvento &&
+            new Date(fechaEvento) >= hoy &&
+            new Date(fechaEvento) <= limiteNoventaDias
+          );
         }
         // Para eventos de periodo, usar endDate o fechaVencimiento
         const fechaRef = evento.endDate || evento.fechaVencimiento;
-        return fechaRef && new Date(fechaRef) >= hoy;
+        return (
+          fechaRef &&
+          new Date(fechaRef) >= hoy &&
+          new Date(fechaRef) <= limiteNoventaDias
+        );
       })
       .sort((a, b) => {
         const fechaA = a.date || a.fechaVencimiento || a.endDate || "";
@@ -171,6 +181,16 @@ export default function ResponsableCalendarioClient() {
     fechaVenc.setHours(0, 0, 0, 0);
     const diff = fechaVenc.getTime() - hoy.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const irAMisReportes = (periodoId?: string) => {
+    if (!periodoId) {
+      window.location.href = "/roles/responsable/mis-reportes";
+      return;
+    }
+
+    const params = new URLSearchParams({ resaltarPeriodo: periodoId });
+    window.location.href = `/roles/responsable/mis-reportes?${params.toString()}`;
   };
 
   if (loading) {
@@ -309,6 +329,8 @@ export default function ResponsableCalendarioClient() {
                     <div
                       key={idx}
                       className={`evento-item ${urgente ? "urgent" : warning ? "warning" : ""}`}
+                      onClick={() => irAMisReportes((evento as any).periodoId)}
+                      role="button"
                     >
                       <div className="evento-date">
                         <span className="date-day">{fecha.getDate()}</span>
@@ -539,6 +561,10 @@ export default function ResponsableCalendarioClient() {
                       <div
                         key={idx}
                         className="evento-detail"
+                        onClick={() =>
+                          irAMisReportes((evento as any).periodoId)
+                        }
+                        role="button"
                         style={{ borderLeftColor: evento.color }}
                       >
                         <div

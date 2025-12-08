@@ -174,6 +174,16 @@ export default function CalendarioClient() {
     ).length,
   };
 
+  const irAMisReportes = (periodoId?: string) => {
+    if (!periodoId) {
+      window.location.href = "/roles/responsable/mis-reportes";
+      return;
+    }
+
+    const params = new URLSearchParams({ resaltarPeriodo: periodoId });
+    window.location.href = `/roles/responsable/mis-reportes?${params.toString()}`;
+  };
+
   if (loading) {
     return (
       <div
@@ -344,6 +354,8 @@ export default function CalendarioClient() {
                 <div
                   key={evento.id}
                   className={`evento-card ${evento.tipo} ${esProximo ? "proximo" : ""}`}
+                  onClick={() => irAMisReportes(evento.periodoId)}
+                  role="button"
                   style={{ borderLeftColor: getColorEvento(evento.tipo) }}
                 >
                   <div className="evento-date">
@@ -369,10 +381,7 @@ export default function CalendarioClient() {
                       </span>
                       <button
                         className="evento-action-btn"
-                        onClick={() =>
-                          (window.location.href =
-                            "/roles/responsable/mis-reportes")
-                        }
+                        onClick={() => irAMisReportes(evento.periodoId)}
                       >
                         Ver detalles
                       </button>
