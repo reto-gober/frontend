@@ -404,32 +404,6 @@ export function TarjetaPeriodo({
         </div>
       )}
 
-      {/* Archivos Adjuntos */}
-      {archivos && archivos.length > 0 && (
-        <div style={{
-          marginBottom: '1rem',
-          paddingTop: '1rem',
-          borderTop: '1px solid var(--color-border)'
-        }}>
-          <div style={{
-            fontSize: '0.75rem',
-            color: 'var(--color-text-light)',
-            fontWeight: 500,
-            marginBottom: '0.5rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
-            Archivos Adjuntos ({archivos.length})
-          </div>
-          <FilesList 
-            periodoId={periodo.periodoId}
-            archivos={archivos}
-            onViewFile={setArchivoSeleccionado}
-            compact={true}
-          />
-        </div>
-      )}
-
       {/* Acciones */}
       {onAccion && (
         <div
@@ -529,35 +503,17 @@ export function TarjetaPeriodo({
               Rechazar
             </button>
           )}
-          <button
-            className="btn btn-secondary btn-with-icon"
-            onClick={() => onAccion("ver", periodo.periodoId)}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Ver Detalle
-          </button>
         </div>
       )}
-    </div>
 
-    {/* Modal de visualización */}
-    {archivoSeleccionado && (
-      <FileViewer
-        archivo={archivoSeleccionado}
-        periodoId={periodo.periodoId}
-        onClose={() => setArchivoSeleccionado(null)}
-      />
-    )}
-    </>
+      {/* Modal de visualización */}
+      {archivoSeleccionado && (
+        <FileViewer
+          archivo={archivoSeleccionado}
+          periodoId={periodo.periodoId}
+          onClose={() => setArchivoSeleccionado(null)}
+        />
+      )}
+    </div>
   );
-}
+}  
