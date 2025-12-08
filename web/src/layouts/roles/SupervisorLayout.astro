@@ -2,6 +2,7 @@
 import BaseLayout from '../BaseLayout.astro';
 import SidebarSupervisor from '../../components/sidebar/SidebarSupervisor';
 import NotificationsBell from '../../components/common/NotificationsBell';
+import AccessibilityPanel from '../../components/common/AccessibilityPanel';
 
 export interface Props {
   title: string;
@@ -54,6 +55,7 @@ const { title } = Astro.props;
           <h1 class="page-title">{title}</h1>
         </div>
         <div class="topbar-right">
+          <AccessibilityPanel client:load />
           <div class="pill-badge pill-supervisor" title="Vista unificada">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>

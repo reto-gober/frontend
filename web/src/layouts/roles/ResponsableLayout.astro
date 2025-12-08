@@ -2,6 +2,7 @@
 import BaseLayout from '../BaseLayout.astro';
 import SidebarResponsable from '../../components/sidebar/SidebarResponsable';
 import NotificationsBell from '../../components/common/NotificationsBell';
+import AccessibilityPanel from '../../components/common/AccessibilityPanel';
 
 export interface Props {
   title: string;
@@ -54,6 +55,7 @@ const { title } = Astro.props;
           <h1 class="page-title">{title}</h1>
         </div>
         <div class="topbar-right">
+          <AccessibilityPanel client:load />
           <NotificationsBell client:load role="responsable" />
           <div class="user-section">
             <span class="user-name-display" id="user-name-display">Responsable Demo</span>
