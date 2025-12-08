@@ -286,6 +286,39 @@ export default function SupervisorDashboardClient() {
         </div>
       </header>
 
+      {/* Acceso rápido para actuar como responsable asignado */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          padding: '1rem 1.25rem',
+          background: 'linear-gradient(90deg, #f0fdf4, #ecfdf3)',
+          border: '1px solid var(--success-green-200)',
+          borderRadius: '12px',
+          boxShadow: '0 6px 18px rgba(16, 185, 129, 0.12)',
+          flexWrap: 'wrap'
+        }}
+      >
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontWeight: 700, color: 'var(--neutral-900)', marginBottom: '0.25rem' }}>
+            Carga como responsable asignado
+          </div>
+          <div style={{ color: 'var(--neutral-600)', fontSize: '0.9rem' }}>
+            Si tienes un reporte asignado, puedes subir el reporte o la evidencia directamente desde aquí.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button className="btn-primary" onClick={() => { /* implementar flujo */ }}>
+            Subir reporte asignado
+          </button>
+          <button className="btn-secondary" onClick={() => { /* implementar flujo */ }}>
+            Subir evidencia
+          </button>
+        </div>
+      </div>
+
       {/* KPIs Principales */}
       <section className="kpis-grid">
         <KpiCard

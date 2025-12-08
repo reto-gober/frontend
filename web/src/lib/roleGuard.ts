@@ -4,7 +4,7 @@ export type Role = 'admin' | 'supervisor' | 'responsable' | 'auditor';
 
 // Jerarquía de acceso: cada rol puede acceder a sus vistas y a las inferiores
 const ROLE_HIERARCHY: Record<Role, Role[]> = {
-  admin: ['admin', 'supervisor', 'responsable'], // Admin NO puede ver auditor
+  admin: ['admin', 'supervisor', 'responsable', 'auditor'],
   supervisor: ['supervisor', 'responsable'],
   responsable: ['responsable'],
   auditor: ['auditor'], // Auditor solo ve su vista
@@ -144,36 +144,8 @@ export function routeGuard(
     };
   }
   
-  // Obtener la vista seleccionada por el usuario (si existe)
-  let selectedView: Role | null = null;
-  if (typeof window !== 'undefined') {
-    try {
-      const saved = localStorage.getItem('selectedView');
-      if (saved) {
-        selectedView = saved as Role;
-      }
-    } catch (e) {
-      console.debug('[RoleGuard] No hay vista seleccionada');
-    }
-  }
-  
-  // Si hay una vista seleccionada, verificar que el usuario pueda acceder a ella
-  if (selectedView) {
-    const canAccessSelected = canAccessRole(userRole, selectedView);
-    if (!canAccessSelected) {
-      // Usuario no puede acceder a la vista seleccionada → limpiar y usar rol real
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('selectedView');
-      }
-      selectedView = null;
-    }
-  }
-  
-  // Determinar qué rol usar para la verificación
-  const roleToCheck = selectedView || userRole;
-  
-  // Verificar si el rol actual (o vista seleccionada) puede acceder a la ruta
-  const hasAccess = canAccessRole(roleToCheck, requiredRole);
+  // Verificar si el rol actual puede acceder a la ruta
+  const hasAccess = canAccessRole(userRole, requiredRole);
   
   if (!hasAccess) {
     return {

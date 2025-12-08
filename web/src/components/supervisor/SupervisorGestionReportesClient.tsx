@@ -30,6 +30,12 @@ export default function SupervisorGestionReportesClient() {
     completado: 0,
     vencido: 0
   });
+  const [modalEnviar, setModalEnviar] = useState<{
+    isOpen: boolean;
+    periodoId: string;
+    reporteNombre: string;
+    esCorreccion: boolean;
+  }>({ isOpen: false, periodoId: '', reporteNombre: '', esCorreccion: false });
 
   useEffect(() => {
     cargarDatosIniciales();

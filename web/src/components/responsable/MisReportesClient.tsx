@@ -4,6 +4,12 @@ import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
 
+type ModoVista = "responsable" | "supervisor" | "admin";
+
+interface MisReportesClientProps {
+  modo?: ModoVista;
+}
+
 type FilterType =
   | "todos"
   | "pendientes"
@@ -13,7 +19,7 @@ type FilterType =
   | "vencidos"
   | "porVencer";
 
-export default function MisReportesClient() {
+export default function MisReportesClient({ modo = "responsable" }: MisReportesClientProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,16 +54,31 @@ export default function MisReportesClient() {
 
   useEffect(() => {
     loadPeriodos();
-  }, [activeFilter, page]);
+  }, [activeFilter, page, modo]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [modo]);
+
+  const fetchAllPeriodos = async (): Promise<ReportePeriodo[]> => {
+    if (modo === "responsable") {
+      const response = await flujoReportesService.misPeriodos(0, 1000);
+      return response.content;
+    }
+
+    if (modo === "admin") {
+      const response = await flujoReportesService.supervisionConFiltros(0, 1000);
+      return response.content;
+    }
+
+    const response = await flujoReportesService.supervisionSupervisor(0, 1000);
+    return response.content;
+  };
 
   const loadPeriodos = async () => {
     try {
       setLoading(true);
-      let response;
-
-      // Cargar todos los periodos primero para obtener contadores
-      const allResponse = await flujoReportesService.misPeriodos(0, 1000);
-      const allPeriodos = allResponse.content;
+      const allPeriodos = await fetchAllPeriodos();
 
       // Calcular contadores
       const now = new Date();
@@ -224,6 +245,18 @@ export default function MisReportesClient() {
     { id: "enviados" as FilterType, label: "Enviados", count: counts.enviados },
   ];
 
+  const titulos: Record<ModoVista, string> = {
+    responsable: "Mis Reportes",
+    supervisor: "Reportes Supervisados",
+    admin: "Reportes del Sistema",
+  };
+
+  const descripciones: Record<ModoVista, string> = {
+    responsable: "Reportes asignados a tu cargo",
+    supervisor: "Sube o gestiona los reportes que supervisas y adjunta evidencias",
+    admin: "Revisa y carga reportes de cualquier responsable y sus evidencias",
+  };
+
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -242,8 +275,8 @@ export default function MisReportesClient() {
         {/* Header */}
         <div className="page-header">
           <div className="header-info">
-            <h1 className="page-title">Mis Reportes</h1>
-            <p className="page-description">Reportes asignados a tu cargo</p>
+            <h1 className="page-title">{titulos[modo]}</h1>
+            <p className="page-description">{descripciones[modo]}</p>
           </div>
         </div>
 
@@ -312,7 +345,7 @@ export default function MisReportesClient() {
                 marginBottom: "0.5rem",
               }}
             >
-              {activeFilter === "todos" && "No tienes reportes asignados"}
+              {activeFilter === "todos" && (modo === "responsable" ? "No tienes reportes asignados" : "No hay reportes disponibles")}
               {activeFilter === "pendientes" && "No hay reportes pendientes"}
               {activeFilter === "enviados" && "No hay reportes enviados"}
               {activeFilter === "vencidos" && "No hay reportes vencidos"}
@@ -320,7 +353,9 @@ export default function MisReportesClient() {
             </h3>
             <p style={{ fontSize: "0.875rem", color: "var(--neutral-500)" }}>
               {activeFilter === "todos" &&
-                "Cuando se te asignen reportes, aparecerán aquí"}
+                (modo === "responsable"
+                  ? "Cuando se te asignen reportes, aparecerán aquí"
+                  : "Crea o asigna reportes para comenzar a gestionarlos")}
               {activeFilter === "pendientes" &&
                 "Todos tus reportes están al día"}
               {activeFilter === "enviados" &&
@@ -339,7 +374,7 @@ export default function MisReportesClient() {
                   key={periodo.periodoId}
                   periodo={periodo}
                   onAccion={handleAccion}
-                  mostrarResponsables={false}
+                  mostrarResponsables={modo !== "responsable"}
                 />
               ))}
             </div>
