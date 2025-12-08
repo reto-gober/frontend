@@ -361,6 +361,70 @@ import AdminReportesClient from '../../../components/admin/AdminReportesClient';
     border-top: 1px solid var(--neutral-200);
   }
 
+  /* Panel lateral intervención */
+  .side-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    justify-content: flex-end;
+    z-index: 1100;
+  }
+
+  .side-panel {
+    width: min(420px, 90vw);
+    background: #fff;
+    height: 100%;
+    box-shadow: -6px 0 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .side-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .side-panel-overline {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+  }
+
+  .side-panel-title {
+    margin: 0.15rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+  }
+
+  .side-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .side-panel-label {
+    font-size: 0.85rem;
+    color: var(--neutral-700);
+    font-weight: 600;
+  }
+
+  .side-panel-select {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid var(--neutral-200);
+    font-size: 0.9rem;
+    color: var(--neutral-800);
+    background: #fff;
+  }
+
   .reporte-form {
     display: flex;
     flex-direction: column;

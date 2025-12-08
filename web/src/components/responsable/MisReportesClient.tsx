@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
-import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
+import {
+  flujoReportesService,
+  reportesService,
+  type ReportePeriodo,
+} from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
 
 type ModoVista = "responsable" | "supervisor" | "admin";
@@ -8,12 +12,25 @@ type ModoVista = "responsable" | "supervisor" | "admin";
 interface MisReportesClientProps {
   modo?: ModoVista;
 }
+
 import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
 import {
   esEstadoPendiente,
   esEstadoEnviado,
   normalizarEstado,
 } from "../../lib/utils/estados";
+
+const titulos: Record<ModoVista, string> = {
+  responsable: "Mis Reportes",
+  supervisor: "Reportes Supervisados",
+  admin: "Reportes del Sistema",
+};
+
+const descripciones: Record<ModoVista, string> = {
+  responsable: "Reportes asignados a tu cargo",
+  supervisor: "Sube o gestiona los reportes que supervisas y adjunta evidencias",
+  admin: "Revisa y carga reportes de cualquier responsable y sus evidencias",
+};
 
 interface ArchivoDTO {
   archivoId: string;
@@ -339,26 +356,41 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
 
   useEffect(() => {
     loadPeriodos();
-  }, [activeFilter, page, modo]);
+  }, []);
 
   useEffect(() => {
-    setPage(0);
-  }, [modo]);
+    if (!pendingEntrega) return;
+    const targetPeriodo = periodos.find(
+      (p) => p.periodoId === pendingEntrega.periodoId
+    );
+    if (!targetPeriodo) return;
 
-  const fetchAllPeriodos = async (): Promise<ReportePeriodo[]> => {
-    if (modo === "responsable") {
-      const response = await flujoReportesService.misPeriodos(0, 1000);
-      return response.content;
+    const params = new URLSearchParams({ periodoId: targetPeriodo.periodoId });
+    const reporteIdToUse = pendingEntrega.reporteId || targetPeriodo.reporteId;
+    if (reporteIdToUse) params.append("reporteId", reporteIdToUse);
+
+    const reporteNombreToUse =
+      pendingEntrega.reporteNombre || (targetPeriodo as any).reporteNombre;
+    if (reporteNombreToUse) params.append("reporteNombre", reporteNombreToUse);
+
+    // Limpiar el query param para no re-disparar
+    const url = new URL(window.location.href);
+    url.searchParams.delete("abrirEntrega");
+    url.searchParams.delete("reporteId");
+    url.searchParams.delete("reporteNombre");
+    window.history.replaceState({}, "", url);
+
+    window.location.href = `/roles/responsable/entrega?${params.toString()}`;
+    setPendingEntrega(null);
+  }, [pendingEntrega, periodos]);
+
+  useEffect(() => {
+    if (!highlightPeriodoId || periodos.length === 0) return;
+    const target = document.getElementById(`periodo-${highlightPeriodoId}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-
-    if (modo === "admin") {
-      const response = await flujoReportesService.supervisionConFiltros(0, 1000);
-      return response.content;
-    }
-
-    const response = await flujoReportesService.supervisionSupervisor(0, 1000);
-    return response.content;
-  };
+  }, [highlightPeriodoId, periodos]);
 
   const loadPeriodos = async () => {
     try {
@@ -369,18 +401,49 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
         activeFilter
       );
 
-      // Cargar todos los periodos primero para obtener contadores
-      const allResponse = await flujoReportesService.misPeriodos(0, 1000);
+      let allPeriodos: ReportePeriodo[] = [];
 
-      console.log("✅ [MisReportes] Respuesta recibida:", allResponse);
+      if (modo === "admin") {
+        // Administrador: trae todos los reportes y agrega sus periodos
+        const reportesResponse = await reportesService.listar(0, 300);
+        const reportes = reportesResponse.content || [];
 
-      if (!allResponse || !allResponse.content) {
-        throw new Error(
-          "La respuesta del servidor no tiene el formato esperado"
+        const periodosPorReporte = await Promise.all(
+          reportes.map(async (reporte) => {
+            try {
+              const periodosPage = await flujoReportesService.periodosPorReporte(
+                reporte.reporteId,
+                0,
+                200
+              );
+              return periodosPage.content || [];
+            } catch (err) {
+              console.warn(
+                "⚠️ [MisReportes] No se pudieron cargar los periodos del reporte",
+                reporte.reporteId,
+                err
+              );
+              return [] as ReportePeriodo[];
+            }
+          })
         );
+
+        allPeriodos = periodosPorReporte.flat();
+      } else {
+        // Responsable/Supervisor: periodos asignados
+        const allResponse = await flujoReportesService.misPeriodos(0, 1000);
+
+        console.log("✅ [MisReportes] Respuesta recibida:", allResponse);
+
+        if (!allResponse || !allResponse.content) {
+          throw new Error(
+            "La respuesta del servidor no tiene el formato esperado"
+          );
+        }
+
+        allPeriodos = allResponse.content;
       }
 
-      const allPeriodos = allResponse.content;
       console.log("📊 [MisReportes] Total de periodos:", allPeriodos.length);
 
       // Si no hay periodos, mostrar estado vacío
@@ -422,13 +485,16 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
 
       setCounts(newCounts);
 
-      // Cargar periodos con paginación
-      const paginatedResponse = await fetchAllPeriodos();
-      setPeriodos(paginatedResponse);
+      // Establecer todos los periodos
+      setPeriodos(allPeriodos);
+
+      // Cargar archivos para los periodos paginados
+      const paginatedPeriodos = allPeriodos.slice(0, PAGE_SIZE);
+      await loadArchivos(paginatedPeriodos);
 
       console.log("✅ [MisReportes] Datos cargados exitosamente");
       console.log("📈 [MisReportes] Contadores:", newCounts);
-      console.log("📋 [MisReportes] Periodos totales:", paginatedResponse.length);
+      console.log("📋 [MisReportes] Periodos totales:", allPeriodos.length);
     } catch (err: any) {
       console.error("❌ [MisReportes] Error cargando periodos:", err);
       console.error(
@@ -583,18 +649,6 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
       Math.min(nextPage, Math.max(0, totalPages - 1))
     );
     setPage(bounded);
-  };
-
-  const titulos: Record<ModoVista, string> = {
-    responsable: "Mis Reportes",
-    supervisor: "Reportes Supervisados",
-    admin: "Reportes del Sistema",
-  };
-
-  const descripciones: Record<ModoVista, string> = {
-    responsable: "Reportes asignados a tu cargo",
-    supervisor: "Sube o gestiona los reportes que supervisas y adjunta evidencias",
-    admin: "Revisa y carga reportes de cualquier responsable y sus evidencias",
   };
 
   return (
