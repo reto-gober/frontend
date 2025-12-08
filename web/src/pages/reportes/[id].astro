@@ -6,7 +6,7 @@ import ReporteForm from '../../components/ReporteForm';
 import EvidenciasList from '../../components/EvidenciasList';
 
 const { id } = Astro.params;
-const reporteId = parseInt(id || '0');
+const reporteId = id || '';
 ---
 
 <MainLayout title="Editar Reporte">

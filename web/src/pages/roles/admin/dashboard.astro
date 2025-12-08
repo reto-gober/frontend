@@ -1,290 +1,99 @@
 ---
 import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
+import AdminDashboardClient from '../../../components/admin/AdminDashboardClient';
 ---
 
-<AdminLayout title="Dashboard Administrativo">
-  <div class="admin-dashboard">
-    <!-- KPIs Globales -->
-    <section class="kpis-section">
-      <h2 class="section-title">Resumen del Sistema</h2>
-      <div class="kpis-grid">
-        <div class="kpi-card">
-          <div class="kpi-icon blue">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <path d="M14 2v6h6"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">248</span>
-            <span class="kpi-label">Reportes Totales</span>
-          </div>
-          <span class="kpi-trend positive">+12% vs mes anterior</span>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon orange">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 22V8l9-5 9 5v14"/>
-              <path d="M9 22V12h6v10"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">15</span>
-            <span class="kpi-label">Entidades Activas</span>
-          </div>
-          <span class="kpi-trend neutral">Sin cambios</span>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon green">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">42</span>
-            <span class="kpi-label">Usuarios Activos</span>
-          </div>
-          <span class="kpi-trend positive">+3 nuevos</span>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon red">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">8</span>
-            <span class="kpi-label">Reportes Vencidos</span>
-          </div>
-          <span class="kpi-trend negative">Requiere atención</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Alertas del Sistema -->
-    <section class="alerts-section">
-      <div class="section-header">
-        <h2 class="section-title">Alertas del Sistema</h2>
-        <a href="/roles/admin/alertas" class="view-all-link">Ver todas</a>
-      </div>
-      <div class="alerts-list">
-        <div class="alert-item critical">
-          <div class="alert-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </div>
-          <div class="alert-content">
-            <span class="alert-title">5 reportes vencidos sin enviar</span>
-            <span class="alert-time">Hace 2 horas</span>
-          </div>
-        </div>
-        <div class="alert-item warning">
-          <div class="alert-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-          </div>
-          <div class="alert-content">
-            <span class="alert-title">12 reportes próximos a vencer (7 días)</span>
-            <span class="alert-time">Actualizado hace 30 min</span>
-          </div>
-        </div>
-        <div class="alert-item info">
-          <div class="alert-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="16" x2="12" y2="12"/>
-              <line x1="12" y1="8" x2="12.01" y2="8"/>
-            </svg>
-          </div>
-          <div class="alert-content">
-            <span class="alert-title">Nueva entidad regulatoria añadida: ANH</span>
-            <span class="alert-time">Ayer a las 14:30</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Grid de dos columnas -->
-    <div class="dashboard-grid">
-      <!-- Últimas Actividades -->
-      <section class="activities-section">
-        <div class="section-header">
-          <h2 class="section-title">Últimas Actividades</h2>
-        </div>
-        <div class="activities-list">
-          <div class="activity-item">
-            <div class="activity-avatar blue">JR</div>
-            <div class="activity-content">
-              <span class="activity-text"><strong>Juan Rodríguez</strong> envió el reporte SUI-001</span>
-              <span class="activity-time">Hace 15 minutos</span>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-avatar green">MC</div>
-            <div class="activity-content">
-              <span class="activity-text"><strong>María Castro</strong> creó nuevo reporte CREG-045</span>
-              <span class="activity-time">Hace 45 minutos</span>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-avatar purple">AL</div>
-            <div class="activity-content">
-              <span class="activity-text"><strong>Admin</strong> agregó usuario nuevo</span>
-              <span class="activity-time">Hace 2 horas</span>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-avatar orange">PM</div>
-            <div class="activity-content">
-              <span class="activity-text"><strong>Pedro Martínez</strong> subió evidencia para ANH-012</span>
-              <span class="activity-time">Hace 3 horas</span>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-avatar red">SR</div>
-            <div class="activity-content">
-              <span class="activity-text"><strong>Sistema</strong> generó alerta de vencimiento</span>
-              <span class="activity-time">Hace 5 horas</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Gráfico de Reportes por Estado -->
-      <section class="chart-section">
-        <div class="section-header">
-          <h2 class="section-title">Reportes por Estado</h2>
-        </div>
-        <div class="chart-placeholder">
-          <div class="bar-chart">
-            <div class="bar-item">
-              <div class="bar-label">Enviados</div>
-              <div class="bar-container">
-                <div class="bar-fill green" style="width: 75%"></div>
-              </div>
-              <span class="bar-value">156</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar-label">En Progreso</div>
-              <div class="bar-container">
-                <div class="bar-fill blue" style="width: 35%"></div>
-              </div>
-              <span class="bar-value">52</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar-label">Pendientes</div>
-              <div class="bar-container">
-                <div class="bar-fill yellow" style="width: 20%"></div>
-              </div>
-              <span class="bar-value">32</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar-label">Vencidos</div>
-              <div class="bar-container">
-                <div class="bar-fill red" style="width: 5%"></div>
-              </div>
-              <span class="bar-value">8</span>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Acciones Rápidas -->
-    <section class="quick-actions">
-      <h2 class="section-title">Acciones Rápidas</h2>
-      <div class="actions-grid">
-        <a href="/roles/admin/usuarios" class="action-card">
-          <div class="action-icon blue">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <line x1="20" y1="8" x2="20" y2="14"/>
-              <line x1="23" y1="11" x2="17" y2="11"/>
-            </svg>
-          </div>
-          <span class="action-label">Nuevo Usuario</span>
-        </a>
-        <a href="/roles/admin/entidades" class="action-card">
-          <div class="action-icon orange">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 22V8l9-5 9 5v14"/>
-              <line x1="12" y1="8" x2="12" y2="14"/>
-              <line x1="9" y1="11" x2="15" y2="11"/>
-            </svg>
-          </div>
-          <span class="action-label">Nueva Entidad</span>
-        </a>
-        <a href="/roles/admin/reportes" class="action-card">
-          <div class="action-icon purple">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <path d="M14 2v6h6"/>
-              <line x1="12" y1="11" x2="12" y2="17"/>
-              <line x1="9" y1="14" x2="15" y2="14"/>
-            </svg>
-          </div>
-          <span class="action-label">Ver Reportes</span>
-        </a>
-        <a href="/roles/admin/configuracion" class="action-card">
-          <div class="action-icon gray">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </div>
-          <span class="action-label">Configuración</span>
-        </a>
-      </div>
-    </section>
-  </div>
+<AdminLayout title="Dashboard de Administración">
+  <AdminDashboardClient client:load />
 </AdminLayout>
 
-<style>
-  .admin-dashboard {
+<style is:global>
+  .dashboard-admin {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
   }
 
-  .section-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--neutral-800);
-    margin-bottom: 1rem;
-  }
-
-  .section-header {
+  /* Header Bar con Filtros */
+  .dashboard-header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
   }
 
-  .view-all-link {
-    font-size: 0.875rem;
-    color: var(--color-primary-600);
-    font-weight: 500;
-  }
-
-  /* KPIs */
-  .kpis-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  .header-left {
+    display: flex;
+    align-items: center;
     gap: 1rem;
+  }
+
+  .period-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .filter-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+  }
+
+  .filter-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--neutral-300);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    transition: border-color 0.2s;
+  }
+
+  .filter-select:hover {
+    border-color: var(--color-primary-400);
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(61, 133, 209, 0.1);
+  }
+
+  .period-text {
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    padding: 0.375rem 0.75rem;
+    background: var(--neutral-100);
+    border-radius: 6px;
+  }
+
+  /* KPIs Row */
+  .kpis-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .kpis-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .kpis-row {
+      grid-template-columns: 1fr;
+    }
   }
 
   .kpi-card {
@@ -293,8 +102,14 @@ import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
     padding: 1.25rem;
     box-shadow: var(--shadow-card);
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .kpi-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
   }
 
   .kpi-icon {
@@ -304,20 +119,22 @@ import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .kpi-icon.blue { background: var(--color-primary-100); color: var(--color-primary-600); }
-  .kpi-icon.orange { background: var(--accent-orange-100); color: var(--accent-orange-600); }
   .kpi-icon.green { background: var(--success-green-100); color: var(--success-green-600); }
-  .kpi-icon.red { background: var(--error-red-100); color: var(--error-red-500); }
+  .kpi-icon.orange { background: var(--accent-orange-100); color: var(--accent-orange-600); }
+  .kpi-icon.purple { background: var(--secondary-purple-100); color: var(--secondary-purple-600); }
 
   .kpi-content {
     display: flex;
     flex-direction: column;
+    gap: 0.25rem;
   }
 
   .kpi-value {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--neutral-900);
     line-height: 1;
@@ -325,70 +142,11 @@ import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
 
   .kpi-label {
     font-size: 0.875rem;
-    color: var(--neutral-500);
-    margin-top: 0.25rem;
-  }
-
-  .kpi-trend {
-    font-size: 0.75rem;
     font-weight: 500;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    align-self: flex-start;
+    color: var(--neutral-700);
   }
 
-  .kpi-trend.positive { background: var(--success-green-100); color: var(--success-green-700); }
-  .kpi-trend.negative { background: var(--error-red-100); color: var(--error-red-700); }
-  .kpi-trend.neutral { background: var(--neutral-100); color: var(--neutral-600); }
-
-  /* Alerts */
-  .alerts-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .alert-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    border-left: 4px solid;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .alert-item.critical { border-left-color: var(--error-red-500); }
-  .alert-item.warning { border-left-color: var(--warning-yellow-500); }
-  .alert-item.info { border-left-color: var(--color-primary-500); }
-
-  .alert-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .alert-item.critical .alert-icon { background: var(--error-red-100); color: var(--error-red-500); }
-  .alert-item.warning .alert-icon { background: var(--warning-yellow-100); color: var(--warning-yellow-700); }
-  .alert-item.info .alert-icon { background: var(--color-primary-100); color: var(--color-primary-600); }
-
-  .alert-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .alert-title {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--neutral-800);
-  }
-
-  .alert-time {
+  .kpi-period {
     font-size: 0.75rem;
     color: var(--neutral-500);
   }
@@ -396,7 +154,7 @@ import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
   /* Dashboard Grid */
   .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
   }
 
@@ -406,148 +164,285 @@ import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
     }
   }
 
-  .activities-section,
-  .chart-section {
+  .dashboard-card {
     background: white;
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--shadow-card);
   }
 
-  .activities-list {
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--neutral-800);
+    margin: 0;
+  }
+
+  .link-view-all {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-primary-600);
+    text-decoration: none;
+  }
+
+  .link-view-all:hover {
+    text-decoration: underline;
+  }
+
+  .card-body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  /* Donut Chart */
+  .donut-chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+  }
+
+  .donut-chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .donut-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .donut-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .legend-label {
+    font-size: 0.875rem;
+    color: var(--neutral-700);
+    flex: 1;
+  }
+
+  .legend-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+  }
+
+  /* Entities Stats */
+  .entities-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .entity-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--neutral-50);
+    border-radius: 10px;
+  }
+
+  .stat-icon-large {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-large.green { background: var(--success-green-100); color: var(--success-green-600); }
+  .stat-icon-large.gray { background: var(--neutral-200); color: var(--neutral-600); }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-value-large {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1;
+  }
+
+  .stat-label-large {
+    font-size: 0.875rem;
+    color: var(--neutral-600);
+  }
+
+  .total-entities {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--neutral-100);
+    border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .total-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .total-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+  }
+
+  /* Activity List */
+  .activity-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 420px;
+    overflow-y: auto;
   }
 
   .activity-item {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+
+  .activity-item:hover {
+    background: var(--neutral-100);
   }
 
   .activity-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     color: white;
     flex-shrink: 0;
   }
 
-  .activity-avatar.blue { background: var(--color-primary-600); }
-  .activity-avatar.green { background: var(--success-green-600); }
-  .activity-avatar.purple { background: var(--secondary-purple-600); }
-  .activity-avatar.orange { background: var(--accent-orange-600); }
-  .activity-avatar.red { background: var(--error-red-500); }
+  .activity-avatar.invitacion { background: var(--color-primary-600); }
+  .activity-avatar.rol { background: var(--secondary-purple-600); }
+  .activity-avatar.estado { background: var(--neutral-500); }
+  .activity-avatar.perfil { background: var(--accent-orange-600); }
+  .activity-avatar.login { background: var(--success-green-600); }
+  .activity-avatar.logout { background: var(--error-red-500); }
 
   .activity-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
   }
 
   .activity-text {
     font-size: 0.875rem;
     color: var(--neutral-700);
+    line-height: 1.5;
+  }
+
+  .activity-text strong {
+    font-weight: 600;
+    color: var(--neutral-900);
   }
 
   .activity-time {
     font-size: 0.75rem;
     color: var(--neutral-500);
+    display: block;
+    margin-top: 0.25rem;
   }
 
-  /* Chart Placeholder */
-  .bar-chart {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .bar-item {
-    display: grid;
-    grid-template-columns: 100px 1fr 50px;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .bar-label {
-    font-size: 0.8125rem;
-    color: var(--neutral-600);
-    font-weight: 500;
-  }
-
-  .bar-container {
-    height: 24px;
-    background: var(--neutral-100);
+  .activity-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0.375rem 0.625rem;
     border-radius: 6px;
-    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    flex-shrink: 0;
   }
 
-  .bar-fill {
-    height: 100%;
-    border-radius: 6px;
-    transition: width 0.5s ease;
+  .activity-badge.invitacion { background: var(--color-primary-100); color: var(--color-primary-700); }
+  .activity-badge.rol { background: var(--secondary-purple-100); color: var(--secondary-purple-700); }
+  .activity-badge.estado { background: var(--neutral-200); color: var(--neutral-700); }
+  .activity-badge.perfil { background: var(--accent-orange-100); color: var(--accent-orange-700); }
+  .activity-badge.login { background: var(--success-green-100); color: var(--success-green-700); }
+  .activity-badge.logout { background: var(--error-red-100); color: var(--error-red-700); }
+
+  /* Loading State */
+  .loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--neutral-200);
+    border-top-color: var(--color-primary-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 
-  .bar-fill.green { background: var(--success-green-500); }
-  .bar-fill.blue { background: var(--color-primary-500); }
-  .bar-fill.yellow { background: var(--warning-yellow-500); }
-  .bar-fill.red { background: var(--error-red-500); }
-
-  .bar-value {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--neutral-800);
-    text-align: right;
-  }
-
-  /* Quick Actions */
-  .actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-  }
-
-  .action-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.5rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: var(--shadow-card);
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-
-  .action-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-  }
-
-  .action-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .action-icon.blue { background: var(--color-primary-100); color: var(--color-primary-600); }
-  .action-icon.orange { background: var(--accent-orange-100); color: var(--accent-orange-600); }
-  .action-icon.purple { background: var(--secondary-purple-100); color: var(--secondary-purple-600); }
-  .action-icon.gray { background: var(--neutral-100); color: var(--neutral-600); }
-
-  .action-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--neutral-700);
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 </style>

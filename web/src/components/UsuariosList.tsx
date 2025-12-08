@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usuariosService, type UsuarioResponse, type UsuarioRequest, type Page } from '../lib/services';
 import { Users, Edit, Trash2, Plus, Shield } from 'lucide-react';
 import { useToast, ToastContainer } from './Toast';
+import notifications from '../lib/notifications';
 
 export default function UsuariosList() {
   const [usuarios, setUsuarios] = useState<UsuarioResponse[]>([]);
@@ -18,7 +19,6 @@ export default function UsuariosList() {
     firstLastname: '',
     secondLastname: '',
     password: '',
-    birthDate: '',
     roles: ['RESPONSABLE'],
   });
 
@@ -64,14 +64,13 @@ export default function UsuariosList() {
   const handleEdit = (usuario: UsuarioResponse) => {
     setFormData({
       documentNumber: usuario.documentNumber,
-      documentType: usuario.documentType,
+      documentType: usuario.documentType || 'CC',
       email: usuario.email,
       firstName: usuario.firstName,
       secondName: usuario.secondName || '',
       firstLastname: usuario.firstLastname,
       secondLastname: usuario.secondLastname || '',
       password: '', // No mostrar password al editar
-      birthDate: usuario.birthDate,
       roles: usuario.roles,
     });
     setEditingDocNumber(usuario.documentNumber);
@@ -79,7 +78,13 @@ export default function UsuariosList() {
   };
 
   const handleDelete = async (documentNumber: string) => {
-    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar usuario?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
     
     try {
       await usuariosService.eliminar(documentNumber);
@@ -106,7 +111,6 @@ export default function UsuariosList() {
       firstLastname: '',
       secondLastname: '',
       password: '',
-      birthDate: '',
       roles: ['RESPONSABLE'],
     });
   };
@@ -221,28 +225,15 @@ export default function UsuariosList() {
               </div>
             </div>
 
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label">Email *</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Fecha de Nacimiento *</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={formData.birthDate}
-                  onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Email *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
             </div>
 
             <div className="form-group">

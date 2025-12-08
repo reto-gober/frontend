@@ -7,12 +7,13 @@ import {
 } from "../lib/services";
 import { Building2, Edit, Trash2, Plus } from "lucide-react";
 import { useToast, ToastContainer } from "./Toast";
+import notifications from '../lib/notifications';
 
 export default function EntidadesList() {
   const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { toasts, removeToast, success, error: showError } = useToast();
   const [formData, setFormData] = useState<EntidadRequest>({
     nit: "",
@@ -76,12 +77,18 @@ export default function EntidadesList() {
       observaciones: entidad.observaciones,
       estado: entidad.estado,
     });
-    setEditingId(entidad.id);
+    setEditingId(entidad.entidadId);
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar esta entidad?")) return;
+  const handleDelete = async (id: string) => {
+    const confirmed = await notifications.confirm(
+      'Esta acción no se puede deshacer',
+      '¿Eliminar entidad?',
+      'Sí, eliminar',
+      'Cancelar'
+    );
+    if (!confirmed) return;
 
     try {
       await entidadesService.eliminar(id);
@@ -244,7 +251,7 @@ export default function EntidadesList() {
       ) : (
         <div className="entidades-grid">
           {entidades.map((entidad) => (
-            <div key={entidad.id} className="entidad-card">
+            <div key={entidad.entidadId} className="entidad-card">
               <div className="entidad-card-header">
                 <div className="entidad-icon">
                   <Building2 size={24} />
@@ -311,7 +318,7 @@ export default function EntidadesList() {
                   Editar
                 </button>
                 <button
-                  onClick={() => handleDelete(entidad.id)}
+                  onClick={() => handleDelete(entidad.entidadId)}
                   className="btn btn-sm btn-danger"
                 >
                   <Trash2 size={14} />

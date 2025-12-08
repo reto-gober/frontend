@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const menuItems = [
   { 
@@ -20,6 +20,16 @@ const menuItems = [
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
         <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    )
+  },
+  { 
+    label: 'Gestión de Reportes', 
+    href: '/roles/supervisor/gestion-reportes',
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
       </svg>
     )
   },
@@ -74,7 +84,29 @@ const menuItems = [
 
 export default function SidebarSupervisor() {
   const [collapsed, setCollapsed] = useState(false);
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const [currentPath, setCurrentPath] = useState('');
+
+  useEffect(() => {
+    // Establecer el path actual solo en el cliente
+    if (typeof window !== 'undefined') {
+      setCurrentPath(window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const container = document.querySelector('.role-container');
+      if (container) {
+        if (collapsed) {
+          container.classList.add('sidebar-collapsed');
+          container.classList.remove('sidebar-expanded');
+        } else {
+          container.classList.add('sidebar-expanded');
+          container.classList.remove('sidebar-collapsed');
+        }
+      }
+    }
+  }, [collapsed]);
 
   return (
     <aside className={`role-sidebar supervisor-sidebar ${collapsed ? 'is-collapsed' : ''}`}>

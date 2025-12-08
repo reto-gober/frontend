@@ -1,80 +1,84 @@
-import { useState } from 'react';
+import { useState, useEffect } from "react";
+import { reportesService, ReporteResponse, Page } from "../../lib/services";
+import { esEstadoEnviado } from "../../lib/utils/estados";
 
 interface EntidadCumplimiento {
-  id: number;
+  id: string;
   nombre: string;
   codigo: string;
   reportesTotales: number;
   reportesEnviados: number;
   reportesPendientes: number;
   porcentaje: number;
-  estado: 'excelente' | 'bueno' | 'riesgo' | 'critico';
+  estado: "excelente" | "bueno" | "riesgo" | "critico";
   ultimoReporte: string;
-  tendencia: 'up' | 'down' | 'stable';
+  tendencia: "up" | "down" | "stable";
 }
 
-const mockEntidades: EntidadCumplimiento[] = [
-  {
-    id: 1,
-    nombre: 'Sistema Único de Información',
-    codigo: 'SUI',
-    reportesTotales: 24,
-    reportesEnviados: 23,
-    reportesPendientes: 1,
-    porcentaje: 96,
-    estado: 'excelente',
-    ultimoReporte: '2025-02-10',
-    tendencia: 'up'
-  },
-  {
-    id: 2,
-    nombre: 'Comisión de Regulación de Energía y Gas',
-    codigo: 'CREG',
-    reportesTotales: 12,
-    reportesEnviados: 11,
-    reportesPendientes: 1,
-    porcentaje: 92,
-    estado: 'excelente',
-    ultimoReporte: '2025-02-08',
-    tendencia: 'stable'
-  },
-  {
-    id: 3,
-    nombre: 'Agencia Nacional de Hidrocarburos',
-    codigo: 'ANH',
-    reportesTotales: 8,
-    reportesEnviados: 6,
-    reportesPendientes: 2,
-    porcentaje: 75,
-    estado: 'riesgo',
-    ultimoReporte: '2025-02-05',
-    tendencia: 'down'
-  },
-  {
-    id: 4,
-    nombre: 'Superintendencia de Servicios Públicos',
-    codigo: 'SSPD',
-    reportesTotales: 6,
-    reportesEnviados: 6,
-    reportesPendientes: 0,
-    porcentaje: 100,
-    estado: 'excelente',
-    ultimoReporte: '2025-02-11',
-    tendencia: 'up'
-  },
-  {
-    id: 5,
-    nombre: 'Ministerio de Minas y Energía',
-    codigo: 'MinEnergía',
-    reportesTotales: 4,
-    reportesEnviados: 3,
-    reportesPendientes: 1,
-    porcentaje: 75,
-    estado: 'riesgo',
-    ultimoReporte: '2025-01-28',
-    tendencia: 'down'
-  }
-];
+// Función para calcular el estado de cumplimiento
+const calcularEstado = (porcentaje: number): EntidadCumplimiento["estado"] => {
+  if (porcentaje >= 90) return "excelente";
+  if (porcentaje >= 75) return "bueno";
+  if (porcentaje >= 50) return "riesgo";
+  return "critico";
+};
+
+// Función para agrupar reportes por entidad
+const agruparPorEntidad = (
+  reportes: ReporteResponse[]
+): EntidadCumplimiento[] => {
+  const entidadesMap = new Map<string, EntidadCumplimiento>();
+
+  reportes.forEach((reporte) => {
+    const key = reporte.entidadId;
+
+    if (!entidadesMap.has(key)) {
+      entidadesMap.set(key, {
+        id: reporte.entidadId,
+        nombre: reporte.entidadNombre,
+        codigo: reporte.entidadNombre
+          .split(" ")
+          .map((word) => word[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 6),
+        reportesTotales: 0,
+        reportesEnviados: 0,
+        reportesPendientes: 0,
+        porcentaje: 0,
+        estado: "critico",
+        ultimoReporte: reporte.updatedAt || reporte.createdAt,
+        tendencia: "stable",
+      });
+    }
+
+    const entidad = entidadesMap.get(key)!;
+    entidad.reportesTotales++;
+
+    if (esEstadoEnviado(reporte.estado)) {
+      entidad.reportesEnviados++;
+    } else {
+      entidad.reportesPendientes++;
+    }
+
+    // Actualizar último reporte si es más reciente
+    const fechaReporte = new Date(reporte.updatedAt || reporte.createdAt);
+    const fechaUltimo = new Date(entidad.ultimoReporte);
+    if (fechaReporte > fechaUltimo) {
+      entidad.ultimoReporte = reporte.updatedAt || reporte.createdAt;
+    }
+  });
+
+  // Calcular porcentajes y estados
+  return Array.from(entidadesMap.values()).map((entidad) => {
+    entidad.porcentaje =
+      entidad.reportesTotales > 0
+        ? Math.round((entidad.reportesEnviados / entidad.reportesTotales) * 100)
+        : 0;
+    entidad.estado = calcularEstado(entidad.porcentaje);
+    return entidad;
+  });
+};
 
 interface CumplimientoTableProps {
   showSearch?: boolean;
@@ -87,62 +91,114 @@ export default function CumplimientoTable({
   showSearch = true,
   showExport = true,
   onRowClick,
-  readonly = false
+  readonly = false,
 }: CumplimientoTableProps) {
-  const [busqueda, setBusqueda] = useState('');
-  const [ordenarPor, setOrdenarPor] = useState<keyof EntidadCumplimiento>('porcentaje');
+  const [busqueda, setBusqueda] = useState("");
+  const [ordenarPor, setOrdenarPor] =
+    useState<keyof EntidadCumplimiento>("porcentaje");
   const [ordenAsc, setOrdenAsc] = useState(false);
+  const [entidades, setEntidades] = useState<EntidadCumplimiento[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const entidadesFiltradas = mockEntidades
-    .filter(e => 
-      e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      e.codigo.toLowerCase().includes(busqueda.toLowerCase())
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      // Cargar todos los reportes y agrupar por entidad
+      const response = await reportesService.listar(0, 1000);
+      const entidadesAgrupadas = agruparPorEntidad(response.content);
+      setEntidades(entidadesAgrupadas);
+    } catch (error) {
+      console.error("Error al cargar datos de cumplimiento:", error);
+      setEntidades([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const entidadesFiltradas = entidades
+    .filter(
+      (e) =>
+        e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        e.codigo.toLowerCase().includes(busqueda.toLowerCase())
     )
     .sort((a, b) => {
       const valorA = a[ordenarPor];
       const valorB = b[ordenarPor];
-      if (typeof valorA === 'number' && typeof valorB === 'number') {
+      if (typeof valorA === "number" && typeof valorB === "number") {
         return ordenAsc ? valorA - valorB : valorB - valorA;
       }
       return 0;
     });
 
-  const getEstadoClase = (estado: EntidadCumplimiento['estado']) => {
+  const getEstadoClase = (estado: EntidadCumplimiento["estado"]) => {
     switch (estado) {
-      case 'excelente': return 'status-excellent';
-      case 'bueno': return 'status-good';
-      case 'riesgo': return 'status-risk';
-      case 'critico': return 'status-critical';
+      case "excelente":
+        return "status-excellent";
+      case "bueno":
+        return "status-good";
+      case "riesgo":
+        return "status-risk";
+      case "critico":
+        return "status-critical";
     }
   };
 
-  const getEstadoTexto = (estado: EntidadCumplimiento['estado']) => {
+  const getEstadoTexto = (estado: EntidadCumplimiento["estado"]) => {
     switch (estado) {
-      case 'excelente': return 'Excelente';
-      case 'bueno': return 'Bueno';
-      case 'riesgo': return 'En Riesgo';
-      case 'critico': return 'Crítico';
+      case "excelente":
+        return "Excelente";
+      case "bueno":
+        return "Bueno";
+      case "riesgo":
+        return "En Riesgo";
+      case "critico":
+        return "Crítico";
     }
   };
 
-  const getTendenciaIcono = (tendencia: EntidadCumplimiento['tendencia']) => {
+  const getTendenciaIcono = (tendencia: EntidadCumplimiento["tendencia"]) => {
     switch (tendencia) {
-      case 'up':
+      case "up":
         return (
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
           </svg>
         );
-      case 'down':
+      case "down":
         return (
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
           </svg>
         );
-      case 'stable':
+      case "stable":
         return (
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="5" y1="12" x2="19" y2="12"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         );
     }
@@ -163,9 +219,16 @@ export default function CumplimientoTable({
         <div className="table-toolbar">
           {showSearch && (
             <div className="search-box">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.3-4.3"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
               </svg>
               <input
                 type="text"
@@ -177,10 +240,17 @@ export default function CumplimientoTable({
           )}
           {showExport && (
             <button className="btn-export">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7,10 12,15 17,10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7,10 12,15 17,10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               Exportar
             </button>
@@ -193,19 +263,16 @@ export default function CumplimientoTable({
           <thead>
             <tr>
               <th>Entidad</th>
-              <th 
+              <th
                 className="sortable center"
-                onClick={() => handleSort('reportesTotales')}
+                onClick={() => handleSort("reportesTotales")}
               >
                 Total
                 <span className="sort-icon">↕</span>
               </th>
               <th className="center">Enviados</th>
               <th className="center">Pendientes</th>
-              <th 
-                className="sortable"
-                onClick={() => handleSort('porcentaje')}
-              >
+              <th className="sortable" onClick={() => handleSort("porcentaje")}>
                 Cumplimiento
                 <span className="sort-icon">↕</span>
               </th>
@@ -215,11 +282,11 @@ export default function CumplimientoTable({
             </tr>
           </thead>
           <tbody>
-            {entidadesFiltradas.map(entidad => (
-              <tr 
+            {entidadesFiltradas.map((entidad) => (
+              <tr
                 key={entidad.id}
                 onClick={() => onRowClick?.(entidad)}
-                className={onRowClick ? 'clickable' : ''}
+                className={onRowClick ? "clickable" : ""}
               >
                 <td>
                   <div className="entidad-info">
@@ -231,22 +298,28 @@ export default function CumplimientoTable({
                   <span className="count-badge">{entidad.reportesTotales}</span>
                 </td>
                 <td className="center">
-                  <span className="count-badge success">{entidad.reportesEnviados}</span>
+                  <span className="count-badge success">
+                    {entidad.reportesEnviados}
+                  </span>
                 </td>
                 <td className="center">
-                  <span className={`count-badge ${entidad.reportesPendientes > 0 ? 'warning' : ''}`}>
+                  <span
+                    className={`count-badge ${entidad.reportesPendientes > 0 ? "warning" : ""}`}
+                  >
                     {entidad.reportesPendientes}
                   </span>
                 </td>
                 <td>
                   <div className="cumplimiento-cell">
                     <div className="progress-bar">
-                      <div 
-                        className={`progress-fill ${entidad.porcentaje >= 90 ? 'excellent' : entidad.porcentaje >= 80 ? 'good' : entidad.porcentaje >= 70 ? 'risk' : 'critical'}`}
+                      <div
+                        className={`progress-fill ${entidad.porcentaje >= 90 ? "excellent" : entidad.porcentaje >= 80 ? "good" : entidad.porcentaje >= 70 ? "risk" : "critical"}`}
                         style={{ width: `${entidad.porcentaje}%` }}
                       />
                     </div>
-                    <span className="porcentaje-valor">{entidad.porcentaje}%</span>
+                    <span className="porcentaje-valor">
+                      {entidad.porcentaje}%
+                    </span>
                   </div>
                 </td>
                 <td className="center">
@@ -255,7 +328,9 @@ export default function CumplimientoTable({
                   </span>
                 </td>
                 <td className="center">
-                  <span className={`estado-badge ${getEstadoClase(entidad.estado)}`}>
+                  <span
+                    className={`estado-badge ${getEstadoClase(entidad.estado)}`}
+                  >
                     {getEstadoTexto(entidad.estado)}
                   </span>
                 </td>
@@ -270,9 +345,16 @@ export default function CumplimientoTable({
 
       {readonly && (
         <div className="readonly-notice">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
           <span>Vista de solo lectura</span>
         </div>

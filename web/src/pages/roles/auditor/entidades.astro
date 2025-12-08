@@ -1,460 +1,13 @@
 ---
 import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
+import AuditorEntidadesClient from '../../../components/auditor/AuditorEntidadesClient';
 ---
 
 <AuditorLayout title="Entidades Regulatorias">
-  <div class="entidades-page">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-info">
-        <h1 class="page-title">Entidades Regulatorias</h1>
-        <p class="page-description">Información consolidada de entidades y sus requisitos regulatorios</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn-export">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7,10 12,15 17,10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exportar Informe
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="summary-cards">
-      <div class="summary-card">
-        <div class="summary-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 21h18"/>
-            <path d="M5 21V7l8-4v18"/>
-            <path d="M19 21V11l-6-4"/>
-            <path d="M9 9v.01"/>
-            <path d="M9 12v.01"/>
-            <path d="M9 15v.01"/>
-            <path d="M9 18v.01"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <span class="summary-value">5</span>
-          <span class="summary-label">Entidades Activas</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon blue">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <span class="summary-value">156</span>
-          <span class="summary-label">Reportes Totales</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon green">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <span class="summary-value">91%</span>
-          <span class="summary-label">Cumplimiento Global</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon yellow">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12,6 12,12 16,14"/>
-          </svg>
-        </div>
-        <div class="summary-content">
-          <span class="summary-value">14</span>
-          <span class="summary-label">Reportes Pendientes</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Entities Grid -->
-    <div class="entities-grid">
-      <!-- SUI -->
-      <div class="entity-card">
-        <div class="entity-header sui">
-          <div class="entity-logo">
-            <span class="logo-text">SUI</span>
-          </div>
-          <div class="entity-title">
-            <h3>Sistema Único de Información</h3>
-            <span class="entity-type">Superintendencia de Servicios Públicos</span>
-          </div>
-          <div class="entity-status ok">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            OK
-          </div>
-        </div>
-        <div class="entity-body">
-          <div class="entity-stats">
-            <div class="stat-item">
-              <span class="stat-value">45</span>
-              <span class="stat-label">Reportes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">41</span>
-              <span class="stat-label">Enviados</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value warning">3</span>
-              <span class="stat-label">Pendientes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value danger">1</span>
-              <span class="stat-label">Atrasado</span>
-            </div>
-          </div>
-          <div class="compliance-bar">
-            <div class="bar-header">
-              <span class="bar-label">Cumplimiento</span>
-              <span class="bar-value">92%</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill sui" style="width: 92%"></div>
-            </div>
-          </div>
-          <div class="entity-details">
-            <div class="detail-row">
-              <span class="detail-label">Frecuencia principal:</span>
-              <span class="detail-value">Mensual</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Próximo vencimiento:</span>
-              <span class="detail-value urgent">12 Feb 2025 (Hoy)</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Responsables asignados:</span>
-              <span class="detail-value">3 usuarios</span>
-            </div>
-          </div>
-        </div>
-        <div class="entity-footer">
-          <a href="/roles/auditor/reportes?entity=sui" class="btn-link">
-            Ver Reportes
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-
-      <!-- CREG -->
-      <div class="entity-card">
-        <div class="entity-header creg">
-          <div class="entity-logo">
-            <span class="logo-text">CREG</span>
-          </div>
-          <div class="entity-title">
-            <h3>Comisión de Regulación</h3>
-            <span class="entity-type">Energía y Gas</span>
-          </div>
-          <div class="entity-status ok">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            OK
-          </div>
-        </div>
-        <div class="entity-body">
-          <div class="entity-stats">
-            <div class="stat-item">
-              <span class="stat-value">38</span>
-              <span class="stat-label">Reportes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">33</span>
-              <span class="stat-label">Enviados</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value warning">4</span>
-              <span class="stat-label">Pendientes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value danger">1</span>
-              <span class="stat-label">Atrasado</span>
-            </div>
-          </div>
-          <div class="compliance-bar">
-            <div class="bar-header">
-              <span class="bar-label">Cumplimiento</span>
-              <span class="bar-value">88%</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill creg" style="width: 88%"></div>
-            </div>
-          </div>
-          <div class="entity-details">
-            <div class="detail-row">
-              <span class="detail-label">Frecuencia principal:</span>
-              <span class="detail-value">Mensual / Trimestral</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Próximo vencimiento:</span>
-              <span class="detail-value warning">13 Feb 2025 (Mañana)</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Responsables asignados:</span>
-              <span class="detail-value">4 usuarios</span>
-            </div>
-          </div>
-        </div>
-        <div class="entity-footer">
-          <a href="/roles/auditor/reportes?entity=creg" class="btn-link">
-            Ver Reportes
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-
-      <!-- ANH - Crítico -->
-      <div class="entity-card critical">
-        <div class="entity-header anh">
-          <div class="entity-logo">
-            <span class="logo-text">ANH</span>
-          </div>
-          <div class="entity-title">
-            <h3>Agencia Nacional</h3>
-            <span class="entity-type">Hidrocarburos</span>
-          </div>
-          <div class="entity-status critical">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            Crítico
-          </div>
-        </div>
-        <div class="entity-body">
-          <div class="alert-banner">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <span>Cumplimiento por debajo del umbral mínimo (85%)</span>
-          </div>
-          <div class="entity-stats">
-            <div class="stat-item">
-              <span class="stat-value">28</span>
-              <span class="stat-label">Reportes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">18</span>
-              <span class="stat-label">Enviados</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value warning">7</span>
-              <span class="stat-label">Pendientes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value danger">3</span>
-              <span class="stat-label">Atrasados</span>
-            </div>
-          </div>
-          <div class="compliance-bar">
-            <div class="bar-header">
-              <span class="bar-label">Cumplimiento</span>
-              <span class="bar-value danger">65%</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill anh warning" style="width: 65%"></div>
-            </div>
-          </div>
-          <div class="entity-details">
-            <div class="detail-row">
-              <span class="detail-label">Frecuencia principal:</span>
-              <span class="detail-value">Mensual / Anual</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Próximo vencimiento:</span>
-              <span class="detail-value danger">10 Feb (2 días atraso)</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Responsables asignados:</span>
-              <span class="detail-value">2 usuarios</span>
-            </div>
-          </div>
-        </div>
-        <div class="entity-footer">
-          <a href="/roles/auditor/reportes?entity=anh" class="btn-link danger">
-            Ver Reportes Urgentes
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-
-      <!-- SSPD -->
-      <div class="entity-card">
-        <div class="entity-header sspd">
-          <div class="entity-logo">
-            <span class="logo-text">SSPD</span>
-          </div>
-          <div class="entity-title">
-            <h3>Superintendencia</h3>
-            <span class="entity-type">Servicios Públicos Domiciliarios</span>
-          </div>
-          <div class="entity-status ok">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            OK
-          </div>
-        </div>
-        <div class="entity-body">
-          <div class="entity-stats">
-            <div class="stat-item">
-              <span class="stat-value">32</span>
-              <span class="stat-label">Reportes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">30</span>
-              <span class="stat-label">Enviados</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value warning">2</span>
-              <span class="stat-label">Pendientes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value neutral">0</span>
-              <span class="stat-label">Atrasado</span>
-            </div>
-          </div>
-          <div class="compliance-bar">
-            <div class="bar-header">
-              <span class="bar-label">Cumplimiento</span>
-              <span class="bar-value">95%</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill sspd" style="width: 95%"></div>
-            </div>
-          </div>
-          <div class="entity-details">
-            <div class="detail-row">
-              <span class="detail-label">Frecuencia principal:</span>
-              <span class="detail-value">Trimestral</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Próximo vencimiento:</span>
-              <span class="detail-value">17 Feb 2025</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Responsables asignados:</span>
-              <span class="detail-value">3 usuarios</span>
-            </div>
-          </div>
-        </div>
-        <div class="entity-footer">
-          <a href="/roles/auditor/reportes?entity=sspd" class="btn-link">
-            Ver Reportes
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-
-      <!-- MinEnergía -->
-      <div class="entity-card excellent">
-        <div class="entity-header minenergia">
-          <div class="entity-logo">
-            <span class="logo-text">MME</span>
-          </div>
-          <div class="entity-title">
-            <h3>Ministerio de Minas</h3>
-            <span class="entity-type">y Energía</span>
-          </div>
-          <div class="entity-status excellent">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-            </svg>
-            Excelente
-          </div>
-        </div>
-        <div class="entity-body">
-          <div class="success-banner">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            <span>100% de cumplimiento en el período actual</span>
-          </div>
-          <div class="entity-stats">
-            <div class="stat-item">
-              <span class="stat-value">13</span>
-              <span class="stat-label">Reportes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">13</span>
-              <span class="stat-label">Enviados</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value neutral">0</span>
-              <span class="stat-label">Pendientes</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value neutral">0</span>
-              <span class="stat-label">Atrasado</span>
-            </div>
-          </div>
-          <div class="compliance-bar">
-            <div class="bar-header">
-              <span class="bar-label">Cumplimiento</span>
-              <span class="bar-value success">100%</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill minenergia" style="width: 100%"></div>
-            </div>
-          </div>
-          <div class="entity-details">
-            <div class="detail-row">
-              <span class="detail-label">Frecuencia principal:</span>
-              <span class="detail-value">Anual</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Próximo vencimiento:</span>
-              <span class="detail-value">15 Mar 2025</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Responsables asignados:</span>
-              <span class="detail-value">2 usuarios</span>
-            </div>
-          </div>
-        </div>
-        <div class="entity-footer">
-          <a href="/roles/auditor/reportes?entity=minenergia" class="btn-link">
-            Ver Reportes
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
+  <AuditorEntidadesClient client:load />
 </AuditorLayout>
 
-<style>
+<style is:global>
   .entidades-page {
     display: flex;
     flex-direction: column;
@@ -478,6 +31,12 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     font-size: 0.875rem;
     color: var(--neutral-500);
     margin: 0.25rem 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
   }
 
   .btn-export {
@@ -539,7 +98,7 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
 
   .summary-icon.yellow {
     background: var(--warning-yellow-100);
-    color: var(--warning-yellow-700);
+    color: var(--warning-yellow-800);
   }
 
   .summary-content {
@@ -564,7 +123,7 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
   /* Entities Grid */
   .entities-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1rem;
   }
 
@@ -573,298 +132,198 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
     border-radius: 12px;
     box-shadow: var(--shadow-card);
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .entity-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-card-hover);
-  }
-
-  .entity-card.critical {
-    border: 2px solid var(--error-red-300);
-  }
-
-  .entity-card.excellent {
-    border: 2px solid var(--success-green-300);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
   .entity-header {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1.25rem;
-    background: linear-gradient(135deg, var(--neutral-100), var(--neutral-50));
+    padding: 1rem;
+    color: white;
   }
 
-  .entity-header.sui {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
-  }
-
-  .entity-header.creg {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));
-  }
-
-  .entity-header.anh {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
-  }
-
-  .entity-header.sspd {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-  }
-
-  .entity-header.minenergia {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
-  }
+  .entity-header.sui { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .entity-header.creg { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .entity-header.anh { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .entity-header.sspd { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .entity-header.minenergia { background: linear-gradient(90deg, #22c55e, #4ade80); }
 
   .entity-logo {
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(255,255,255,0.15);
     border-radius: 12px;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-
-  .logo-text {
-    font-size: 0.875rem;
     font-weight: 700;
-    color: var(--neutral-700);
-  }
-
-  .entity-title {
-    flex: 1;
+    font-size: 0.875rem;
   }
 
   .entity-title h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--neutral-800);
     margin: 0;
+    font-size: 1rem;
   }
 
-  .entity-type {
-    font-size: 0.75rem;
-    color: var(--neutral-500);
+  .entity-title .entity-type {
+    font-size: 0.8125rem;
+    opacity: 0.9;
   }
 
   .entity-status {
-    display: flex;
+    margin-left: auto;
+    display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: 16px;
-    font-size: 0.6875rem;
-    font-weight: 600;
+    gap: 0.25rem;
+    background: rgba(255,255,255,0.15);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
   }
 
   .entity-status.ok {
-    background: var(--success-green-100);
-    color: var(--success-green-700);
+    background: rgba(255,255,255,0.2);
   }
 
   .entity-status.critical {
-    background: var(--error-red-100);
-    color: var(--error-red-700);
-  }
-
-  .entity-status.excellent {
-    background: var(--role-accent-light);
-    color: var(--role-accent);
+    background: rgba(255,0,0,0.2);
   }
 
   .entity-body {
-    padding: 1.25rem;
-  }
-
-  .alert-banner {
+    padding: 1rem;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: var(--error-red-50);
-    border-radius: 8px;
-    border-left: 3px solid var(--error-red-500);
-    font-size: 0.75rem;
-    color: var(--error-red-700);
-    margin-bottom: 1rem;
-  }
-
-  .success-banner {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: var(--success-green-50);
-    border-radius: 8px;
-    border-left: 3px solid var(--success-green-500);
-    font-size: 0.75rem;
-    color: var(--success-green-700);
-    margin-bottom: 1rem;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .entity-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 0.75rem;
-    margin-bottom: 1rem;
   }
 
   .stat-item {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 0.25rem;
     padding: 0.75rem;
     background: var(--neutral-50);
     border-radius: 8px;
+    border: 1px solid var(--neutral-100);
   }
 
-  .stat-item .stat-value {
-    font-size: 1.25rem;
+  .stat-value {
+    font-size: 1.1rem;
     font-weight: 700;
-    color: var(--neutral-800);
+    color: var(--neutral-900);
   }
 
-  .stat-item .stat-value.success {
-    color: var(--success-green-600);
-  }
+  .stat-value.success { color: var(--success-green-600); }
+  .stat-value.warning { color: var(--warning-yellow-700); }
+  .stat-value.danger { color: var(--error-red-600); }
 
-  .stat-item .stat-value.warning {
-    color: var(--warning-yellow-700);
-  }
-
-  .stat-item .stat-value.danger {
-    color: var(--error-red-600);
-  }
-
-  .stat-item .stat-value.neutral {
-    color: var(--neutral-400);
-  }
-
-  .stat-item .stat-label {
-    font-size: 0.625rem;
+  .stat-label {
+    font-size: 0.75rem;
     color: var(--neutral-500);
-    text-transform: uppercase;
-    margin-top: 0.25rem;
   }
 
   .compliance-bar {
-    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .bar-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.375rem;
-  }
-
-  .bar-label {
-    font-size: 0.75rem;
-    color: var(--neutral-500);
-  }
-
-  .bar-value {
+    align-items: center;
     font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--neutral-700);
-  }
-
-  .bar-value.success {
-    color: var(--success-green-600);
-  }
-
-  .bar-value.danger {
-    color: var(--error-red-600);
+    color: var(--neutral-600);
   }
 
   .bar-track {
+    width: 100%;
     height: 8px;
     background: var(--neutral-200);
-    border-radius: 4px;
+    border-radius: 999px;
     overflow: hidden;
   }
 
   .bar-fill {
     height: 100%;
-    border-radius: 4px;
+    border-radius: 999px;
   }
 
   .bar-fill.sui { background: #3b82f6; }
   .bar-fill.creg { background: #8b5cf6; }
   .bar-fill.anh { background: #f59e0b; }
-  .bar-fill.anh.warning { background: #facc15; }
   .bar-fill.sspd { background: #ef4444; }
   .bar-fill.minenergia { background: #22c55e; }
 
   .entity-details {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--neutral-50);
+    border-radius: 8px;
+    border: 1px solid var(--neutral-100);
   }
 
   .detail-row {
     display: flex;
     justify-content: space-between;
     font-size: 0.8125rem;
+    color: var(--neutral-600);
   }
 
   .detail-label {
-    color: var(--neutral-500);
+    font-weight: 600;
   }
 
   .detail-value {
-    font-weight: 500;
-    color: var(--neutral-700);
+    color: var(--neutral-800);
+    font-weight: 700;
   }
 
   .detail-value.urgent {
     color: var(--error-red-600);
-    font-weight: 600;
-  }
-
-  .detail-value.warning {
-    color: var(--warning-yellow-700);
-    font-weight: 600;
-  }
-
-  .detail-value.danger {
-    color: var(--error-red-600);
-    font-weight: 600;
   }
 
   .entity-footer {
-    padding: 1rem 1.25rem;
-    border-top: 1px solid var(--neutral-100);
+    padding: 0.75rem 1rem;
     background: var(--neutral-50);
+    border-top: 1px solid var(--neutral-100);
   }
 
   .btn-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--role-accent);
+    gap: 0.35rem;
+    color: var(--neutral-700);
     text-decoration: none;
-    transition: all 0.2s;
+    font-weight: 600;
+    font-size: 0.875rem;
   }
 
-  .btn-link:hover {
-    gap: 0.625rem;
+  .btn-link svg {
+    color: var(--neutral-500);
   }
 
-  .btn-link.danger {
-    color: var(--error-red-600);
-  }
-
-  @media (max-width: 1200px) {
+  @media (max-width: 1024px) {
     .summary-cards {
       grid-template-columns: repeat(2, 1fr);
     }
 
-    .entities-grid {
+    .entity-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .entity-details {
       grid-template-columns: 1fr;
     }
   }
@@ -877,10 +336,6 @@ import AuditorLayout from '../../../layouts/roles/AuditorLayout.astro';
 
     .summary-cards {
       grid-template-columns: 1fr;
-    }
-
-    .entity-stats {
-      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>

@@ -1,0 +1,83 @@
+---
+// Página 404 - Redirige al dashboard según el rol del usuario
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página No Encontrada</title>
+</head>
+<body>
+  <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: system-ui;">
+    <div style="text-align: center;">
+      <h1 style="font-size: 3rem; margin: 0;">404</h1>
+      <p style="color: #666;">Página no encontrada. Redirigiendo...</p>
+    </div>
+  </div>
+
+  <script>
+    // Sistema de redirección inteligente por rol
+    (function() {
+      console.log('[404] Página no encontrada, analizando redirección por rol...');
+      
+      // Obtener usuario del localStorage
+      let usuario = null;
+      try {
+        const usuarioData = localStorage.getItem('usuario');
+        if (usuarioData) {
+          usuario = JSON.parse(usuarioData);
+          console.log('[404] Usuario encontrado:', usuario.email, 'Roles:', usuario.roles);
+        }
+      } catch (e) {
+        console.error('[404] Error al leer usuario:', e);
+      }
+      
+      // Jerarquía de roles para determinar dashboard
+      const ROLE_DASHBOARDS = {
+        admin: '/roles/admin/dashboard',
+        supervisor: '/roles/supervisor/dashboard',
+        responsable: '/roles/responsable/dashboard',
+        auditor: '/roles/auditor/dashboard',
+      };
+      
+      // Función para obtener el rol principal
+      function getPrimaryRole(roles: string[]): string {
+        const hierarchy = ['admin', 'supervisor', 'responsable', 'auditor'];
+        for (const role of hierarchy) {
+          if (roles.some((r: string) => r.toLowerCase() === role)) {
+            return role;
+          }
+        }
+        return roles[0]?.toLowerCase() || 'responsable';
+      }
+      
+      // Determinar redirección
+      let redirectUrl = '/login';
+      
+      if (usuario && usuario.roles && usuario.roles.length > 0) {
+        const primaryRole = getPrimaryRole(usuario.roles);
+        redirectUrl = (ROLE_DASHBOARDS as any)[primaryRole] || '/login';
+        console.log('[404] Rol principal:', primaryRole, '→ Dashboard:', redirectUrl);
+      } else {
+        console.log('[404] No hay usuario autenticado, redirigiendo a login');
+      }
+      
+      // Evitar bucles: verificar que no estamos ya en la ruta de destino
+      const currentPath = window.location.pathname;
+      if (currentPath === redirectUrl) {
+        console.warn('[404] Bucle detectado, redirigiendo a /login');
+        redirectUrl = '/login';
+      }
+      
+      // Registrar y redirigir
+      console.log('[404] Redirigiendo a:', redirectUrl);
+      
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 500); // Pequeño delay para que se vea el mensaje
+    })();
+  </script>
+</body>
+</html>
