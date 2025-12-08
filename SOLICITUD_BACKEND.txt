@@ -1,0 +1,206 @@
+================================================================================
+  SOLICITUD DE CORRECCIONES EN BACKEND - SISTEMA DE REPORTES
+================================================================================
+
+CONTEXTO
+--------
+Estoy trabajando en la integración del frontend (Astro + React) con el backend 
+del sistema de gestión de reportes. He realizado correcciones en el frontend 
+basándome en la especificación de la API, pero necesito verificar y posiblemente 
+corregir aspectos del backend para completar la integración.
+
+PROBLEMA ACTUAL
+---------------
+El rol RESPONSABLE no está mostrando datos en el frontend. 
+
+He implementado:
+✓ Normalización de estados según la especificación (pendiente, enviado, extemporaneo, etc.)
+✓ Utilidades para manejo de fechas y estados
+✓ Logging extensivo en toda la cadena de peticiones
+✓ Manejo de errores y estados vacíos
+
+Sin embargo, persiste el problema de que NO SE MUESTRAN DATOS.
+
+================================================================================
+LO QUE NECESITO VERIFICAR
+================================================================================
+
+1. ENDPOINT DE PERIODOS DEL RESPONSABLE
+----------------------------------------
+   GET /api/flujo-reportes/mis-periodos?page=0&size=100
+
+   PREGUNTAS:
+   - ¿Este endpoint existe y está funcionando?
+   - ¿Requiere autenticación JWT?
+   - ¿Filtra automáticamente por el usuarioId extraído del token?
+   - ¿Devuelve periodos donde el usuario es responsable_elaboracion_id?
+
+
+2. ESTRUCTURA DE LA RESPUESTA
+------------------------------
+   El frontend espera esta estructura exacta:
+
+   {
+     "success": true,
+     "data": {
+       "content": [
+         {
+           "periodoId": "uuid",
+           "reporteId": "uuid",
+           "reporteNombre": "string",
+           "entidadNombre": "string",
+           "estado": "pendiente",
+           "fechaVencimientoCalculada": "2024-12-10",
+           "fechaInicio": "2024-12-01",
+           "fechaFin": "2024-12-31",
+           "responsableElaboracionId": "uuid",
+           "responsableElaboracionNombre": "string"
+         }
+       ],
+       "totalPages": 1,
+       "totalElements": 5
+     },
+     "statusCode": 200
+   }
+
+   PREGUNTAS:
+   - ¿La respuesta tiene exactamente esta estructura?
+   - ¿El campo "estado" viene en MINÚSCULAS con guiones bajos? 
+     (ej: "en_elaboracion", NO "EN_ELABORACION" o "enElaboracion")
+   - ¿Los campos de fecha están en formato ISO (YYYY-MM-DD)?
+
+
+3. ESTADOS VÁLIDOS
+------------------
+   Según la especificación, los estados deben ser:
+   - pendiente
+   - en_elaboracion
+   - enviado
+   - extemporaneo
+   - en_revision
+   - requiere_correccion
+   - aprobado
+   - rechazado
+   - vencido
+
+   PREGUNTAS:
+   - ¿Estos son exactamente los valores que se guardan en la BD?
+   - ¿Hay alguna transformación de mayúsculas/minúsculas en el backend?
+   - ¿Algún estado adicional que no esté documentado?
+
+
+4. AUTENTICACIÓN Y AUTORIZACIÓN
+--------------------------------
+   PREGUNTAS:
+   - ¿El endpoint valida el token JWT correctamente?
+   - ¿Extrae el usuarioId del token para filtrar los periodos?
+   - ¿Hay algún problema de CORS configurado?
+   - ¿El backend permite el origen http://localhost:4321?
+   - ¿Permite los headers Authorization y Content-Type?
+
+
+5. DATOS DE PRUEBA
+------------------
+   PREGUNTAS:
+   - ¿Existen periodos en la base de datos asignados a usuarios con rol RESPONSABLE?
+   - ¿Los periodos tienen el campo responsable_elaboracion_id correctamente poblado?
+   - ¿Puedes proporcionarme un ejemplo de respuesta real del endpoint?
+
+
+================================================================================
+LO QUE SOLICITO
+================================================================================
+
+A. VERIFICACIÓN DEL ENDPOINT
+-----------------------------
+Por favor verifica que el endpoint /api/flujo-reportes/mis-periodos funcione:
+
+1. Prueba con un token JWT válido de un usuario RESPONSABLE
+2. Confirma que devuelve periodos
+3. Comparte la respuesta JSON completa
+
+
+B. CORRECCIONES NECESARIAS
+---------------------------
+Si encuentras algún problema, por favor corrige:
+
+1. ESTADOS: Asegúrate de que estén en minúsculas con guiones bajos
+2. ESTRUCTURA DE RESPUESTA: Debe seguir el formato especificado arriba
+3. CORS: Debe permitir http://localhost:4321
+4. PAGINACIÓN: Debe soportar parámetros page y size
+
+
+C. SCRIPT DE PRUEBA
+--------------------
+¿Puedes ejecutar este curl y compartir el resultado?
+
+curl -X GET "http://localhost:8080/api/flujo-reportes/mis-periodos?page=0&size=10" \
+  -H "Authorization: Bearer TU_TOKEN_JWT_AQUI" \
+  -H "Content-Type: application/json"
+
+
+================================================================================
+INFORMACIÓN ADICIONAL DEL FRONTEND
+================================================================================
+
+CONFIGURACIÓN:
+- Frontend: Astro 4.x + React
+- Puerto: 4321
+- Backend API URL: http://localhost:8080
+- Autenticación: JWT en localStorage
+
+LOGS DEL FRONTEND:
+🔐 [API Interceptor] Token encontrado: ✅ Sí
+📤 [API Interceptor] Request URL: /api/flujo-reportes/mis-periodos?page=0&size=100
+🌐 [API] Llamando a: /api/flujo-reportes/mis-periodos?page=0&size=100
+
+Pero no hay respuesta exitosa o los datos vienen vacíos.
+
+
+================================================================================
+PREGUNTAS ESPECÍFICAS PARA EL BACKEND
+================================================================================
+
+1. ¿El endpoint /api/flujo-reportes/mis-periodos existe?
+
+2. ¿Está protegido por autenticación JWT?
+
+3. ¿Filtra automáticamente por el usuario del token?
+
+4. ¿Qué estructura JSON devuelve exactamente?
+
+5. ¿Los estados están en minúsculas con guiones bajos?
+
+6. ¿Hay datos de prueba en la BD para usuarios RESPONSABLES?
+
+7. ¿Algún error o warning en los logs del backend cuando se hace la petición?
+
+8. ¿La configuración de CORS permite peticiones desde localhost:4321?
+
+
+================================================================================
+SOLICITUD FINAL
+================================================================================
+
+Por favor:
+
+1. Verifica el endpoint
+2. Comparte un ejemplo real de la respuesta JSON
+3. Confirma que los estados estén en el formato correcto
+4. Asegúrate de que haya datos de prueba
+5. Revisa los logs del backend cuando hago la petición desde el frontend
+
+Con esta información podré completar la integración correctamente.
+
+
+================================================================================
+DOCUMENTOS DE REFERENCIA ADJUNTOS
+================================================================================
+- especificacion_api.md
+- BACKEND_REQUIREMENTS.md
+- GUIA_DIAGNOSTICO_NO_HAY_DATOS.md (frontend)
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

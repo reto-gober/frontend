@@ -43,7 +43,7 @@ export interface EntidadResponse {
 
 export interface ResponsableReporte {
   usuarioId: string;
-  tipoResponsabilidad: 'elaboracion' | 'supervision' | 'revision';
+  tipoResponsabilidad: "elaboracion" | "supervision" | "revision";
   esPrincipal: boolean;
   activo: boolean;
   orden: number;
@@ -101,7 +101,7 @@ export interface ReporteResponse {
   responsables?: Array<{
     usuarioId: string;
     nombreCompleto: string;
-    tipoResponsabilidad: 'elaboracion' | 'supervision' | 'revision';
+    tipoResponsabilidad: "elaboracion" | "supervision" | "revision";
     esPrincipal: boolean;
   }>;
   correosNotificacion?: string[];
@@ -123,6 +123,7 @@ export interface EvidenciaResponse {
   subidoPorId: string;
   subidoPorNombre: string;
   creadoEn: string;
+  urlPublica?: string; // URL directa para acceder al archivo (campo adicional del backend)
 }
 
 export interface DashboardResponse {
@@ -427,7 +428,13 @@ export interface UserSessionLogResponse {
   usuarioId?: string;
   usuarioNombre?: string;
   email: string;
-  evento: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT' | 'TOKEN_REFRESH' | 'PASSWORD_CHANGE' | 'SESSION_EXPIRED';
+  evento:
+    | "LOGIN_SUCCESS"
+    | "LOGIN_FAILED"
+    | "LOGOUT"
+    | "TOKEN_REFRESH"
+    | "PASSWORD_CHANGE"
+    | "SESSION_EXPIRED";
   ipAddress?: string;
   userAgent?: string;
   timestamp: string;
@@ -605,18 +612,38 @@ export const reportesService = {
 };
 
 export const entidadesService = {
-  async listar(page = 0, size = 100, sort = ['nombre,asc']): Promise<Page<EntidadResponse>> {
-    const response = await api.get('/api/entidades', { params: { page, size, sort } });
+  async listar(
+    page = 0,
+    size = 100,
+    sort = ["nombre,asc"]
+  ): Promise<Page<EntidadResponse>> {
+    const response = await api.get("/api/entidades", {
+      params: { page, size, sort },
+    });
     // Verificar si la respuesta tiene el formato { success, data }
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
-  async activas(page = 0, size = 100, sort = ['nombre,asc']): Promise<Page<EntidadResponse>> {
-    const response = await api.get('/api/entidades', { params: { page, size, sort } });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+  async activas(
+    page = 0,
+    size = 100,
+    sort = ["nombre,asc"]
+  ): Promise<Page<EntidadResponse>> {
+    const response = await api.get("/api/entidades", {
+      params: { page, size, sort },
+    });
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -624,15 +651,23 @@ export const entidadesService = {
 
   async obtener(id: string): Promise<EntidadResponse> {
     const response = await api.get(`/api/entidades/${id}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   async crear(data: EntidadRequest): Promise<EntidadResponse> {
-    const response = await api.post('/api/entidades', data);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.post("/api/entidades", data);
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -640,7 +675,11 @@ export const entidadesService = {
 
   async actualizar(id: string, data: EntidadRequest): Promise<EntidadResponse> {
     const response = await api.put(`/api/entidades/${id}`, data);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -648,7 +687,11 @@ export const entidadesService = {
 
   async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/entidades/${id}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -658,12 +701,41 @@ export const entidadesService = {
 export const evidenciasService = {
   async subir(reporteId: string, file: File): Promise<EvidenciaResponse> {
     const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post(`/api/evidencias/reporte/${reporteId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    formData.append("file", file);
+    const response = await api.post(
+      `/api/evidencias/reporte/${reporteId}`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     // Verificar si la respuesta tiene el formato { success, data }
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async subirPorPeriodo(periodoId: string, file: File): Promise<EvidenciaResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post(
+      `/api/evidencias/periodo/${periodoId}`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    // Verificar si la respuesta tiene el formato { success, data }
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -671,7 +743,11 @@ export const evidenciasService = {
 
   async listarPorReporte(reporteId: string): Promise<EvidenciaResponse[]> {
     const response = await api.get(`/api/evidencias/reporte/${reporteId}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -685,8 +761,8 @@ export const evidenciasService = {
       type: response.headers["content-type"],
     });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const disposition = response.headers['content-disposition'];
+    const a = document.createElement("a");
+    const disposition = response.headers["content-disposition"];
     const match = disposition?.match(/filename="(.+)"/);
     a.href = url;
     a.download = match?.[1] || `evidencia-${id}`;
@@ -694,9 +770,22 @@ export const evidenciasService = {
     window.URL.revokeObjectURL(url);
   },
 
+  async obtenerBlob(id: string): Promise<Blob> {
+    const response = await api.get(`/api/evidencias/${id}/descargar`, {
+      responseType: "blob",
+    });
+    return new Blob([response.data], {
+      type: response.headers["content-type"] || "application/octet-stream",
+    });
+  },
+
   async eliminar(id: string): Promise<{ mensaje: string }> {
     const response = await api.delete(`/api/evidencias/${id}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -704,21 +793,33 @@ export const evidenciasService = {
 };
 
 export const dashboardService = {
-  async estadisticas(periodo?: string, fechaInicio?: string, fechaFin?: string): Promise<DashboardResponse> {
+  async estadisticas(
+    periodo?: string,
+    fechaInicio?: string,
+    fechaFin?: string
+  ): Promise<DashboardResponse> {
     const params: any = {};
     if (periodo) params.periodo = periodo;
     if (fechaInicio) params.fechaInicio = fechaInicio;
     if (fechaFin) params.fechaFin = fechaFin;
-    const response = await api.get('/api/dashboard/estadisticas', { params });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/dashboard/estadisticas", { params });
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   async cumplimiento(): Promise<number> {
-    const response = await api.get('/api/dashboard/cumplimiento');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/dashboard/cumplimiento");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -726,54 +827,48 @@ export const dashboardService = {
 
   // Dashboard por rol
   async dashboardAdmin(): Promise<any> {
-    const response = await api.get('/api/dashboard/admin');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/dashboard/admin");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   async dashboardResponsable(): Promise<any> {
-    const response = await api.get('/api/dashboard/responsable');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/dashboard/responsable");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
-  async dashboardSupervisor(filters?: {
-    entidadId?: string;
-    responsableId?: string;
-    frecuencia?: string;
-    estado?: string;
-    tipoAlerta?: string;
-    fechaInicio?: string;
-    fechaFin?: string;
-    vistaTemporal?: string;
-    limitePeriodos?: number;
-  }): Promise<DashboardSupervisorResponse> {
-    const params = new URLSearchParams();
-    if (filters?.entidadId) params.append('entidadId', filters.entidadId);
-    if (filters?.responsableId) params.append('responsableId', filters.responsableId);
-    if (filters?.frecuencia) params.append('frecuencia', filters.frecuencia);
-    if (filters?.estado) params.append('estado', filters.estado);
-    if (filters?.tipoAlerta) params.append('tipoAlerta', filters.tipoAlerta);
-    if (filters?.fechaInicio) params.append('fechaInicio', filters.fechaInicio);
-    if (filters?.fechaFin) params.append('fechaFin', filters.fechaFin);
-    if (filters?.vistaTemporal) params.append('vistaTemporal', filters.vistaTemporal);
-    if (filters?.limitePeriodos) params.append('limitePeriodos', filters.limitePeriodos.toString());
-
-    const query = params.toString();
-    const response = await api.get(`/api/supervisor/dashboard${query ? `?${query}` : ''}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+  async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
+    const response = await api.get("/api/dashboard/supervisor");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
-  async dashboardAuditor(): Promise<DashboardAuditor> {
-    const response = await api.get('/api/dashboard/auditor');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+  async dashboardAuditor(): Promise<any> {
+    const response = await api.get("/api/dashboard/auditor");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -878,7 +973,10 @@ export const usuariosService = {
     return response.data;
   },
 
-  async actualizar(documentNumber: string, data: UsuarioRequest): Promise<UsuarioResponse> {
+  async actualizar(
+    documentNumber: string,
+    data: UsuarioRequest
+  ): Promise<UsuarioResponse> {
     const response = await api.put(`/api/usuarios/${documentNumber}`, data);
     // Verificar si la respuesta tiene el formato { success, data }
     if (
@@ -904,29 +1002,34 @@ export const usuariosService = {
     return response.data;
   },
 
-  // Cambiar rol de usuario (usando PUT con workaround)
-  async cambiarRol(documentNumber: string, nuevoRol: string): Promise<UsuarioResponse> {
-    // Primero obtenemos los datos actuales del usuario
-    const usuarioActual = await this.obtener(documentNumber);
+  // Cambiar rol de usuario (usando PATCH)
+  async cambiarRol(
+    documentNumber: string,
+    nuevoRol: string
+  ): Promise<UsuarioResponse> {
+    const response = await api.patch(
+      `/usuarios/${documentNumber}/rol`,
+      null,
+      {
+        params: { rolCodigo: nuevoRol }
+      }
+    );
     
-    // Actualizamos solo el rol, manteniendo los demás campos
-    const dataActualizada: UsuarioRequest = {
-      documentNumber: usuarioActual.documentNumber,
-      documentType: usuarioActual.documentType || 'CC',
-      email: usuarioActual.email,
-      firstName: usuarioActual.firstName,
-      secondName: usuarioActual.secondName || '',
-      firstLastname: usuarioActual.firstLastname,
-      secondLastname: usuarioActual.secondLastname || '',
-      roles: [nuevoRol]
-    };
-
-    return this.actualizar(documentNumber, dataActualizada);
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
   },
 
   // Desactivar usuario (usando nuevo endpoint PATCH)
   async desactivar(documentNumber: string): Promise<UsuarioResponse> {
-    const response = await api.patch(`/api/usuarios/${documentNumber}/desactivar`);
+    const response = await api.patch(
+      `/api/usuarios/${documentNumber}/desactivar`
+    );
 
     if (
       response.data &&
@@ -940,7 +1043,26 @@ export const usuariosService = {
 
   // Activar usuario (usando nuevo endpoint PATCH)
   async activar(documentNumber: string): Promise<UsuarioResponse> {
-    const response = await api.patch(`/api/usuarios/${documentNumber}/activar`);
+    // Primero obtenemos los datos actuales del usuario
+    const usuarioActual = await this.obtener(documentNumber);
+
+    // Actualizamos el estado a activo
+    const dataActualizada: UsuarioRequest = {
+      documentNumber: usuarioActual.documentNumber,
+      documentType: usuarioActual.documentType || "CC",
+      email: usuarioActual.email,
+      firstName: usuarioActual.firstName,
+      secondName: usuarioActual.secondName || "",
+      firstLastname: usuarioActual.firstLastname,
+      secondLastname: usuarioActual.secondLastname || "",
+      roles: usuarioActual.roles,
+    };
+
+    // El campo 'activo' debe ir en el request
+    const response = await api.put(`/api/usuarios/${documentNumber}`, {
+      ...dataActualizada,
+      activo: true,
+    });
 
     if (
       response.data &&
@@ -953,20 +1075,29 @@ export const usuariosService = {
   },
 
   // Invitar usuario
-  async invitar(email: string, role: string): Promise<{ success: boolean; message: string; data?: any }> {
-    const response = await api.post('/api/users/invite', { email, role });
+  async invitar(
+    email: string,
+    role: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    const response = await api.post("/api/users/invite", { email, role });
     return response.data;
   },
 
   // Cancelar invitación
-  async cancelarInvitacion(invitationId: string): Promise<{ success: boolean; message: string }> {
+  async cancelarInvitacion(
+    invitationId: string
+  ): Promise<{ success: boolean; message: string }> {
     const response = await api.delete(`/api/users/invite/${invitationId}`);
     return response.data;
   },
 
   // Validar token de invitación
-  async validarTokenInvitacion(token: string): Promise<{ success: boolean; data: boolean; message: string }> {
-    const response = await api.get(`/api/users/validate-invitation?token=${token}`);
+  async validarTokenInvitacion(
+    token: string
+  ): Promise<{ success: boolean; data: boolean; message: string }> {
+    const response = await api.get(
+      `/api/users/validate-invitation?token=${token}`
+    );
     return response.data;
   },
 
@@ -982,7 +1113,7 @@ export const usuariosService = {
     password: string;
     telefono?: string;
   }): Promise<{ success: boolean; message: string }> {
-    const response = await api.post('/api/users/complete-invitation', data);
+    const response = await api.post("/api/users/complete-invitation", data);
     return response.data;
   },
 };
@@ -1017,6 +1148,12 @@ export interface ReportePeriodo {
     email: string;
     cargo: string;
   };
+  responsableEnvio?: {
+    usuarioId: string;
+    nombreCompleto: string;
+    email: string;
+    cargo: string;
+  };
   comentarios: string | null;
   cantidadArchivos: number;
   puedeEnviar: boolean;
@@ -1035,7 +1172,7 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: 'aprobar' | 'rechazar' | 'revisar';
+  accion: "aprobar" | "rechazar";
   comentarios?: string;
   motivoRechazo?: string;
 }
@@ -1057,75 +1194,170 @@ export interface HistorialEstado {
 
 export const flujoReportesService = {
   // Obtener mis periodos (RESPONSABLE)
-  async misPeriodos(page = 0, size = 10, sort?: string): Promise<Page<ReportePeriodo>> {
+  async misPeriodos(
+    page = 0,
+    size = 10,
+    sort?: string
+  ): Promise<Page<ReportePeriodo>> {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
     });
-    if (sort) params.append('sort', sort);
-    
-    const response = await api.get(`/api/flujo-reportes/mis-periodos?${params}`);
-    return response.data.data;
+    if (sort) params.append("sort", sort);
+
+    const url = `/api/flujo-reportes/mis-periodos?${params}`;
+    console.log("🌐 [flujoReportesService] Llamando a:", url);
+
+    try {
+      const response = await api.get(url);
+
+      console.log(
+        "✅ [flujoReportesService] Respuesta status:",
+        response.status
+      );
+      console.log("📊 [flujoReportesService] Estructura de respuesta:", {
+        hasData: !!response.data,
+        hasDataProperty: response.data && "data" in response.data,
+        dataType: typeof response.data,
+        keys: response.data ? Object.keys(response.data) : [],
+      });
+
+      if (!response.data) {
+        throw new Error("Respuesta vacía del servidor");
+      }
+
+      // Manejar ambos formatos de respuesta
+      if (response.data.data) {
+        console.log("📦 [flujoReportesService] Usando response.data.data");
+        console.log(
+          "📋 [flujoReportesService] Cantidad de periodos:",
+          response.data.data?.content?.length || 0
+        );
+        return response.data.data;
+      } else if (response.data.content) {
+        console.log(
+          "📦 [flujoReportesService] Usando response.data directamente"
+        );
+        console.log(
+          "📋 [flujoReportesService] Cantidad de periodos:",
+          response.data.content.length
+        );
+        return response.data;
+      } else {
+        console.error(
+          "❌ [flujoReportesService] Formato de respuesta inesperado:",
+          response.data
+        );
+        throw new Error("Formato de respuesta del servidor no reconocido");
+      }
+    } catch (error: any) {
+      console.error("❌ [flujoReportesService] Error en la petición:", error);
+      console.error("❌ [flujoReportesService] URL:", url);
+      console.error(
+        "❌ [flujoReportesService] Response:",
+        error.response?.data
+      );
+      throw error;
+    }
   },
 
   // Obtener periodos pendientes
-  async misPeriodosPendientes(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
-    const response = await api.get(`/api/flujo-reportes/mis-periodos/pendientes?page=${page}&size=${size}`);
+  async misPeriodosPendientes(
+    page = 0,
+    size = 10
+  ): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(
+      `/api/flujo-reportes/mis-periodos/pendientes?page=${page}&size=${size}`
+    );
     return response.data.data;
   },
 
   // Obtener periodos que requieren corrección
-  async misPeríodosCorrecciones(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
-    const response = await api.get(`/api/flujo-reportes/mis-periodos/requieren-correccion?page=${page}&size=${size}`);
+  async misPeríodosCorrecciones(
+    page = 0,
+    size = 10
+  ): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(
+      `/api/flujo-reportes/mis-periodos/requieren-correccion?page=${page}&size=${size}`
+    );
     return response.data.data;
   },
 
   // Enviar reporte
   async enviar(request: EnviarReporteRequest): Promise<ReportePeriodo> {
-    const response = await api.post('/api/flujo-reportes/enviar', request);
+    const response = await api.post("/api/flujo-reportes/enviar", request);
     return response.data.data;
   },
 
   // Corregir y reenviar
-  async corregirReenviar(request: EnviarReporteRequest): Promise<ReportePeriodo> {
-    const response = await api.post('/api/flujo-reportes/corregir-reenviar', request);
+  async corregirReenviar(
+    request: EnviarReporteRequest
+  ): Promise<ReportePeriodo> {
+    const response = await api.post(
+      "/api/flujo-reportes/corregir-reenviar",
+      request
+    );
     return response.data.data;
   },
 
   // Obtener periodos pendientes de validación (SUPERVISOR)
-  async pendientesValidacion(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
-    const response = await api.get(`/api/flujo-reportes/pendientes-validacion?page=${page}&size=${size}`);
+  async pendientesValidacion(
+    page = 0,
+    size = 10
+  ): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(
+      `/api/flujo-reportes/pendientes-validacion?page=${page}&size=${size}`
+    );
     return response.data.data;
   },
 
   // Obtener periodos bajo mi supervisión
   async supervision(page = 0, size = 10): Promise<Page<ReportePeriodo>> {
-    const response = await api.get(`/api/flujo-reportes/supervision?page=${page}&size=${size}`);
+    const response = await api.get(
+      `/api/flujo-reportes/supervision?page=${page}&size=${size}`
+    );
     return response.data.data;
   },
 
   // Validar reporte (aprobar/rechazar)
   async validar(request: ValidarReporteRequest): Promise<ReportePeriodo> {
-    const response = await api.post('/api/flujo-reportes/validar', request);
+    const response = await api.post("/api/flujo-reportes/validar", request);
     return response.data.data;
   },
 
   // Aprobar directamente
-  async aprobar(periodoId: string, comentarios?: string): Promise<ReportePeriodo> {
-    const params = comentarios ? `?comentarios=${encodeURIComponent(comentarios)}` : '';
-    const response = await api.post(`/api/flujo-reportes/${periodoId}/aprobar${params}`);
+  async aprobar(
+    periodoId: string,
+    comentarios?: string
+  ): Promise<ReportePeriodo> {
+    const params = comentarios
+      ? `?comentarios=${encodeURIComponent(comentarios)}`
+      : "";
+    const response = await api.post(
+      `/api/flujo-reportes/${periodoId}/aprobar${params}`
+    );
     return response.data.data;
   },
 
   // Rechazar directamente
-  async rechazar(periodoId: string, motivoRechazo: string): Promise<ReportePeriodo> {
-    const response = await api.post(`/api/flujo-reportes/${periodoId}/rechazar?motivoRechazo=${encodeURIComponent(motivoRechazo)}`);
+  async rechazar(
+    periodoId: string,
+    motivoRechazo: string
+  ): Promise<ReportePeriodo> {
+    const response = await api.post(
+      `/api/flujo-reportes/${periodoId}/rechazar?motivoRechazo=${encodeURIComponent(motivoRechazo)}`
+    );
     return response.data.data;
   },
 
   // Solicitar corrección con detalles
-  async solicitarCorreccion(request: SolicitarCorreccionRequest): Promise<ReportePeriodo> {
-    const response = await api.post('/api/flujo-reportes/solicitar-correccion', request);
+  async solicitarCorreccion(
+    request: SolicitarCorreccionRequest
+  ): Promise<ReportePeriodo> {
+    const response = await api.post(
+      "/api/flujo-reportes/solicitar-correccion",
+      request
+    );
     return response.data.data;
   },
 
@@ -1137,32 +1369,40 @@ export const flujoReportesService = {
 
   // Obtener historial de estados
   async obtenerHistorial(periodoId: string): Promise<HistorialEstado[]> {
-    const response = await api.get(`/api/flujo-reportes/periodos/${periodoId}/historial`);
+    const response = await api.get(
+      `/api/flujo-reportes/periodos/${periodoId}/historial`
+    );
     return response.data.data;
   },
 
   // Filtrar por estado
-  async porEstado(estado: string, page = 0, size = 10): Promise<Page<ReportePeriodo>> {
-    const response = await api.get(`/api/flujo-reportes/periodos/estado/${estado}?page=${page}&size=${size}`);
+  async porEstado(
+    estado: string,
+    page = 0,
+    size = 10
+  ): Promise<Page<ReportePeriodo>> {
+    const response = await api.get(
+      `/api/flujo-reportes/periodos/estado/${estado}?page=${page}&size=${size}`
+    );
     return response.data.data;
   },
 
   // Obtener periodos supervisados con filtros
   async supervisionConFiltros(
-    page = 0, 
-    size = 10, 
-    estado?: string, 
-    responsableId?: string, 
+    page = 0,
+    size = 10,
+    estado?: string,
+    responsableId?: string,
     entidadId?: string
   ): Promise<Page<ReportePeriodo>> {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
     });
-    if (estado) params.append('estado', estado);
-    if (responsableId) params.append('responsableId', responsableId);
-    if (entidadId) params.append('entidadId', entidadId);
-    
+    if (estado) params.append("estado", estado);
+    if (responsableId) params.append("responsableId", responsableId);
+    if (entidadId) params.append("entidadId", entidadId);
+
     const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
     return response.data.data;
   },
@@ -1179,15 +1419,12 @@ export const flujoReportesService = {
       page: page.toString(),
       size: size.toString(),
     });
-    if (estado) params.append('estado', estado);
-    if (responsableId) params.append('responsableId', responsableId);
-    if (entidadId) params.append('entidadId', entidadId);
+    if (estado) params.append("estado", estado);
+    if (responsableId) params.append("responsableId", responsableId);
+    if (entidadId) params.append("entidadId", entidadId);
 
-    const response = await api.get(`/api/supervisor/reportes`, { params });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      return response.data.data;
-    }
-    return response.data;
+    const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
+    return response.data.data;
   },
 };
 
@@ -1196,24 +1433,28 @@ export const flujoReportesService = {
 export const evidenciasSupervisorService = {
   // Obtener evidencias bajo supervisión
   async listar(
-    page = 0, 
-    size = 10, 
-    tipoArchivo?: string, 
-    responsableId?: string, 
-    entidadId?: string, 
+    page = 0,
+    size = 10,
+    tipoArchivo?: string,
+    responsableId?: string,
+    entidadId?: string,
     estado?: string
   ): Promise<Page<EvidenciaSupervisor>> {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
     });
-    if (tipoArchivo) params.append('tipoArchivo', tipoArchivo);
-    if (responsableId) params.append('responsableId', responsableId);
-    if (entidadId) params.append('entidadId', entidadId);
-    if (estado) params.append('estado', estado);
-    
+    if (tipoArchivo) params.append("tipoArchivo", tipoArchivo);
+    if (responsableId) params.append("responsableId", responsableId);
+    if (entidadId) params.append("entidadId", entidadId);
+    if (estado) params.append("estado", estado);
+
     const response = await api.get(`/api/evidencias/supervision?${params}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1222,14 +1463,14 @@ export const evidenciasSupervisorService = {
   // Descargar evidencia
   async descargar(id: string): Promise<void> {
     const response = await api.get(`/api/evidencias/download/${id}`, {
-      responseType: 'blob',
+      responseType: "blob",
     });
     const blob = new Blob([response.data], {
-      type: response.headers['content-type'],
+      type: response.headers["content-type"],
     });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const disposition = response.headers['content-disposition'];
+    const a = document.createElement("a");
+    const disposition = response.headers["content-disposition"];
     const match = disposition?.match(/filename="(.+)"/);
     a.href = url;
     a.download = match?.[1] || `evidencia-${id}`;
@@ -1246,20 +1487,28 @@ export interface EventoCalendario {
   reporteId?: string;
   titulo: string;
   // Tipo de evento determina qué campos usar
-  tipo: 'periodo' | 'vencimiento' | 'VENCIMIENTO' | 'ENVIO' | 'APROBACION' | 'RECHAZO' | 'CORRECCION' | 'VALIDACION_PENDIENTE';
-  
+  tipo:
+    | "periodo"
+    | "vencimiento"
+    | "VENCIMIENTO"
+    | "ENVIO"
+    | "APROBACION"
+    | "RECHAZO"
+    | "CORRECCION"
+    | "VALIDACION_PENDIENTE";
+
   // Para eventos tipo "periodo" (barra continua)
   startDate?: string;
   endDate?: string;
-  
+
   // Para eventos tipo "vencimiento" (marcador puntual)
   date?: string;
   fechaVencimiento?: string; // Alias para compatibilidad
-  
+
   estado?: string;
   color: string;
   descripcion?: string;
-  
+
   // Campos opcionales según rol
   esMio?: boolean;
   puedoActuar?: boolean;
@@ -1276,7 +1525,7 @@ export interface EventoCalendario {
   requiereAccion?: boolean;
   fechaLimiteCorreccion?: string;
   tiempoRespuesta?: string;
-  cumplimiento?: 'OPORTUNO' | 'EXTEMPORANEO' | 'VENCIDO';
+  cumplimiento?: "OPORTUNO" | "EXTEMPORANEO" | "VENCIDO";
 }
 
 export interface CalendarioResponse {
@@ -1310,14 +1559,20 @@ export const calendarioService = {
   // Calendario Admin (Global)
   async admin(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
     const params = new URLSearchParams();
-    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
-    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
-    if (filtros?.tipo) params.append('tipo', filtros.tipo);
-    if (filtros?.estado) params.append('estado', filtros.estado);
-    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
+    if (filtros?.fechaInicio) params.append("fechaInicio", filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append("fechaFin", filtros.fechaFin);
+    if (filtros?.tipo) params.append("tipo", filtros.tipo);
+    if (filtros?.estado) params.append("estado", filtros.estado);
+    if (filtros?.entidadId) params.append("entidadId", filtros.entidadId);
 
-    const response = await api.get(`/api/dashboard/admin/calendario?${params.toString()}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get(
+      `/api/dashboard/admin/calendario?${params.toString()}`
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1326,63 +1581,96 @@ export const calendarioService = {
   // Calendario Responsable (Personal)
   async responsable(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
     const params = new URLSearchParams();
-    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
-    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
-    if (filtros?.tipo) params.append('tipo', filtros.tipo);
-    if (filtros?.estado) params.append('estado', filtros.estado);
+    if (filtros?.fechaInicio) params.append("fechaInicio", filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append("fechaFin", filtros.fechaFin);
+    if (filtros?.tipo) params.append("tipo", filtros.tipo);
+    if (filtros?.estado) params.append("estado", filtros.estado);
 
-    const response = await api.get(`/api/dashboard/responsable/calendario?${params.toString()}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      return response.data.data;
+    const url = `/api/dashboard/responsable/calendario?${params.toString()}`;
+    console.log("🌐 [calendarioService] Llamando a:", url);
+
+    try {
+      const response = await api.get(url);
+
+      console.log("✅ [calendarioService] Respuesta status:", response.status);
+      console.log("📊 [calendarioService] Estructura de respuesta:", {
+        hasData: !!response.data,
+        hasDataProperty: response.data && "data" in response.data,
+        dataType: typeof response.data,
+      });
+
+      if (!response.data) {
+        throw new Error("Respuesta vacía del servidor");
+      }
+
+      // Manejar ambos formatos de respuesta
+      if (response.data.data) {
+        console.log("📦 [calendarioService] Usando response.data.data");
+        console.log(
+          "📋 [calendarioService] Eventos:",
+          response.data.data?.eventos?.length || 0
+        );
+        return response.data.data;
+      } else if (response.data.eventos) {
+        console.log("📦 [calendarioService] Usando response.data directamente");
+        console.log(
+          "📋 [calendarioService] Eventos:",
+          response.data.eventos.length
+        );
+        return response.data;
+      } else {
+        console.error(
+          "❌ [calendarioService] Formato de respuesta inesperado:",
+          response.data
+        );
+        throw new Error("Formato de respuesta del servidor no reconocido");
+      }
+    } catch (error: any) {
+      console.error("❌ [calendarioService] Error en la petición:", error);
+      console.error("❌ [calendarioService] URL:", url);
+      console.error("❌ [calendarioService] Response:", error.response?.data);
+      throw error;
     }
-    return response.data;
   },
 
   // Calendario Supervisor (Incidencias)
   async supervisor(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
     const params = new URLSearchParams();
-    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
-    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
-    if (filtros?.tipo) params.append('tipo', filtros.tipo);
-    if (filtros?.estado) params.append('estado', filtros.estado);
-    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
+    if (filtros?.fechaInicio) params.append("fechaInicio", filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append("fechaFin", filtros.fechaFin);
+    if (filtros?.tipo) params.append("tipo", filtros.tipo);
+    if (filtros?.estado) params.append("estado", filtros.estado);
 
-    try {
-      const response = await api.get(`/api/dashboard/supervisor/calendario?${params.toString()}`);
-      const data = response.data && typeof response.data === 'object' && 'data' in response.data
-        ? response.data.data
-        : response.data;
-
-      // Compatibilidad si el backend envía "incidencias" en lugar de "eventos"
-      if (data && !data.eventos && Array.isArray((data as any).incidencias)) {
-        return { ...data, eventos: (data as any).incidencias };
-      }
-
-      return data;
-    } catch (error) {
-      console.error('[calendarioService.supervisor] Error cargando calendario:', error);
-      return {
-        eventos: [],
-        totalEventosMes: 0,
-        eventosVencidosMes: 0,
-        eventosProximosMes: 0,
-        validacionesPendientes: 0,
-        incidenciasCriticas: 0,
-      };
+    const response = await api.get(
+      `/api/dashboard/supervisor/calendario?${params.toString()}`
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
     }
+    return response.data;
   },
 
   // Calendario Auditor (Consulta)
   async auditor(filtros?: CalendarioFiltros): Promise<CalendarioResponse> {
     const params = new URLSearchParams();
-    if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
-    if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
-    if (filtros?.tipo) params.append('tipo', filtros.tipo);
-    if (filtros?.estado) params.append('estado', filtros.estado);
-    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
+    if (filtros?.fechaInicio) params.append("fechaInicio", filtros.fechaInicio);
+    if (filtros?.fechaFin) params.append("fechaFin", filtros.fechaFin);
+    if (filtros?.tipo) params.append("tipo", filtros.tipo);
+    if (filtros?.estado) params.append("estado", filtros.estado);
+    if (filtros?.entidadId) params.append("entidadId", filtros.entidadId);
 
-    const response = await api.get(`/api/dashboard/auditor/calendario?${params.toString()}`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get(
+      `/api/dashboard/auditor/calendario?${params.toString()}`
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1407,8 +1695,12 @@ export const auditoriaService = {
     if (fechaDesde) params.fechaDesde = fechaDesde;
     if (fechaHasta) params.fechaHasta = fechaHasta;
 
-    const response = await api.get('/api/auditoria/accesos', { params });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/auditoria/accesos", { params });
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1416,8 +1708,12 @@ export const auditoriaService = {
 
   // Obtener estadísticas (Admin)
   async obtenerEstadisticas(): Promise<AccesosEstadisticasDTO> {
-    const response = await api.get('/api/auditoria/accesos/estadisticas');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/auditoria/accesos/estadisticas");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1429,30 +1725,52 @@ export const auditoriaService = {
     page = 0,
     size = 20
   ): Promise<Page<UserSessionLogResponse>> {
-    const response = await api.get(`/api/auditoria/accesos/usuario/${usuarioId}`, {
-      params: { page, size }
-    });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get(
+      `/api/auditoria/accesos/usuario/${usuarioId}`,
+      {
+        params: { page, size },
+      }
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   // Obtener último acceso de un usuario (Admin)
-  async obtenerUltimoAccesoUsuario(usuarioId: string): Promise<UserSessionLogResponse> {
-    const response = await api.get(`/api/auditoria/accesos/usuario/${usuarioId}/ultimo`);
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+  async obtenerUltimoAccesoUsuario(
+    usuarioId: string
+  ): Promise<UserSessionLogResponse> {
+    const response = await api.get(
+      `/api/auditoria/accesos/usuario/${usuarioId}/ultimo`
+    );
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 
   // Obtener mis propios accesos (Usuario autenticado)
-  async obtenerMisAccesos(page = 0, size = 20): Promise<Page<UserSessionLogResponse>> {
-    const response = await api.get('/api/auditoria/mis-accesos', {
-      params: { page, size }
+  async obtenerMisAccesos(
+    page = 0,
+    size = 20
+  ): Promise<Page<UserSessionLogResponse>> {
+    const response = await api.get("/api/auditoria/mis-accesos", {
+      params: { page, size },
     });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1460,8 +1778,12 @@ export const auditoriaService = {
 
   // Obtener mi último acceso (Usuario autenticado)
   async obtenerMiUltimoAcceso(): Promise<UserSessionLogResponse> {
-    const response = await api.get('/api/auditoria/mi-ultimo-acceso');
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const response = await api.get("/api/auditoria/mi-ultimo-acceso");
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
@@ -1469,13 +1791,16 @@ export const auditoriaService = {
 
   // Limpiar logs antiguos (Admin)
   async limpiarLogsAntiguos(diasRetencion = 90): Promise<void> {
-    const response = await api.delete('/api/auditoria/accesos/limpiar', {
-      params: { diasRetencion }
+    const response = await api.delete("/api/auditoria/accesos/limpiar", {
+      params: { diasRetencion },
     });
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
       return response.data.data;
     }
     return response.data;
   },
 };
-

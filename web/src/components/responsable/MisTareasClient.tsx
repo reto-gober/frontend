@@ -1,797 +1,311 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { TarjetaPeriodo } from "../flujo/TarjetaPeriodo";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
+import { useToast, ToastContainer } from "../Toast";
+import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
+import { esEstadoEnviado, esEstadoPendiente } from "../../lib/utils/estados";
 
-type FiltroTarea = "todas" | "pendientes" | "completadas" | "vencidas";
+type FilterType =
+  | "todos"
+  | "pendientes"
+  | "enviados"
+  | "vencidos"
+  | "porVencer";
+
+const PAGE_SIZE = 10;
 
 export default function MisTareasClient() {
-  const [tareas, setTareas] = useState<ReportePeriodo[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
+  const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtroActivo, setFiltroActivo] = useState<FiltroTarea>("todas");
-  const [tareasMarcadas, setTareasMarcadas] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+  const [pageMeta, setPageMeta] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    size: PAGE_SIZE,
+    number: 0,
+  });
+  const { toasts, removeToast, success, error } = useToast();
+
+  const [counts, setCounts] = useState({
+    todos: 0,
+    pendientes: 0,
+    enviados: 0,
+    vencidos: 0,
+    porVencer: 0,
+  });
 
   useEffect(() => {
-    loadTareas();
+    const params = new URLSearchParams(window.location.search);
+    const filtroParam = params.get("filtro");
+    if (filtroParam) {
+      setActiveFilter(filtroParam as FilterType);
+    }
   }, []);
 
-  const loadTareas = async () => {
+  useEffect(() => {
+    loadPeriodos();
+    setPage(0);
+  }, [activeFilter]);
+
+  const loadPeriodos = async () => {
     try {
       setLoading(true);
-      const response = await flujoReportesService.misPeriodos(0, 100);
-      setTareas(response.content);
-    } catch (err) {
-      console.error("Error al cargar tareas:", err);
+
+      const response = await flujoReportesService.misPeriodos(0, 1000);
+      if (!response || !response.content) {
+        throw new Error(
+          "La respuesta del servidor no tiene el formato esperado"
+        );
+      }
+
+      const all = response.content;
+      setPageMeta({
+        totalPages: response.totalPages ?? 0,
+        totalElements: response.totalElements ?? all.length,
+        size: response.size ?? PAGE_SIZE,
+        number: response.number ?? 0,
+      });
+
+      const newCounts = {
+        todos: all.length,
+        pendientes: all.filter((p) => esEstadoPendiente(p.estado)).length,
+        enviados: all.filter((p) => esEstadoEnviado(p.estado)).length,
+        vencidos: all.filter((p) => {
+          if (!p.fechaVencimientoCalculada) return false;
+          return (
+            esFechaVencida(p.fechaVencimientoCalculada) &&
+            !esEstadoEnviado(p.estado)
+          );
+        }).length,
+        porVencer: all.filter((p) => {
+          if (!p.fechaVencimientoCalculada) return false;
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
+        }).length,
+      };
+
+      setCounts(newCounts);
+
+      setPeriodos(all);
+    } catch (err: any) {
+      console.error("❌ [MisTareas] Error cargando periodos:", err);
+      error(
+        err.response?.data?.message || err.message || "Error al cargar tareas"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const getPrioridad = (periodo: ReportePeriodo): "high" | "medium" | "low" => {
-    const diasRestantes = getDiasRestantes(
-      new Date(periodo.fechaVencimientoCalculada)
-    );
-    if (diasRestantes < 0 || periodo.estado === "REQUIERE_CORRECCION")
-      return "high";
-    if (diasRestantes <= 3) return "medium";
-    return "low";
+  const handleFilterChange = (filter: FilterType) => {
+    setActiveFilter(filter);
+    const url = new URL(window.location.href);
+    url.searchParams.set("filtro", filter);
+    window.history.pushState({}, "", url);
   };
 
-  const getDiasRestantes = (fecha: Date): number => {
-    const now = new Date();
-    const diff = fecha.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
+  const handleAccion = (accion: string, periodoId: string) => {
+    const periodo = periodos.find((p) => p.periodoId === periodoId);
+    if (!periodo) return;
 
-  const esVencida = (periodo: ReportePeriodo): boolean => {
-    return (
-      getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) < 0 &&
-      periodo.estado !== "ENVIADO" &&
-      periodo.estado !== "APROBADO"
-    );
-  };
-
-  const esParaHoy = (periodo: ReportePeriodo): boolean => {
-    return (
-      getDiasRestantes(new Date(periodo.fechaVencimientoCalculada)) === 0 &&
-      periodo.estado !== "ENVIADO" &&
-      periodo.estado !== "APROBADO"
-    );
-  };
-
-  const esPendiente = (periodo: ReportePeriodo): boolean => {
-    return (
-      periodo.estado !== "ENVIADO" &&
-      periodo.estado !== "APROBADO" &&
-      !esVencida(periodo)
-    );
-  };
-
-  const esCompletada = (periodo: ReportePeriodo): boolean => {
-    return periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
-  };
-
-  const tareasFiltradas = tareas.filter((tarea) => {
-    switch (filtroActivo) {
-      case "pendientes":
-        return esPendiente(tarea);
-      case "completadas":
-        return esCompletada(tarea);
-      case "vencidas":
-        return esVencida(tarea);
-      default:
-        return true;
+    if (accion === "ver") {
+      window.location.href = `/mis-reportes/${periodoId}`;
+      return;
     }
-  });
 
-  const tareasVencidas = tareasFiltradas.filter(esVencida);
-  const tareasParaHoy = tareasFiltradas.filter(esParaHoy);
-  const tareasPendientesNormales = tareasFiltradas.filter(
-    (t) => !esVencida(t) && !esParaHoy(t) && !esCompletada(t)
-  );
-  const tareasCompletadas = tareasFiltradas.filter(esCompletada);
-
-  const contadores = {
-    todas: tareas.length,
-    pendientes: tareas.filter(esPendiente).length,
-    completadas: tareas.filter(esCompletada).length,
-    vencidas: tareas.filter(esVencida).length,
-    paraHoy: tareas.filter(esParaHoy).length,
-  };
-
-  const toggleTareaMarcada = (periodoId: string) => {
-    setTareasMarcadas((prev) => {
-      const nuevas = new Set(prev);
-      if (nuevas.has(periodoId)) {
-        nuevas.delete(periodoId);
-      } else {
-        nuevas.add(periodoId);
+    if (accion === "enviar" || accion === "corregir") {
+      const params = new URLSearchParams({
+        periodoId: periodo.periodoId,
+        reporteId: periodo.reporteId,
+      });
+      if ((periodo as any).reporteNombre) {
+        params.append("reporteNombre", (periodo as any).reporteNombre);
       }
-      return nuevas;
+      window.location.href = `/roles/responsable/entrega?${params.toString()}`;
+    }
+  };
+
+  const filters = [
+    { id: "todos" as FilterType, label: "Todos", count: counts.todos },
+    {
+      id: "pendientes" as FilterType,
+      label: "Pendientes",
+      count: counts.pendientes,
+    },
+    { id: "vencidos" as FilterType, label: "Vencidos", count: counts.vencidos },
+    {
+      id: "porVencer" as FilterType,
+      label: "Por Vencer (3 días)",
+      count: counts.porVencer,
+    },
+    { id: "enviados" as FilterType, label: "Enviados", count: counts.enviados },
+  ];
+
+  const periodosFiltrados = useMemo(() => {
+    let filtered = periodos;
+    switch (activeFilter) {
+      case "pendientes":
+        filtered = periodos.filter((p) => esEstadoPendiente(p.estado));
+        break;
+      case "enviados":
+        filtered = periodos.filter((p) => esEstadoEnviado(p.estado));
+        break;
+      case "vencidos":
+        filtered = periodos.filter((p) => {
+          if (!p.fechaVencimientoCalculada) return false;
+          return (
+            esFechaVencida(p.fechaVencimientoCalculada) &&
+            !esEstadoEnviado(p.estado)
+          );
+        });
+        break;
+      case "porVencer":
+        filtered = periodos.filter((p) => {
+          if (!p.fechaVencimientoCalculada) return false;
+          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+          return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
+        });
+        break;
+      case "todos":
+      default:
+        break;
+    }
+
+    return [...filtered].sort((a, b) => {
+      const fa = a.fechaVencimientoCalculada
+        ? new Date(a.fechaVencimientoCalculada).getTime()
+        : 0;
+      const fb = b.fechaVencimientoCalculada
+        ? new Date(b.fechaVencimientoCalculada).getTime()
+        : 0;
+      return fa - fb;
     });
-  };
+  }, [periodos, activeFilter]);
 
-  const getTextoFechaVencimiento = (periodo: ReportePeriodo): string => {
-    const diasRestantes = getDiasRestantes(
-      new Date(periodo.fechaVencimientoCalculada)
+  const totalPagesUi = useMemo(() => {
+    return Math.max(0, Math.ceil(periodosFiltrados.length / PAGE_SIZE));
+  }, [periodosFiltrados.length]);
+
+  const currentPage = Math.min(page, Math.max(0, totalPagesUi - 1));
+
+  const periodosPagina = useMemo(() => {
+    const start = currentPage * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return periodosFiltrados.slice(start, end);
+  }, [periodosFiltrados, currentPage]);
+
+  const handlePageChange = (nextPage: number) => {
+    const bounded = Math.max(
+      0,
+      Math.min(nextPage, Math.max(0, totalPagesUi - 1))
     );
-    if (diasRestantes < 0) {
-      return `Venció hace ${Math.abs(diasRestantes)} día${Math.abs(diasRestantes) !== 1 ? "s" : ""}`;
-    } else if (diasRestantes === 0) {
-      return "Vence hoy";
-    } else if (diasRestantes === 1) {
-      return "Vence mañana";
-    } else {
-      return `Vence en ${diasRestantes} días`;
-    }
+    setPage(bounded);
   };
-
-  const getDescripcionTarea = (periodo: ReportePeriodo): string => {
-    if (periodo.estado === "REQUIERE_CORRECCION") {
-      return `Requiere corrección${periodo.comentarios ? ": " + periodo.comentarios : ""}`;
-    }
-    if (periodo.estado === "PENDIENTE") {
-      return `Completar y enviar reporte de ${periodo.periodoTipo}`;
-    }
-    if (periodo.estado === "ENVIADO") {
-      return "Reporte enviado, en proceso de revisión";
-    }
-    if (periodo.estado === "APROBADO") {
-      return "Reporte aprobado";
-    }
-    return periodo.estadoDescripcion || "Sin descripción";
-  };
-
-  const handleIrAReporte = (periodoId: string) => {
-    window.location.href = `/roles/responsable/mis-reportes?periodo=${periodoId}`;
-  };
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "400px",
-          color: "var(--neutral-500)",
-        }}
-      >
-        <div
-          style={{
-            width: "40px",
-            height: "40px",
-            border: "4px solid var(--neutral-200)",
-            borderTop: "4px solid var(--role-accent)",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="mis-tareas-page">
-      {/* Header */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+
       <div className="page-header">
         <div className="header-info">
           <h1 className="page-title">Mis Tareas</h1>
           <p className="page-description">
-            Gestión de tareas y actividades pendientes
+            Cada periodo asignado como tarea individual
           </p>
         </div>
-        <div className="header-stats">
-          <div className="stat-badge pending">
-            <span className="stat-number">{contadores.pendientes}</span>
-            <span className="stat-label">Pendientes</span>
-          </div>
-          <div className="stat-badge today">
-            <span className="stat-number">{contadores.paraHoy}</span>
-            <span className="stat-label">Para Hoy</span>
-          </div>
+      </div>
+
+      <div className="status-tabs">
+        {filters.map((filter) => (
+          <button
+            key={filter.id}
+            onClick={() => handleFilterChange(filter.id)}
+            className={`status-tab ${activeFilter === filter.id ? "active" : ""}`}
+          >
+            <span className="tab-count">{filter.count}</span>
+            <span className="tab-label">{filter.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="loader-wrapper">
+          <div className="loader" />
         </div>
-      </div>
-
-      {/* Quick Filters */}
-      <div className="quick-filters">
-        <button
-          className={`filter-btn ${filtroActivo === "todas" ? "active" : ""}`}
-          onClick={() => setFiltroActivo("todas")}
-        >
+      ) : periodosFiltrados.length === 0 ? (
+        <div className="empty-state">
           <svg
+            style={{ margin: "0 auto 1rem", color: "var(--neutral-400)" }}
+            width="64"
+            height="64"
             viewBox="0 0 24 24"
-            width="18"
-            height="18"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
           >
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Todas ({contadores.todas})
-        </button>
-        <button
-          className={`filter-btn ${filtroActivo === "pendientes" ? "active" : ""}`}
-          onClick={() => setFiltroActivo("pendientes")}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+          <h3>
+            {activeFilter === "todos" && "No tienes tareas asignadas"}
+            {activeFilter === "pendientes" && "No hay tareas pendientes"}
+            {activeFilter === "enviados" && "No hay tareas enviadas"}
+            {activeFilter === "vencidos" && "No hay tareas vencidas"}
+            {activeFilter === "porVencer" && "No hay tareas próximas a vencer"}
+          </h3>
+          <p>
+            {activeFilter === "todos" &&
+              "Cuando se te asignen tareas, aparecerán aquí"}
+            {activeFilter === "pendientes" && "Todas tus tareas están al día"}
+            {activeFilter === "enviados" && "Aún no has enviado ninguna tarea"}
+            {activeFilter === "vencidos" &&
+              "Excelente, no tienes tareas vencidas"}
+            {activeFilter === "porVencer" &&
+              "No hay tareas por vencer en los próximos 3 días"}
+          </p>
+        </div>
+      ) : (
+        <div className="tareas-list">
+          {periodosPagina.map((periodo) => (
+            <TarjetaPeriodo
+              key={periodo.periodoId}
+              periodo={periodo}
+              onAccion={handleAccion}
+              mostrarResponsables={false}
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && periodosFiltrados.length > 0 && totalPagesUi > 1 && (
+        <div className="pagination">
+          <button
+            className="page-btn"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 0}
+            aria-label="Página anterior"
           >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12,6 12,12 16,14" />
-          </svg>
-          Pendientes ({contadores.pendientes})
-        </button>
-        <button
-          className={`filter-btn ${filtroActivo === "completadas" ? "active" : ""}`}
-          onClick={() => setFiltroActivo("completadas")}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-          Completadas ({contadores.completadas})
-        </button>
-        <button
-          className={`filter-btn ${filtroActivo === "vencidas" ? "active" : ""}`}
-          onClick={() => setFiltroActivo("vencidas")}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          Vencidas ({contadores.vencidas})
-        </button>
-      </div>
-
-      {/* Tareas List */}
-      <div className="tareas-container">
-        {/* Sección: Vencidas */}
-        {tareasVencidas.length > 0 && (
-          <div className="tareas-section overdue">
-            <div className="section-header">
-              <div className="section-title">
-                <span className="section-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  </svg>
-                </span>
-                <h2>Vencidas</h2>
-                <span className="count">{tareasVencidas.length}</span>
-              </div>
-            </div>
-            <div className="tareas-list">
-              {tareasVencidas.map((tarea) => (
-                <div key={tarea.periodoId} className="tarea-item overdue">
-                  <div className="tarea-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`task-${tarea.periodoId}`}
-                      checked={tareasMarcadas.has(tarea.periodoId)}
-                      onChange={() => toggleTareaMarcada(tarea.periodoId)}
-                    />
-                    <label htmlFor={`task-${tarea.periodoId}`}></label>
-                  </div>
-                  <div className="tarea-content">
-                    <div className="tarea-header">
-                      <h3 className="tarea-title">{tarea.reporteNombre}</h3>
-                      <div className={`tarea-priority ${getPrioridad(tarea)}`}>
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                        >
-                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                        </svg>
-                        {getPrioridad(tarea) === "high"
-                          ? "Alta"
-                          : getPrioridad(tarea) === "medium"
-                            ? "Media"
-                            : "Baja"}
-                      </div>
-                    </div>
-                    <p className="tarea-description">
-                      {getDescripcionTarea(tarea)}
-                    </p>
-                    <div className="tarea-meta">
-                      <span className="meta-item danger">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect
-                            x="3"
-                            y="4"
-                            width="18"
-                            height="18"
-                            rx="2"
-                            ry="2"
-                          />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        {getTextoFechaVencimiento(tarea)}
-                      </span>
-                      <span className="meta-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        </svg>
-                        {tarea.entidadNombre}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="tarea-actions">
-                    <button
-                      className="action-btn primary"
-                      onClick={() => handleIrAReporte(tarea.periodoId)}
-                      title="Ir al reporte"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sección: Para Hoy */}
-        {tareasParaHoy.length > 0 && (
-          <div className="tareas-section today">
-            <div className="section-header">
-              <div className="section-title">
-                <span className="section-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12,6 12,12 16,14" />
-                  </svg>
-                </span>
-                <h2>Para Hoy</h2>
-                <span className="count">{tareasParaHoy.length}</span>
-              </div>
-            </div>
-            <div className="tareas-list">
-              {tareasParaHoy.map((tarea) => (
-                <div key={tarea.periodoId} className="tarea-item">
-                  <div className="tarea-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`task-${tarea.periodoId}`}
-                      checked={tareasMarcadas.has(tarea.periodoId)}
-                      onChange={() => toggleTareaMarcada(tarea.periodoId)}
-                    />
-                    <label htmlFor={`task-${tarea.periodoId}`}></label>
-                  </div>
-                  <div className="tarea-content">
-                    <div className="tarea-header">
-                      <h3 className="tarea-title">{tarea.reporteNombre}</h3>
-                      <div className={`tarea-priority ${getPrioridad(tarea)}`}>
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                        >
-                          {getPrioridad(tarea) === "high" && (
-                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                          )}
-                          {getPrioridad(tarea) === "medium" && (
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                          )}
-                          {getPrioridad(tarea) === "low" && (
-                            <circle cx="12" cy="12" r="8" />
-                          )}
-                        </svg>
-                        {getPrioridad(tarea) === "high"
-                          ? "Alta"
-                          : getPrioridad(tarea) === "medium"
-                            ? "Media"
-                            : "Baja"}
-                      </div>
-                    </div>
-                    <p className="tarea-description">
-                      {getDescripcionTarea(tarea)}
-                    </p>
-                    <div className="tarea-meta">
-                      <span className="meta-item warning">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect
-                            x="3"
-                            y="4"
-                            width="18"
-                            height="18"
-                            rx="2"
-                            ry="2"
-                          />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        {getTextoFechaVencimiento(tarea)}
-                      </span>
-                      <span className="meta-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        </svg>
-                        {tarea.entidadNombre}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="tarea-actions">
-                    <button
-                      className="action-btn primary"
-                      onClick={() => handleIrAReporte(tarea.periodoId)}
-                      title="Ir al reporte"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sección: Pendientes */}
-        {tareasPendientesNormales.length > 0 && (
-          <div className="tareas-section">
-            <div className="section-header">
-              <div className="section-title">
-                <span className="section-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                  </svg>
-                </span>
-                <h2>Próximas</h2>
-                <span className="count">{tareasPendientesNormales.length}</span>
-              </div>
-            </div>
-            <div className="tareas-list">
-              {tareasPendientesNormales.map((tarea) => (
-                <div key={tarea.periodoId} className="tarea-item">
-                  <div className="tarea-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`task-${tarea.periodoId}`}
-                      checked={tareasMarcadas.has(tarea.periodoId)}
-                      onChange={() => toggleTareaMarcada(tarea.periodoId)}
-                    />
-                    <label htmlFor={`task-${tarea.periodoId}`}></label>
-                  </div>
-                  <div className="tarea-content">
-                    <div className="tarea-header">
-                      <h3 className="tarea-title">{tarea.reporteNombre}</h3>
-                      <div className={`tarea-priority ${getPrioridad(tarea)}`}>
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                        >
-                          {getPrioridad(tarea) === "high" && (
-                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                          )}
-                          {getPrioridad(tarea) === "medium" && (
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                          )}
-                          {getPrioridad(tarea) === "low" && (
-                            <circle cx="12" cy="12" r="8" />
-                          )}
-                        </svg>
-                        {getPrioridad(tarea) === "high"
-                          ? "Alta"
-                          : getPrioridad(tarea) === "medium"
-                            ? "Media"
-                            : "Baja"}
-                      </div>
-                    </div>
-                    <p className="tarea-description">
-                      {getDescripcionTarea(tarea)}
-                    </p>
-                    <div className="tarea-meta">
-                      <span className="meta-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect
-                            x="3"
-                            y="4"
-                            width="18"
-                            height="18"
-                            rx="2"
-                            ry="2"
-                          />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        {getTextoFechaVencimiento(tarea)}
-                      </span>
-                      <span className="meta-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        </svg>
-                        {tarea.entidadNombre}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="tarea-actions">
-                    <button
-                      className="action-btn"
-                      onClick={() => handleIrAReporte(tarea.periodoId)}
-                      title="Ir al reporte"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sección: Completadas */}
-        {tareasCompletadas.length > 0 && (
-          <div className="tareas-section completed">
-            <div className="section-header">
-              <div className="section-title">
-                <span className="section-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                </span>
-                <h2>Completadas</h2>
-                <span className="count">{tareasCompletadas.length}</span>
-              </div>
-            </div>
-            <div className="tareas-list">
-              {tareasCompletadas.map((tarea) => (
-                <div key={tarea.periodoId} className="tarea-item completed">
-                  <div className="tarea-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`task-${tarea.periodoId}`}
-                      checked={true}
-                      disabled
-                    />
-                    <label htmlFor={`task-${tarea.periodoId}`}></label>
-                  </div>
-                  <div className="tarea-content">
-                    <div className="tarea-header">
-                      <h3 className="tarea-title">{tarea.reporteNombre}</h3>
-                      <div className="tarea-status success">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                          <polyline points="22 4 12 14.01 9 11.01" />
-                        </svg>
-                        {tarea.estado === "APROBADO" ? "Aprobado" : "Enviado"}
-                      </div>
-                    </div>
-                    <p className="tarea-description">
-                      {getDescripcionTarea(tarea)}
-                    </p>
-                    <div className="tarea-meta">
-                      <span className="meta-item success">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect
-                            x="3"
-                            y="4"
-                            width="18"
-                            height="18"
-                            rx="2"
-                            ry="2"
-                          />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        {tarea.fechaEnvioReal
-                          ? new Date(tarea.fechaEnvioReal).toLocaleDateString(
-                              "es-CO"
-                            )
-                          : "Completado"}
-                      </span>
-                      <span className="meta-item">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        </svg>
-                        {tarea.entidadNombre}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="tarea-actions">
-                    <button
-                      className="action-btn"
-                      onClick={() => handleIrAReporte(tarea.periodoId)}
-                      title="Ver reporte"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mensaje cuando no hay tareas */}
-        {tareasFiltradas.length === 0 && (
-          <div
-            style={{
-              padding: "4rem 2rem",
-              textAlign: "center",
-              color: "var(--neutral-400)",
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="64"
-              height="64"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              style={{ opacity: 0.5, margin: "0 auto 1rem" }}
+            «
+          </button>
+          {Array.from({ length: totalPagesUi }, (_, idx) => (
+            <button
+              key={idx}
+              className={`page-number ${idx === currentPage ? "active" : ""}`}
+              onClick={() => handlePageChange(idx)}
             >
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-            </svg>
-            <p style={{ fontSize: "0.875rem" }}>
-              {filtroActivo === "todas" && "No tienes tareas asignadas"}
-              {filtroActivo === "pendientes" && "No tienes tareas pendientes"}
-              {filtroActivo === "completadas" && "No tienes tareas completadas"}
-              {filtroActivo === "vencidas" && "No tienes tareas vencidas"}
-            </p>
-          </div>
-        )}
-      </div>
+              {idx + 1}
+            </button>
+          ))}
+          <button
+            className="page-btn"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPagesUi - 1}
+            aria-label="Página siguiente"
+          >
+            »
+          </button>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin {
@@ -807,7 +321,7 @@ export default function MisTareasClient() {
         .page-header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
         }
 
         .page-title {
@@ -823,340 +337,131 @@ export default function MisTareasClient() {
           margin: 0.25rem 0 0;
         }
 
-        .header-stats {
-          display: flex;
-          gap: 0.75rem;
-        }
-
-        .stat-badge {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 0.75rem 1.25rem;
-          border-radius: 10px;
-          min-width: 80px;
-        }
-
-        .stat-badge.pending {
-          background: var(--warning-yellow-100);
-        }
-
-        .stat-badge.today {
-          background: var(--color-primary-100);
-        }
-
-        .stat-number {
-          font-size: 1.5rem;
-          font-weight: 700;
-        }
-
-        .stat-badge.pending .stat-number { color: var(--warning-yellow-700); }
-        .stat-badge.today .stat-number { color: var(--color-primary-700); }
-
-        .stat-label {
-          font-size: 0.6875rem;
-          color: var(--neutral-600);
-          text-transform: uppercase;
-          letter-spacing: 0.025em;
-        }
-
-        .quick-filters {
+        .status-tabs {
           display: flex;
           gap: 0.5rem;
-          flex-wrap: wrap;
+          background: white;
+          padding: 0.5rem;
+          border-radius: 12px;
+          box-shadow: var(--shadow-card);
+          overflow-x: auto;
         }
 
-        .filter-btn {
+        .status-tab {
           display: flex;
           align-items: center;
           gap: 0.5rem;
           padding: 0.625rem 1rem;
-          background: white;
-          border: 1px solid var(--neutral-200);
+          border: none;
           border-radius: 8px;
-          font-size: 0.8125rem;
-          font-weight: 500;
-          color: var(--neutral-600);
+          background: transparent;
           cursor: pointer;
           transition: all 0.2s;
+          white-space: nowrap;
         }
 
-        .filter-btn:hover {
-          background: var(--neutral-100);
+        .status-tab:hover { background: var(--neutral-100); }
+
+        .status-tab.active { background: var(--role-accent); }
+
+        .tab-count {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--neutral-800);
         }
 
-        .filter-btn.active {
-          background: var(--role-accent);
-          border-color: var(--role-accent);
+        .tab-label {
+          font-size: 0.8125rem;
+          color: var(--neutral-600);
+        }
+
+        .status-tab.active .tab-count,
+        .status-tab.active .tab-label {
           color: var(--neutral-900);
         }
 
-        .filter-btn svg {
-          opacity: 0.7;
-        }
-
-        .tareas-container {
+        .loader-wrapper {
           display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
+          justify-content: center;
+          align-items: center;
+          min-height: 300px;
         }
 
-        .tareas-section {
+        .loader {
+          width: 40px;
+          height: 40px;
+          border: 4px solid var(--neutral-200);
+          border-top: 4px solid var(--role-accent);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 3rem 1rem;
           background: white;
           border-radius: 12px;
           box-shadow: var(--shadow-card);
-          overflow: hidden;
+          border: 2px dashed var(--neutral-300);
         }
 
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.25rem;
-          border-bottom: 1px solid var(--neutral-100);
-        }
-
-        .section-title {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .section-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-        }
-
-        .tareas-section.overdue .section-icon {
-          background: var(--error-red-100);
-          color: var(--error-red-600);
-        }
-
-        .tareas-section.today .section-icon {
-          background: var(--warning-yellow-100);
-          color: var(--warning-yellow-600);
-        }
-
-        .tareas-section.completed .section-icon {
-          background: var(--success-green-100);
-          color: var(--success-green-600);
-        }
-
-        .section-title h2 {
-          font-size: 0.9375rem;
+        .empty-state h3 {
+          font-size: 1.125rem;
           font-weight: 600;
-          color: var(--neutral-800);
-          margin: 0;
+          color: var(--neutral-900);
+          margin-bottom: 0.5rem;
         }
 
-        .section-title .count {
-          font-size: 0.75rem;
-          font-weight: 600;
+        .empty-state p {
+          font-size: 0.875rem;
           color: var(--neutral-500);
-          padding: 0.125rem 0.5rem;
-          background: var(--neutral-100);
-          border-radius: 10px;
         }
 
         .tareas-list {
-          padding: 0.5rem;
-        }
-
-        .tarea-item {
           display: flex;
-          align-items: flex-start;
-          gap: 0.875rem;
-          padding: 1rem;
-          border-radius: 8px;
-          transition: background 0.2s;
-        }
-
-        .tarea-item:hover {
-          background: var(--neutral-50);
-        }
-
-        .tarea-item.overdue {
-          background: var(--error-red-50);
-          border-left: 3px solid var(--error-red-500);
-        }
-
-        .tarea-item.completed {
-          opacity: 0.8;
-        }
-
-        .tarea-checkbox {
-          flex-shrink: 0;
-          margin-top: 0.125rem;
-        }
-
-        .tarea-checkbox input {
-          display: none;
-        }
-
-        .tarea-checkbox label {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 22px;
-          height: 22px;
-          border: 2px solid var(--neutral-300);
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .tarea-checkbox label:hover {
-          border-color: var(--role-accent);
-        }
-
-        .tarea-checkbox input:checked + label {
-          background: var(--success-green-500);
-          border-color: var(--success-green-500);
-        }
-
-        .tarea-checkbox input:checked + label::after {
-          content: '✓';
-          color: white;
-          font-size: 0.75rem;
-          font-weight: 700;
-        }
-
-        .tarea-content {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .tarea-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
+          flex-direction: column;
           gap: 1rem;
-          margin-bottom: 0.25rem;
         }
 
-        .tarea-title {
-          font-size: 0.9375rem;
-          font-weight: 500;
-          color: var(--neutral-800);
-          margin: 0;
-        }
-
-        .tarea-priority {
+        .pagination {
           display: flex;
+          justify-content: center;
           align-items: center;
-          gap: 0.25rem;
-          padding: 0.125rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.6875rem;
-          font-weight: 600;
-          white-space: nowrap;
-        }
-
-        .tarea-priority.high {
-          background: var(--error-red-100);
-          color: var(--error-red-700);
-        }
-
-        .tarea-priority.medium {
-          background: var(--warning-yellow-100);
-          color: var(--warning-yellow-700);
-        }
-
-        .tarea-priority.low {
-          background: var(--neutral-100);
-          color: var(--neutral-600);
-        }
-
-        .tarea-status {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          padding: 0.125rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.6875rem;
-          font-weight: 600;
-          white-space: nowrap;
-        }
-
-        .tarea-status.success {
-          background: var(--success-green-100);
-          color: var(--success-green-700);
-        }
-
-        .tarea-description {
-          font-size: 0.8125rem;
-          color: var(--neutral-600);
-          margin: 0 0 0.5rem;
-          line-height: 1.4;
-        }
-
-        .tarea-meta {
-          display: flex;
+          gap: 0.35rem;
+          margin-top: 1.5rem;
           flex-wrap: wrap;
-          gap: 1rem;
         }
 
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          font-size: 0.75rem;
-          color: var(--neutral-500);
-        }
-
-        .meta-item svg {
-          opacity: 0.7;
-        }
-
-        .meta-item.danger {
-          color: var(--error-red-600);
-        }
-
-        .meta-item.warning {
-          color: var(--warning-yellow-700);
-        }
-
-        .meta-item.success {
-          color: var(--success-green-600);
-        }
-
-        .tarea-actions {
-          display: flex;
-          gap: 0.375rem;
-          flex-shrink: 0;
-        }
-
-        .action-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
+        .page-btn,
+        .page-number {
+          min-width: 36px;
           height: 36px;
-          border: 1px solid var(--neutral-200);
-          border-radius: 6px;
+          padding: 0 0.75rem;
+          border: 1px solid var(--neutral-300);
+          border-radius: 8px;
           background: white;
-          color: var(--neutral-500);
+          color: var(--neutral-800);
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.15s ease;
         }
 
-        .action-btn:hover {
-          background: var(--neutral-100);
-          color: var(--neutral-700);
+        .page-btn:disabled,
+        .page-number:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
-        .action-btn.primary {
+        .page-number.active {
           background: var(--role-accent);
-          border-color: var(--role-accent);
           color: var(--neutral-900);
+          border-color: var(--neutral-400);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         }
 
-        .action-btn.primary:hover {
-          background: var(--role-accent-dark);
+        .page-btn:not(:disabled):hover,
+        .page-number:not(.active):not(:disabled):hover {
+          background: var(--neutral-50);
         }
       `}</style>
     </div>

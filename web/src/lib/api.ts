@@ -1,7 +1,7 @@
-import axios from 'axios';
-import notifications from './notifications';
+import axios from "axios";
+import notifications from "./notifications";
 
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -9,12 +9,21 @@ export const api = axios.create({
 
 // Request interceptor to add JWT token
 api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    console.log(
+      "🔐 [API Interceptor] Token encontrado:",
+      token ? "✅ Sí" : "❌ No"
+    );
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("🔐 [API Interceptor] Authorization header configurado");
+    } else {
+      console.warn("⚠️ [API Interceptor] No se encontró token en localStorage");
     }
   }
+  console.log("📤 [API Interceptor] Request URL:", config.url);
+  console.log("📤 [API Interceptor] Request Method:", config.method);
   return config;
 });
 
@@ -22,12 +31,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const status = error.response?.status;
       const message = error.response?.data?.message || error.message || 'Error desconocido';
       const currentPath = window.location.pathname;
-      const isLoginRequest = error.config?.url?.includes('/api/auth/login');
-      const isRegisterRequest = error.config?.url?.includes('/api/auth/registro');
       const isPublicEndpoint = error.config?.url?.includes('/api/auth/') || 
                                error.config?.url?.includes('/api/users/validate-invitation') ||
                                error.config?.url?.includes('/api/users/complete-invitation');
@@ -47,16 +54,13 @@ api.interceptors.response.use(
         // Mostrar notificación SOLO si no estamos en login
         if (currentPath !== '/login' && currentPath !== '/registro') {
           notifications.warning(
-            'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
-            'Sesión Expirada'
+            "Por favor, inicia sesión nuevamente",
+            "Sesión expirada"
           );
         }
-        
-        // Redirigir a login
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
-        
+
+        // Redirect to login
+        window.location.href = '/login';
         return Promise.reject(error);
       }
 

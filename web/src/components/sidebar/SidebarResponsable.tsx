@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { flujoReportesService } from "../../lib/services";
+import { esEstadoEnviado } from "../../lib/utils/estados";
 
 const menuItems = [
   {
@@ -103,6 +105,49 @@ export default function SidebarResponsable() {
     if (typeof window !== "undefined") {
       setCurrentPath(window.location.pathname);
     }
+  }, []);
+
+  useEffect(() => {
+    // Cargar contadores de alertas
+    const loadBadges = async () => {
+      try {
+        const response = await flujoReportesService.misPeriodos(0, 1000);
+        const periodos = response.content;
+
+        const now = new Date();
+        const tresDias = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        let alertasCount = 0;
+
+        periodos.forEach((periodo) => {
+          if (!periodo.fechaVencimientoCalculada) return;
+
+          const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
+          const enviado = esEstadoEnviado(periodo.estado);
+
+          // Contar alertas críticas - Reportes vencidos
+          if (fechaVenc < now && !enviado) {
+            alertasCount++;
+          }
+
+          // Contar alertas de advertencia - Por vencer en 3 días
+          if (fechaVenc >= now && fechaVenc <= tresDias && !enviado) {
+            alertasCount++;
+          }
+
+          // Contar alertas de corrección requerida
+          if (periodo.estado === "requiere_correccion") {
+            alertasCount++;
+          }
+        });
+
+        setBadges({ alertas: alertasCount });
+      } catch (err) {
+        console.error("Error al cargar badges:", err);
+        setBadges({ alertas: 0 });
+      }
+    };
+
+    loadBadges();
   }, []);
 
   useEffect(() => {
