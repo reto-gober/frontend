@@ -11,9 +11,11 @@ import '../../styles/reporte-detalle.css';
 
 interface ReporteDetalleClientProps {
   periodoId: string;
+  backHref?: string;
+  backLabel?: string;
 }
 
-export default function ReporteDetalleClient({ periodoId }: ReporteDetalleClientProps) {
+export default function ReporteDetalleClient({ periodoId, backHref, backLabel }: ReporteDetalleClientProps) {
   const [detalle, setDetalle] = useState<ReportePeriodo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -178,11 +180,17 @@ export default function ReporteDetalleClient({ periodoId }: ReporteDetalleClient
         {/* Header con botón de regreso */}
         <div className="reporte-header">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => {
+              if (backHref) {
+                window.location.href = backHref;
+              } else {
+                window.history.back();
+              }
+            }}
             className="back-button"
           >
             <ArrowLeft />
-            <span>Volver a Mis Reportes</span>
+            <span>{backLabel || 'Volver a Mis Reportes'}</span>
           </button>
           
           <div className="header-card">

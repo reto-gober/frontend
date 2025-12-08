@@ -144,6 +144,7 @@
 /* Backdrop con opacidad suave */
 .swal2-container {
   background-color: rgba(0, 0, 0, 0.4) !important;
+  z-index: 4000 !important; /* asegurar que cubra cualquier modal propio */
 }
 
 /* Responsive - Mobile */

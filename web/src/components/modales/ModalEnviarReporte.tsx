@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   flujoReportesService,
   evidenciasService,
@@ -8,6 +8,9 @@ import {
 interface ModalEnviarReporteProps {
   periodoId: string;
   reporteNombre: string;
+  periodoInicio?: string;
+  periodoFin?: string;
+  frecuencia?: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -18,6 +21,9 @@ interface ModalEnviarReporteProps {
 export function ModalEnviarReporte({
   periodoId,
   reporteNombre,
+  periodoInicio,
+  periodoFin,
+  frecuencia,
   isOpen,
   onClose,
   onSuccess,
@@ -25,39 +31,101 @@ export function ModalEnviarReporte({
   esCorreccion = false,
 }: ModalEnviarReporteProps) {
   const [comentarios, setComentarios] = useState("");
-  const [archivos, setArchivos] = useState<File[]>([]);
+  const [archivoReporte, setArchivoReporte] = useState<File | null>(null);
+  const [evidencias, setEvidencias] = useState<File[]>([]);
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [mostrarExito, setMostrarExito] = useState(false);
+  const headerRef = useRef<HTMLHeadingElement | null>(null);
+
+  const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+  const ALLOW_TYPES = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "image/jpeg",
+    "image/png",
+  ];
 
   useEffect(() => {
     // Limpiar el estado al abrir/cerrar
     if (isOpen) {
       setComentarios("");
-      setArchivos([]);
+      setArchivoReporte(null);
+      setEvidencias([]);
+      setErrorArchivo(null);
+      setMostrarExito(false);
+      // Mover foco al encabezado del modal para accesibilidad
+      setTimeout(() => headerRef.current?.focus(), 0);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setArchivos(Array.from(e.target.files));
+  const validarArchivo = (file: File) => {
+    if (!ALLOW_TYPES.includes(file.type)) {
+      return "Formato no permitido. Usa PDF, Word, Excel o imágenes";
     }
+    if (file.size > MAX_SIZE_BYTES) {
+      return "El archivo supera el límite de 10MB";
+    }
+    return null;
+  };
+
+  const handleReporteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const error = validarArchivo(file);
+      setErrorArchivo(error);
+      if (!error) setArchivoReporte(file);
+    }
+  };
+
+  const handleEvidenciasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const nuevos = Array.from(e.target.files);
+    const filtrados: File[] = [];
+    let errorMensaje: string | null = null;
+    nuevos.forEach((file) => {
+      const error = validarArchivo(file);
+      if (error && !errorMensaje) errorMensaje = error;
+      if (!error) filtrados.push(file);
+    });
+    if (errorMensaje) setErrorArchivo(errorMensaje);
+    setEvidencias((prev) => [...prev, ...filtrados]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEnviando(true);
 
+    if (!archivoReporte) {
+      setErrorArchivo("Debes adjuntar el archivo del reporte");
+      setEnviando(false);
+      return;
+    }
+
     try {
       // Subir archivos primero usando periodoId directamente
       let evidenciasIds: string[] = [];
 
-      if (archivos.length > 0) {
+      if (archivoReporte || evidencias.length > 0) {
         setUploading(true);
-        const uploadPromises = archivos.map(async (archivo) => {
-          const response = await evidenciasService.subirPorPeriodo(periodoId, archivo);
-          return response.id;
+        const uploadPromises: Promise<string>[] = [];
+
+        if (archivoReporte) {
+          uploadPromises.push(
+            evidenciasService.subirPorPeriodo(periodoId, archivoReporte).then((res) => res.id)
+          );
+        }
+
+        evidencias.forEach((ev) => {
+          uploadPromises.push(
+            evidenciasService.subirPorPeriodo(periodoId, ev).then((res) => res.id)
+          );
         });
 
         evidenciasIds = await Promise.all(uploadPromises);
@@ -77,128 +145,115 @@ export function ModalEnviarReporte({
         await flujoReportesService.enviar(request);
       }
 
-      onSuccess();
-      onClose();
-      setComentarios("");
-      setArchivos([]);
+      // Mostrar mensaje de éxito
+      setMostrarExito(true);
+      
+      // Esperar 2 segundos antes de cerrar
+      setTimeout(() => {
+        setMostrarExito(false);
+        onSuccess();
+        onClose();
+        setComentarios("");
+        setArchivoReporte(null);
+        setEvidencias([]);
+        setErrorArchivo(null);
+      }, 2000);
     } catch (err: any) {
-      onError(err.response?.data?.message || "Error al enviar el reporte");
+      const msg = err.response?.data?.message || "Error al enviar el reporte";
+      onError(msg);
     } finally {
       setEnviando(false);
       setUploading(false);
     }
   };
 
-  const removeFile = (index: number) => {
-    setArchivos((prev) => prev.filter((_, i) => i !== index));
+  const removeEvidencia = (index: number) => {
+    setEvidencias((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: "1rem",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="card"
-        style={{
-          maxWidth: "600px",
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "2rem",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "1.5rem",
-                  fontWeight: 700,
-                  color: "var(--color-text)",
-                }}
-              >
-                {esCorreccion
-                  ? "Corregir y Reenviar Reporte"
-                  : "Enviar Reporte"}
-              </h2>
-              <p
-                style={{
-                  margin: "0.5rem 0 0",
-                  color: "var(--color-text-light)",
-                  fontSize: "0.9375rem",
-                }}
-              >
-                {reporteNombre}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "0.5rem",
-                color: "var(--color-text-light)",
-              }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        {/* Modal de éxito */}
+        {mostrarExito && (
+          <div style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'white',
+            borderRadius: '16px',
+            padding: '2rem',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            zIndex: 3000,
+            textAlign: 'center',
+            minWidth: '320px'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              margin: '0 auto 1rem',
+              borderRadius: '50%',
+              background: '#dcfce7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-            </button>
+            </div>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+              Éxito
+            </h3>
+            <p style={{ margin: '0.5rem 0 0', color: '#475569' }}>
+              Reporte enviado exitosamente
+            </p>
           </div>
+        )}
+
+        <div className="modal-header">
+          <div>
+            <p className="modal-overline">Intervención manual</p>
+            <h2
+              className="modal-title"
+              tabIndex={-1}
+              ref={headerRef}
+            >
+              {esCorreccion ? "Corregir y Reenviar Reporte" : "Enviar Reporte"}
+            </h2>
+            <p className="modal-subtitle">{reporteNombre}</p>
+            {(periodoInicio || periodoFin || frecuencia) && (
+              <div className="modal-chip-row">
+                {frecuencia && <span className="chip info">{frecuencia}</span>}
+                {(periodoInicio || periodoFin) && (
+                  <span className="chip muted">{periodoInicio ? new Date(periodoInicio).toLocaleDateString('es-CO') : ''} → {periodoFin ? new Date(periodoFin).toLocaleDateString('es-CO') : ''}</span>
+                )}
+              </div>
+            )}
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="Cerrar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="modal-body">
           {/* Comentarios */}
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label
-              htmlFor="comentarios"
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                color: "var(--color-text)",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Comentarios{" "}
-              {esCorreccion && (
-                <span style={{ color: "var(--color-danger)" }}>*</span>
-              )}
-            </label>
+          <section className="modal-section">
+            <div className="section-header">
+              <div>
+                <p className="section-overline">Comentarios</p>
+                <h3 className="section-title">Observaciones del envío</h3>
+              </div>
+              <span className="char-counter">{comentarios.length}/500</span>
+            </div>
             <textarea
               id="comentarios"
-              className="form-textarea"
+              className="form-textarea-modern"
+              maxLength={500}
               value={comentarios}
               onChange={(e) => setComentarios(e.target.value)}
               rows={4}
@@ -208,254 +263,194 @@ export function ModalEnviarReporte({
                   : "Agrega comentarios sobre el reporte (opcional)..."
               }
               required={esCorreccion}
-              style={{ resize: "vertical" }}
             />
-          </div>
+          </section>
 
-          {/* Adjuntar Archivos */}
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                color: "var(--color-text)",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Evidencias / Archivos
-            </label>
+          {/* Archivos */}
+          <section className="modal-section">
+            <div className="section-header">
+              <div>
+                <p className="section-overline">Archivos</p>
+                <h3 className="section-title">Carga de documentos</h3>
+              </div>
+              <span className="helper-text">Formatos: PDF, Word, Excel, JPG/PNG • Máx 10MB</span>
+            </div>
 
-            <label
-              htmlFor="file-upload"
-              className="btn btn-secondary btn-with-icon"
-              style={{
-                width: "100%",
-                justifyContent: "center",
-                cursor: "pointer",
-                marginBottom: "1rem",
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              Seleccionar Archivos
-            </label>
-            <input
-              id="file-upload"
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              style={{ display: "none" }}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-            />
-
-            {archivos.length > 0 && (
-              <div
-                style={{
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "6px",
-                  padding: "0.75rem",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "var(--color-text-light)",
-                    marginBottom: "0.5rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Archivos seleccionados ({archivos.length})
+            <div className="upload-grid">
+              {/* Reporte obligatorio */}
+              <div className={`upload-card ${errorArchivo ? 'has-error' : ''}`}>
+                <div className="upload-header">
+                  <div>
+                    <p className="upload-label">Archivo del Reporte <span className="required">*</span></p>
+                    <p className="upload-sub">Subir Reporte / Archivo del Informe</p>
+                  </div>
+                  {archivoReporte && <span className="chip success">Listo</span>}
                 </div>
-                {archivos.map((archivo, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0.5rem",
-                      backgroundColor: "var(--color-gray-50)",
-                      borderRadius: "4px",
-                      marginBottom: "0.375rem",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                        <polyline points="13 2 13 9 20 9"></polyline>
+                <label className="upload-drop" htmlFor="reporte-file">
+                  <div className="upload-icon-circle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,5 17,10"/>
+                      <line x1="12" y1="5" x2="12" y2="17"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="upload-title">Seleccionar archivo</p>
+                    <p className="upload-hint">Arrastra o haz clic para cargar</p>
+                  </div>
+                </label>
+                <input
+                  id="reporte-file"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  style={{ display: 'none' }}
+                  onChange={handleReporteChange}
+                />
+                {archivoReporte && (
+                  <div className="file-row">
+                    <div className="file-main">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
                       </svg>
-                      <span
-                        style={{
-                          fontSize: "0.875rem",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {archivo.name}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--color-text-light)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        ({(archivo.size / 1024).toFixed(0)} KB)
-                      </span>
+                      <div className="file-text">
+                        <span className="file-name">{archivoReporte.name}</span>
+                        <span className="file-meta">{(archivoReporte.size / 1024).toFixed(0)} KB</span>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0.25rem",
-                        color: "var(--color-danger)",
-                        flexShrink: 0,
-                      }}
-                      title="Eliminar archivo"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    <button type="button" className="icon-button danger" onClick={() => setArchivoReporte(null)} aria-label="Eliminar">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
                     </button>
                   </div>
-                ))}
+                )}
+                {errorArchivo && <p className="error-text">{errorArchivo}</p>}
               </div>
-            )}
-          </div>
 
-          {/* Botones */}
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              justifyContent: "flex-end",
-              paddingTop: "1rem",
-              borderTop: "1px solid var(--color-border)",
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={enviando || uploading}
-            >
+              {/* Evidencias opcionales */}
+              <div className="upload-card">
+                <div className="upload-header">
+                  <div>
+                    <p className="upload-label">Evidencias / Archivos adicionales</p>
+                    <p className="upload-sub">Subir Evidencias (opcional)</p>
+                  </div>
+                  {evidencias.length > 0 && <span className="chip info">{evidencias.length} archivo(s)</span>}
+                </div>
+                <label className="upload-drop" htmlFor="evidencias-file">
+                  <div className="upload-icon-circle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,5 17,10"/>
+                      <line x1="12" y1="5" x2="12" y2="17"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="upload-title">Añadir evidencias</p>
+                    <p className="upload-hint">Puedes seleccionar múltiples archivos</p>
+                  </div>
+                </label>
+                <input
+                  id="evidencias-file"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  style={{ display: 'none' }}
+                  onChange={handleEvidenciasChange}
+                />
+
+                {evidencias.length > 0 && (
+                  <div className="file-list">
+                    {evidencias.map((archivo, index) => (
+                      <div className="file-row" key={index}>
+                        <div className="file-main">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                          <div className="file-text">
+                            <span className="file-name">{archivo.name}</span>
+                            <span className="file-meta">{(archivo.size / 1024).toFixed(0)} KB</span>
+                          </div>
+                        </div>
+                        <button type="button" className="icon-button danger" onClick={() => removeEvidencia(index)} aria-label="Eliminar">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Acciones */}
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={enviando || uploading}>
               Cancelar
             </button>
             <button
               type="submit"
-              className="btn btn-primary btn-with-icon"
-              disabled={
-                enviando || uploading || (esCorreccion && !comentarios.trim())
-              }
+              className="btn-primary"
+              disabled={enviando || uploading || !!errorArchivo || !archivoReporte || (esCorreccion && !comentarios.trim())}
             >
-              {uploading ? (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    style={{ animation: "spin 1s linear infinite" }}
-                  >
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                  </svg>
-                  Subiendo archivos...
-                </>
-              ) : enviando ? (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    style={{ animation: "spin 1s linear infinite" }}
-                  >
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                  </svg>
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                  </svg>
-                  {esCorreccion ? "Reenviar Reporte" : "Enviar Reporte"}
-                </>
-              )}
+              {uploading ? 'Subiendo...' : enviando ? 'Enviando...' : esCorreccion ? 'Reenviar Reporte' : 'Enviar Reporte'}
             </button>
           </div>
         </form>
 
         <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
+          .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
+          .modal-card { background: #fff; border-radius: 16px; width: min(720px, 100%); max-height: 90vh; overflow-y: auto; padding: 1.5rem; box-shadow: 0 20px 60px rgba(15,23,42,0.25); display: flex; flex-direction: column; gap: 1rem; }
+          .modal-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+          .modal-overline { text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-size: 0.75rem; margin: 0 0 0.1rem 0; }
+          .modal-title { margin: 0; font-size: 1.5rem; font-weight: 800; color: #0f172a; }
+          .modal-subtitle { margin: 0.15rem 0 0; color: #475569; font-weight: 600; }
+          .modal-chip-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+          .chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; border-radius: 999px; font-weight: 700; font-size: 0.82rem; border: 1px solid #e2e8f0; color: #334155; background: #f8fafc; }
+          .chip.info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+          .chip.muted { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+          .chip.success { background: #ecfdf3; color: #15803d; border-color: #bbf7d0; }
+          .modal-body { display: flex; flex-direction: column; gap: 1rem; }
+          .modal-section { border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; background: #f8fafc; }
+          .section-header { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+          .section-overline { margin: 0; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-size: 0.75rem; }
+          .section-title { margin: 0.1rem 0 0; font-size: 1rem; color: #0f172a; font-weight: 800; }
+          .helper-text { color: #64748b; font-size: 0.85rem; }
+          .char-counter { color: #94a3b8; font-weight: 700; font-size: 0.85rem; }
+          .form-textarea-modern { width: 100%; border: 1px solid #dbeafe; border-radius: 12px; padding: 0.85rem; font-size: 0.95rem; background: #fff; min-height: 110px; outline: none; transition: border 0.2s, box-shadow 0.2s; }
+          .form-textarea-modern:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+          .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; }
+          .upload-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem; }
+          .upload-card.has-error { border-color: #fecdd3; background: #fff1f2; }
+          .upload-header { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+          .upload-label { margin: 0; font-weight: 800; color: #0f172a; }
+          .upload-sub { margin: 0; color: #64748b; font-size: 0.9rem; }
+          .required { color: #dc2626; }
+          .upload-drop { border: 1px dashed #cbd5e1; border-radius: 12px; padding: 0.85rem; display: flex; gap: 0.75rem; align-items: center; background: #f8fafc; cursor: pointer; transition: border 0.2s, background 0.2s; }
+          .upload-drop:hover { border-color: #6366f1; background: #eef2ff; }
+          .upload-icon-circle { width: 44px; height: 44px; border-radius: 12px; background: #eef2ff; display: grid; place-items: center; color: #4338ca; }
+          .upload-title { margin: 0; font-weight: 700; color: #0f172a; }
+          .upload-hint { margin: 0; color: #64748b; font-size: 0.9rem; }
+          .file-list { display: flex; flex-direction: column; gap: 0.5rem; }
+          .file-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+          .file-main { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+          .file-text { display: flex; flex-direction: column; }
+          .file-name { font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+          .file-meta { color: #94a3b8; font-size: 0.85rem; }
+          .icon-button { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.35rem; cursor: pointer; color: #475569; }
+          .icon-button:hover { background: #e2e8f0; }
+          .icon-button.danger { color: #b91c1c; border-color: #fecdd3; background: #fff5f5; }
+          .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; }
+          .btn-primary { background: #4338ca; color: #fff; border: none; padding: 0.75rem 1.2rem; border-radius: 10px; font-weight: 700; cursor: pointer; }
+          .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+          .btn-secondary { background: #f8fafc; color: #0f172a; border: 1px solid #e2e8f0; padding: 0.75rem 1.1rem; border-radius: 10px; font-weight: 700; cursor: pointer; }
+          .btn-secondary:hover { background: #eef2ff; }
+          .error-text { color: #b91c1c; margin: 0; font-weight: 700; font-size: 0.9rem; }
         `}</style>
       </div>
     </div>

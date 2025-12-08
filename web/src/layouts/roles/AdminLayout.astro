@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../BaseLayout.astro';
 import SidebarAdmin from '../../components/sidebar/SidebarAdmin';
+import AccessibilityPanel from '../../components/common/AccessibilityPanel';
 import '../../styles/admin-module.css';
 
 export interface Props {
@@ -58,6 +59,7 @@ const { title } = Astro.props;
           <h1 class="page-title">{title}</h1>
         </div>
         <div class="topbar-right">
+          <AccessibilityPanel client:load />
           
 
           <div class="search-box">

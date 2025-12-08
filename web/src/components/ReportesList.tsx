@@ -80,7 +80,7 @@ export default function ReportesList() {
         </a>
       </div>
 
-      <div className="reportes-filters">
+      <div className="reportes-filters" aria-label="Filtros de reportes">
         <select
           className="form-select"
           value={filtroEstado}
@@ -89,12 +89,16 @@ export default function ReportesList() {
             setPage(0);
           }}
           style={{ maxWidth: '200px' }}
+          aria-label="Filtrar por estado"
         >
           <option value="">Todos los estados</option>
           <option value="PENDIENTE">Pendiente</option>
           <option value="EN_PROGRESO">En Progreso</option>
           <option value="ENVIADO">Enviado</option>
         </select>
+        <div aria-live="polite" className="a11y-sr-only">
+          Estado de filtro seleccionado: {filtroEstado || 'sin filtro'}
+        </div>
       </div>
 
       {reportes.length === 0 ? (
@@ -105,12 +109,22 @@ export default function ReportesList() {
         </div>
       ) : (
         <>
-          <div className="reportes-grid">
+          <div className="reportes-grid" aria-live="polite">
             {reportes.map((reporte) => (
-              <div key={reporte.reporteId} className="reporte-card">
+              <div
+                key={reporte.reporteId}
+                className="reporte-card"
+                tabIndex={0}
+                role="article"
+                aria-label={`Reporte ${reporte.nombre}, estado ${reporte.estado}`}
+              >
                 <div className="reporte-card-header">
                   <h3 className="reporte-card-title">{reporte.nombre}</h3>
-                  <span className={`badge ${getEstadoBadge(reporte.estado)}`}>
+                  <span
+                    className={`badge ${getEstadoBadge(reporte.estado)}`}
+                    role="status"
+                    aria-label={`Estado ${reporte.estado.replace('_', ' ')}`}
+                  >
                     {reporte.estado.replace('_', ' ')}
                   </span>
                 </div>
