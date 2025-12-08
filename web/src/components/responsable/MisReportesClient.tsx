@@ -406,7 +406,7 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
       }).length;
 
       const inactivos = gruposCompletos.length - activos;
-      const allPeriodos = await fetchAllPeriodos();
+ 
 
       // Calcular contadores
       const now = new Date();
@@ -421,11 +421,14 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
       };
 
       setCounts(newCounts);
-      setPeriodos(allPeriodos);
+
+      // Cargar periodos con paginación
+      const paginatedResponse = await fetchAllPeriodos();
+      setPeriodos(paginatedResponse);
 
       console.log("✅ [MisReportes] Datos cargados exitosamente");
       console.log("📈 [MisReportes] Contadores:", newCounts);
-      console.log("📋 [MisReportes] Periodos totales:", allPeriodos.length);
+      console.log("📋 [MisReportes] Periodos totales:", paginatedResponse.length);
     } catch (err: any) {
       console.error("❌ [MisReportes] Error cargando periodos:", err);
       console.error(
@@ -700,13 +703,6 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
         ) : (
           <>
             <div className="reportes-list">
-              {periodos.map((periodo) => (
-                <TarjetaPeriodo
-                  key={periodo.periodoId}
-                  periodo={periodo}
-                  onAccion={handleAccion}
-                  mostrarResponsables={modo !== "responsable"}
-                />
               {gruposPagina.map((grupo) => (
                 <div
                   key={grupo.key}

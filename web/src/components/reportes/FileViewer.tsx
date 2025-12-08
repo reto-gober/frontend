@@ -43,15 +43,18 @@ const FileViewer: React.FC<FileViewerProps> = ({ archivo, periodoId, onClose }) 
 
       // Sino, obtener URL temporal
       const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://localhost:8080/api/periodos/${periodoId}/archivos/${archivo.archivoId}/url`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      
+      // Si no hay periodoId, usar endpoint de evidencias directamente
+      const endpoint = periodoId 
+        ? `http://localhost:8080/api/periodos/${periodoId}/archivos/${archivo.archivoId}/url`
+        : `http://localhost:8080/api/evidencias/${archivo.archivoId}/url`;
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (!response.ok) {
         throw new Error('Error al obtener URL del archivo');

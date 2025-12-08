@@ -5,6 +5,7 @@ import ResponsablesList from './ReporteForm/ResponsablesList';
 import ResponsableSelector from './ReporteForm/ResponsableSelector';
 import MultiUserSelector from './ReporteForm/MultiUserSelector';
 import notifications from '../lib/notifications';
+import { authService } from '../lib/auth';
 
 interface Props {
   reporteId?: string;
@@ -25,6 +26,12 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
   const [selectedSupervisores, setSelectedSupervisores] = useState<string[]>([]);
   const { toasts, removeToast, success, error } = useToast();
+  
+  // Detectar si el usuario actual es supervisor
+  const usuarioActual = authService.getUser();
+  const esSupervisor = usuarioActual?.roles?.some((rol: string) => 
+    rol.toLowerCase() === 'supervisor' || rol.toLowerCase() === 'role_supervisor'
+  ) || false;
   
   // Estado para responsables en nuevo formato
   const [responsables, setResponsables] = useState<ResponsableFormData[]>([]);
@@ -58,6 +65,9 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
         await loadSelects();
         if (reporteId) {
           await loadReporte();
+        } else if (esSupervisor && usuarioActual?.usuarioId) {
+          // Si es un nuevo reporte y el usuario es supervisor, asignarse automáticamente
+          setSelectedSupervisores([usuarioActual.usuarioId]);
         }
       } catch (err) {
         console.error('Error inicializando formulario de reporte:', err);
@@ -134,15 +144,22 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       } else {
         // Usar campos legacy si no hay responsables nuevos
         if (reporte.responsableElaboracionId) {
-          elaboradores.push(reporte.responsableElaboracionId);
+          if (Array.isArray(reporte.responsableElaboracionId)) {
+            elaboradores.push(...reporte.responsableElaboracionId);
+          } else {
+            elaboradores.push(reporte.responsableElaboracionId);
+          }
         }
-        if (reporte.responsableSupervisionId) {
-          supervisores.push(reporte.responsableSupervisionId);
-        }
+
       }
       
       setSelectedResponsables(elaboradores);
       setSelectedSupervisores(supervisores);
+      
+      // Si es supervisor y no hay supervisores cargados, asignarse automáticamente
+      if (esSupervisor && supervisores.length === 0 && usuarioActual?.usuarioId) {
+        setSelectedSupervisores([usuarioActual.usuarioId]);
+      }
       
       console.log('Elaboradores cargados:', elaboradores);
       console.log('Supervisores cargados:', supervisores);
@@ -529,7 +546,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
 
               {useNewFormat && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: esSupervisor ? '1fr' : '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <MultiUserSelector
                       usuarios={usuarios}
                       selectedIds={selectedResponsables}
@@ -539,14 +556,26 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                       placeholder="Buscar responsables..."
                     />
 
-                    <MultiUserSelector
-                      usuarios={usuarios}
-                      selectedIds={selectedSupervisores}
-                      onSelectionChange={setSelectedSupervisores}
-                      roleFilter="SUPERVISOR"
-                      label="Supervisores"
-                      placeholder="Buscar supervisores..."
-                    />
+                    {!esSupervisor && (
+                      <MultiUserSelector
+                        usuarios={usuarios.filter(u => 
+                          u.roles?.some(rol => 
+                            rol.toLowerCase() === 'supervisor' || 
+                            rol.toLowerCase() === 'role_supervisor'
+                          )
+                        )}
+                        selectedIds={selectedSupervisores}
+                        onSelectionChange={setSelectedSupervisores}
+                        roleFilter="SUPERVISOR"
+                        label="Supervisores"
+                        placeholder="Buscar supervisores..."
+                      />
+                    )}
+                    
+                    {/* Hidden input para supervisor cuando es el usuario actual */}
+                    {esSupervisor && usuarioActual?.usuarioId && (
+                      <input type="hidden" name="supervisor" value={usuarioActual.usuarioId} />
+                    )}
                   </div>
                 </>
               )}
@@ -935,15 +964,29 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 <div>
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
                     Supervisores ({Array.isArray(selectedSupervisores) ? selectedSupervisores.length : 0})
+                    {esSupervisor && (
+                      <span style={{ marginLeft: '0.5rem', fontSize: '0.625rem', fontWeight: 500, color: 'var(--color-primary-600)' }}>
+                        (Tú)
+                      </span>
+                    )}
                   </div>
                   <div style={{ color: 'var(--color-primary-900)' }}>
                     {Array.isArray(selectedSupervisores) && selectedSupervisores.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                         {selectedSupervisores.slice(0, 3).map(id => {
-                          const usuario = usuarios.find(u => u.usuarioId === id);
+                          const usuario = usuarios.find(u => u.usuarioId === id) || 
+                            (id === usuarioActual?.usuarioId ? {
+                              firstName: usuarioActual.firstName,
+                              firstLastname: usuarioActual.firstLastname
+                            } : null);
                           return usuario ? (
                             <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4 }}>
                               • {usuario.firstName} {usuario.firstLastname}
+                              {id === usuarioActual?.usuarioId && esSupervisor && (
+                                <span style={{ marginLeft: '0.375rem', fontSize: '0.75rem', color: 'var(--color-primary-600)' }}>
+                                  (Tú)
+                                </span>
+                              )}
                             </div>
                           ) : null;
                         })}
