@@ -99,6 +99,7 @@ const menuItems = [
 export default function SidebarResponsable() {
   const [collapsed, setCollapsed] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
+  const [badges, setBadges] = useState<{ alertas: number }>({ alertas: 0 });
 
   useEffect(() => {
     // Establecer el path actual solo en el cliente
@@ -205,17 +206,27 @@ export default function SidebarResponsable() {
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item) => (
-        <a
-          key={item.href}
-          href={item.href}
-          className={`nav-link ${currentPath === item.href ? "active" : ""}`}
-          title={collapsed ? item.label : undefined}
-        >
-          <span className="nav-icon">{item.icon}</span>
-          {!collapsed && <span className="nav-label">{item.label}</span>}
-        </a>
-      ))}
+        {menuItems.map((item, index) => {
+          const isAlertasItem = item.href === "/roles/responsable/alertas";
+          const hasBadge = isAlertasItem && badges.alertas > 0;
+          
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`nav-link ${currentPath === item.href ? "active" : ""}`}
+              title={collapsed ? item.label : undefined}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {!collapsed && <span className="nav-label">{item.label}</span>}
+              {hasBadge && (
+                <span className="nav-badge">
+                  {badges.alertas > 99 ? "99+" : badges.alertas}
+                </span>
+              )}
+            </a>
+          );
+        })}
       </nav>
 
       <div className="sidebar-footer">

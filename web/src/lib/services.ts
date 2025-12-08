@@ -850,13 +850,6 @@ export const dashboardService = {
     return response.data;
   },
 
-  async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
-    const response = await api.get("/api/dashboard/supervisor");
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
   async dashboardSupervisor(filters?: {
     entidadId?: string;
     responsableId?: string;
@@ -1179,14 +1172,36 @@ export interface ReportePeriodo {
     email: string;
     cargo: string;
   };
-  comentarios: string | null;
+  comentarios: ComentarioInfo[] | null;
+  comentariosTexto?: string | null; // Legacy field
   cantidadArchivos: number;
+  archivos?: ArchivoDTO[];
   puedeEnviar: boolean;
   puedeAprobar: boolean;
   puedeRechazar: boolean;
   puedeCorregir: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ArchivoDTO {
+  archivoId: string;
+  tipoArchivo: string;
+  nombreOriginal: string;
+  tamanoBytes: number;
+  mimeType: string;
+  subidoPor: string;
+  subidoPorEmail: string;
+  subidoEn: string;
+  urlPublica: string | null;
+}
+
+export interface ComentarioInfo {
+  autor: string;
+  cargo: string;
+  fecha: string;
+  accion: string;
+  texto: string;
 }
 
 export interface EnviarReporteRequest {
@@ -1480,6 +1495,23 @@ export const flujoReportesService = {
     const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
     return response.data.data;
   },
+
+  // ==================== COMENTARIOS ====================
+  
+  // Obtener comentarios de un periodo
+  async obtenerComentarios(periodoId: string): Promise<ComentarioInfo[]> {
+    const response = await api.get(`/api/flujo-reportes/periodos/${periodoId}/comentarios`);
+    return response.data.data;
+  },
+
+  // Agregar comentario adicional
+  async agregarComentario(request: {
+    periodoId: string;
+    texto: string;
+  }): Promise<ComentarioInfo> {
+    const response = await api.post("/api/flujo-reportes/comentarios", request);
+    return response.data.data;
+  },
 };
 
 // ==================== EVIDENCIAS SUPERVISOR ====================
@@ -1725,7 +1757,6 @@ export const calendarioService = {
         incidenciasCriticas: 0,
       };
     }
-    return response.data;
   },
 
   // Calendario Auditor (Consulta)

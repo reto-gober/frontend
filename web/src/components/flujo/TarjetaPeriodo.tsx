@@ -1,21 +1,9 @@
-import type { ReportePeriodo } from "../../lib/services";
+import type { ReportePeriodo, ArchivoDTO } from "../../lib/services";
 import { EstadoBadge } from "./EstadoBadge";
 import { DiasHastaVencimiento } from "./DiasHastaVencimiento";
 import FilesList from '../reportes/FilesList';
 import FileViewer from '../reportes/FileViewer';
 import { useState } from 'react';
-
-interface ArchivoDTO {
-  archivoId: string;
-  tipoArchivo: string;
-  nombreOriginal: string;
-  tamanoBytes: number;
-  mimeType: string;
-  subidoPor: string;
-  subidoPorEmail: string;
-  subidoEn: string;
-  urlPublica: string | null;
-}
 
 interface TarjetaPeriodoProps {
   periodo: ReportePeriodo;
@@ -346,8 +334,8 @@ export function TarjetaPeriodo({
         </div>
       )}
 
-      {/* Comentarios */}
-      {periodo.comentarios && (
+      {/* Último Comentario */}
+      {periodo.comentarios && Array.isArray(periodo.comentarios) && periodo.comentarios.length > 0 && (
         <div
           style={{
             padding: "0.75rem",
@@ -362,9 +350,17 @@ export function TarjetaPeriodo({
               color: "var(--color-text-light)",
               fontWeight: 500,
               marginBottom: "0.375rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            Comentarios
+            <span>Último Comentario</span>
+            {periodo.comentarios.length > 1 && (
+              <span style={{ fontSize: "0.7rem" }}>
+                +{periodo.comentarios.length - 1} más
+              </span>
+            )}
           </div>
           <div
             style={{
@@ -373,7 +369,12 @@ export function TarjetaPeriodo({
               whiteSpace: "pre-wrap",
             }}
           >
-            {periodo.comentarios}
+            {(() => {
+              const ultimoComentario = periodo.comentarios[periodo.comentarios.length - 1];
+              return typeof ultimoComentario === 'string' 
+                ? ultimoComentario 
+                : ultimoComentario.texto || '';
+            })()}
           </div>
         </div>
       )}
@@ -425,47 +426,7 @@ export function TarjetaPeriodo({
             Ver Detalle
           </button>
 
-          {/* Acciones del Responsable */}
-          {periodo.puedeEnviar && (
-            <button
-              className="btn btn-primary btn-with-icon"
-              onClick={() => onAccion("enviar", periodo.periodoId)}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-              Enviar Reporte
-            </button>
-          )}
-          {periodo.puedeCorregir && (
-            <button
-              className="btn btn-warning btn-with-icon"
-              onClick={() => onAccion("corregir", periodo.periodoId)}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-              </svg>
-              Corregir y Reenviar
-            </button>
-          )}
-
-          {/* Acciones del Supervisor - NO mostrar si mostrarResponsables es false */}
+          {/* Acciones del Supervisor - SOLO mostrar si mostrarResponsables es true */}
           {mostrarResponsables && periodo.puedeAprobar && (
             <button
               className="btn btn-success btn-with-icon"
