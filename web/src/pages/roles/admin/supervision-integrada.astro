@@ -1,13 +1,20 @@
 ---
-import SupervisorLayout from '../../../layouts/roles/SupervisorLayout.astro';
+import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
 import SupervisorDashboardClient from '../../../components/supervisor/SupervisorDashboardClient';
 ---
 
-<SupervisorLayout title="Tablero de Supervisión">
+<AdminLayout title="Supervisión integrada">
   <div class="dashboard-shell">
+    <div class="info-banner">
+      <div>
+        <p class="info-title">Supervisión sin cambiar de vista</p>
+        <p class="info-subtitle">Accede a las métricas y acciones del rol Supervisor directamente desde tu sesión de administrador.</p>
+      </div>
+      <div class="info-pill">Vista unificada</div>
+    </div>
     <SupervisorDashboardClient client:load />
   </div>
-</SupervisorLayout>
+</AdminLayout>
 
 <style is:global>
   body {
@@ -21,6 +28,42 @@ import SupervisorDashboardClient from '../../../components/supervisor/Supervisor
     display: flex;
     flex-direction: column;
     gap: 24px;
+  }
+
+  .info-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    background: white;
+    border: 1px solid var(--neutral-200);
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+    gap: 12px;
+  }
+
+  .info-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+  }
+
+  .info-subtitle {
+    margin: 2px 0 0 0;
+    color: var(--neutral-600);
+    font-size: 0.875rem;
+  }
+
+  .info-pill {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--success-green-200);
+    background: var(--success-green-50);
+    color: var(--success-green-800);
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
   }
 
   .dashboard-supervisor {

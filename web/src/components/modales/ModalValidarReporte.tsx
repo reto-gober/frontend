@@ -20,7 +20,7 @@ export function ModalValidarReporte({
   onSuccess,
   onError
 }: ModalValidarReporteProps) {
-  const [accion, setAccion] = useState<'aprobar' | 'rechazar'>('aprobar');
+  const [accion, setAccion] = useState<'aprobar' | 'rechazar' | 'revisar'>('aprobar');
   const [comentarios, setComentarios] = useState('');
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [validando, setValidando] = useState(false);
@@ -130,7 +130,7 @@ export function ModalValidarReporte({
             }}>
               Decisión <span style={{ color: 'var(--color-danger)' }}>*</span>
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <button
                 type="button"
                 onClick={() => setAccion('aprobar')}
@@ -153,6 +153,31 @@ export function ModalValidarReporte({
                 </svg>
                 <span style={{ fontWeight: 600, color: accion === 'aprobar' ? 'var(--color-success)' : 'var(--color-text)' }}>
                   Aprobar
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAccion('revisar')}
+                style={{
+                  padding: '1rem',
+                  border: `2px solid ${accion === 'revisar' ? 'var(--color-primary-500)' : 'var(--color-border)'}`,
+                  borderRadius: '8px',
+                  background: accion === 'revisar' ? 'var(--color-primary-50)' : 'white',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--color-primary-500)' }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l3 3" />
+                </svg>
+                <span style={{ fontWeight: 600, color: accion === 'revisar' ? 'var(--color-primary-600)' : 'var(--color-text)' }}>
+                  Marcar revisión
                 </span>
               </button>
 

@@ -227,165 +227,202 @@ export default function SupervisorReportesClient() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="header-info">
-          <h1 className="page-title">Reportes del Equipo</h1>
-          <p className="page-description">Revisión y aprobación de reportes del equipo</p>
-        </div>
-      </div>
+      {/* Contenedor principal centrado */}
+      <div className="reportes-container">
 
-      {/* Status Tabs */}
-      <div className="status-tabs">
-        <button 
-          className={`status-tab ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => handleTabChange('all')}
-        >
-          <span className="tab-label">Todos</span>
-          <span className="tab-count">{contadores.all}</span>
-        </button>
-        <button 
-          className={`status-tab ${activeTab === 'pendiente_validacion' ? 'active' : ''}`}
-          onClick={() => handleTabChange('pendiente_validacion')}
-        >
-          <span className="tab-label">Pendientes Revisión</span>
-          <span className="tab-count warning">{contadores.pendiente_validacion}</span>
-        </button>
-        <button 
-          className={`status-tab ${activeTab === 'aprobado' ? 'active' : ''}`}
-          onClick={() => handleTabChange('aprobado')}
-        >
-          <span className="tab-label">Aprobados</span>
-          <span className="tab-count success">{contadores.aprobado}</span>
-        </button>
-        <button 
-          className={`status-tab ${activeTab === 'requiere_correccion' ? 'active' : ''}`}
-          onClick={() => handleTabChange('requiere_correccion')}
-        >
-          <span className="tab-label">Con Observaciones</span>
-          <span className="tab-count danger">{contadores.requiere_correccion}</span>
-        </button>
-        <button 
-          className={`status-tab ${activeTab === 'enviado' ? 'active' : ''}`}
-          onClick={() => handleTabChange('enviado')}
-        >
-          <span className="tab-label">Enviados a Entidad</span>
-          <span className="tab-count">{contadores.enviado}</span>
-        </button>
-      </div>
+        {/* SECCIÓN: Filtros y Acciones */}
+        <div className="seccion-filtros">
+          <div className="filtros-card">
+            
+            {/* Fila 1: Chips de Estado */}
+            <div className="chips-estados">
+              <button 
+                className={`chip-estado ${activeTab === 'all' ? 'active' : ''}`}
+                onClick={() => handleTabChange('all')}
+              >
+                <span className="chip-label">Todos</span>
+                <span className="chip-count">{contadores.all}</span>
+              </button>
+              <button 
+                className={`chip-estado ${activeTab === 'pendiente_validacion' ? 'active' : ''}`}
+                onClick={() => handleTabChange('pendiente_validacion')}
+              >
+                <span className="chip-label">Pendientes Revisión</span>
+                <span className="chip-count warning">{contadores.pendiente_validacion}</span>
+              </button>
+              <button 
+                className={`chip-estado ${activeTab === 'aprobado' ? 'active' : ''}`}
+                onClick={() => handleTabChange('aprobado')}
+              >
+                <span className="chip-label">Aprobados</span>
+                <span className="chip-count success">{contadores.aprobado}</span>
+              </button>
+              <button 
+                className={`chip-estado ${activeTab === 'requiere_correccion' ? 'active' : ''}`}
+                onClick={() => handleTabChange('requiere_correccion')}
+              >
+                <span className="chip-label">Con Observaciones</span>
+                <span className="chip-count danger">{contadores.requiere_correccion}</span>
+              </button>
+              <button 
+                className={`chip-estado ${activeTab === 'enviado' ? 'active' : ''}`}
+                onClick={() => handleTabChange('enviado')}
+              >
+                <span className="chip-label">Enviados a Entidad</span>
+                <span className="chip-count sent">{contadores.enviado}</span>
+              </button>
+            </div>
 
-      {/* Filters and Search */}
-      <div className="filters-bar">
-        <div className="search-box">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input 
-            type="text" 
-            placeholder="Buscar por código, título o responsable..." 
-            className="search-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="filters">
-          <select 
-            className="filter-select"
-            value={filtroResponsable}
-            onChange={(e) => { setFiltroResponsable(e.target.value); setPage(0); }}
-          >
-            <option value="">Todos los Responsables</option>
-            {responsables.map(r => (
-              <option key={r.id} value={r.id}>{r.nombre}</option>
-            ))}
-          </select>
-          <select 
-            className="filter-select"
-            value={filtroEntidad}
-            onChange={(e) => { setFiltroEntidad(e.target.value); setPage(0); }}
-          >
-            <option value="">Todas las Entidades</option>
-            {entidades.map(e => (
-              <option key={e.id} value={e.id}>{e.nombre}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+            {/* Separador */}
+            <div className="filtros-separador"></div>
 
-      {/* Loading State */}
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '3rem' }}>
-          <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
-          <p style={{ marginTop: '1rem', color: 'var(--neutral-600)' }}>Cargando reportes...</p>
-        </div>
-      )}
+            {/* Fila 2: Búsqueda y Filtros */}
+            <div className="fila-busqueda">
+              <div className="search-box-principal">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="Buscar por reporte, responsable o entidad..." 
+                  className="search-input-principal"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="filtros-secundarios">
+                <select 
+                  className="filter-select-mejorado"
+                  value={filtroResponsable}
+                  onChange={(e) => { setFiltroResponsable(e.target.value); setPage(0); }}
+                >
+                  <option value="">Todos los Responsables</option>
+                  {responsables.map(r => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
+                <select 
+                  className="filter-select-mejorado"
+                  value={filtroEntidad}
+                  onChange={(e) => { setFiltroEntidad(e.target.value); setPage(0); }}
+                >
+                  <option value="">Todas las Entidades</option>
+                  {entidades.map(e => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-      {/* Reports Grid */}
-      {!loading && (
-        <>
-          {reportesFiltrados.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--neutral-500)' }}>
-              <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 1rem', display: 'block' }}>
+          </div>
+        </div>
+
+        {/* SECCIÓN 3: Lista de Reportes */}
+        <div className="seccion-reportes">
+          
+          {/* Loading State */}
+          {loading && (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p className="loading-text">Cargando reportes...</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && reportesFiltrados.length === 0 && (
+            <div className="empty-state">
+              <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
               </svg>
-              <p>No hay reportes {activeTab !== 'all' ? 'con este estado' : ''}</p>
+              <p className="empty-text">No hay reportes {activeTab !== 'all' ? 'con este estado' : 'disponibles'}</p>
             </div>
-          ) : (
-            <div className="reports-grid">
+          )}
+
+          {/* Reports Grid Mejorado */}
+          {!loading && reportesFiltrados.length > 0 && (
+            <div className="reports-grid-mejorado">
               {reportesFiltrados.map((reporte) => {
                 const { dias, urgencia } = calcularDiasRestantes(reporte.fechaVencimientoCalculada);
                 const estadoBadge = getEstadoBadge(reporte.estado);
                 const puedeValidar = ['pendiente_validacion', 'PENDIENTE_VALIDACION'].includes(reporte.estado);
                 
                 return (
-                  <div key={reporte.periodoId} className={`report-card ${urgencia}`}>
-                    <div className={`card-status-bar ${estadoBadge.clase}`}></div>
-                    <div className="card-header">
-                      <div className="card-badges">
-                        <span className="badge entity">{reporte.entidadNombre}</span>
-                        <span className={`badge status ${estadoBadge.clase}`}>{estadoBadge.texto}</span>
+                  <div key={reporte.periodoId} className="report-card-mejorada">
+                    
+                    {/* Barra superior de estado */}
+                    <div className={`card-barra-estado ${estadoBadge.clase}`}></div>
+                    
+                    {/* Header Compacto */}
+                    <div className="card-header-mejorado">
+                      <div className="card-info-superior">
+                        <h3 className="card-titulo-mejorado">{reporte.reporteNombre}</h3>
+                        <span className={`badge-estado-mejorado ${estadoBadge.clase}`}>
+                          {estadoBadge.texto}
+                        </span>
                       </div>
-                      <span className={`card-date ${urgencia}`}>
-                        {urgencia === 'vencido' ? `Vencido hace ${Math.abs(dias)} días` :
-                         urgencia === 'hoy' ? 'Vence hoy' :
-                         urgencia === 'urgente' ? `Vence en ${dias} días` :
-                         `Vence ${formatearFechaCorta(reporte.fechaVencimientoCalculada)}`}
-                      </span>
+                      <div className="card-meta-superior">
+                        <span className="meta-frecuencia">{reporte.periodoTipo}</span>
+                        <span className="meta-separador">•</span>
+                        <span className={`meta-vencimiento ${urgencia}`}>
+                          {urgencia === 'vencido' ? `Vencido hace ${Math.abs(dias)}d` :
+                           urgencia === 'hoy' ? 'Vence hoy' :
+                           urgencia === 'urgente' ? `Vence en ${dias}d` :
+                           `Vence ${formatearFechaCorta(reporte.fechaVencimientoCalculada)}`}
+                        </span>
+                      </div>
                     </div>
-                    <div className="card-body">
-                      <h3 className="card-title">{reporte.reporteNombre}</h3>
-                      <p className="card-code">{reporte.periodoTipo} - {reporte.periodoInicio}</p>
-                      <div className="card-meta">
-                        <div className="meta-item">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+
+                    {/* Body Compacto */}
+                    <div className="card-body-mejorado">
+                      
+                      {/* Información clave */}
+                      <div className="info-clave">
+                        <div className="info-item">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                          </svg>
+                          <span className="info-label">Entidad:</span>
+                          <span className="info-value">{reporte.entidadNombre}</span>
+                        </div>
+                        
+                        <div className="info-item">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             <circle cx="12" cy="7" r="4"/>
                           </svg>
-                          {reporte.responsableElaboracion?.nombreCompleto || 'Sin asignar'}
+                          <span className="info-label">Responsable:</span>
+                          <span className="info-value">{reporte.responsableElaboracion?.nombreCompleto || 'Sin asignar'}</span>
                         </div>
-                        {reporte.fechaEnvioReal && (
-                          <div className="meta-item">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+
+                        {typeof reporte.diasDesviacion === 'number' && reporte.diasDesviacion !== 0 && (
+                          <div className="info-item">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                               <circle cx="12" cy="12" r="10"/>
-                              <polyline points="12,6 12,12 16,14"/>
+                              <polyline points="12 6 12 12 16 14"/>
                             </svg>
-                            Enviado {formatearFechaCorta(reporte.fechaEnvioReal)}
+                            <span className="info-label">Desviación:</span>
+                            <span className={`info-value ${reporte.diasDesviacion > 0 ? 'negativo' : 'positivo'}`}>
+                              {reporte.diasDesviacion > 0 ? '+' : ''}{reporte.diasDesviacion} días
+                            </span>
+                          </div>
+                        )}
+
+                        {reporte.cantidadArchivos > 0 && (
+                          <div className="info-item">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                            </svg>
+                            <span className="info-value evidencias">{reporte.cantidadArchivos} archivo{reporte.cantidadArchivos > 1 ? 's' : ''}</span>
                           </div>
                         )}
                       </div>
-                      {reporte.cantidadArchivos > 0 && (
-                        <div className="card-files">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                          </svg>
-                          {reporte.cantidadArchivos} archivo{reporte.cantidadArchivos > 1 ? 's' : ''} adjunto{reporte.cantidadArchivos > 1 ? 's' : ''}
-                        </div>
-                      )}
                     </div>
-                    <div className="card-footer">
-                      <button className="btn-secondary" onClick={() => setDetalle({ open: true, periodo: reporte })}>
+
+                    {/* Footer Compacto */}
+                    <div className="card-footer-mejorado">
+                      <button className="btn-detalle-mejorado" onClick={() => setDetalle({ open: true, periodo: reporte })}>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -394,11 +431,11 @@ export default function SupervisorReportesClient() {
                       </button>
                       {puedeValidar && (
                         <button 
-                          className="btn-primary"
+                          className="btn-revisar-mejorado"
                           onClick={() => setModalValidar({ open: true, periodo: reporte })}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="9,11 12,14 22,4"/>
+                            <polyline points="9 11 12 14 22 4"/>
                             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                           </svg>
                           Revisar
@@ -411,73 +448,257 @@ export default function SupervisorReportesClient() {
             </div>
           )}
 
-          {/* Modal Detalle */}
-          {detalle.open && detalle.periodo && (
-            <div className="modal-overlay-fullscreen" onClick={() => setDetalle({ open: false, periodo: null })}>
-              <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
-                <button className="btn-close-floating" onClick={() => setDetalle({ open: false, periodo: null })} title="Cerrar">
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-                <div style={{ padding: '1.5rem' }}>
-                  <h2 style={{ marginBottom: '0.5rem' }}>{detalle.periodo.reporteNombre || 'Reporte'}</h2>
-                  <p style={{ color: 'var(--neutral-600)', marginBottom: '1rem' }}>
-                    Entidad: {detalle.periodo.entidadNombre || 'N/A'} · Estado: {detalle.periodo.estado || 'N/A'}
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                    <div className="card" style={{ padding: '1rem' }}>
-                      <h4 style={{ marginTop: 0 }}>Fechas</h4>
-                      <p><strong>Inicio:</strong> {detalle.periodo.periodoInicio || '-'}</p>
-                      <p><strong>Fin:</strong> {detalle.periodo.periodoFin || '-'}</p>
-                      <p><strong>Vencimiento:</strong> {detalle.periodo.fechaVencimientoCalculada || '-'}</p>
-                      {detalle.periodo.fechaEnvioReal && <p><strong>Enviado:</strong> {detalle.periodo.fechaEnvioReal}</p>}
-                    </div>
-                    <div className="card" style={{ padding: '1rem' }}>
-                      <h4 style={{ marginTop: 0 }}>Responsables</h4>
-                      <p><strong>Elabora:</strong> {detalle.periodo.responsableElaboracion?.nombreCompleto || 'Sin asignar'}</p>
-                      <p><strong>Supervisa:</strong> {detalle.periodo.responsableSupervision?.nombreCompleto || 'Sin asignar'}</p>
-                    </div>
-                    <div className="card" style={{ padding: '1rem' }}>
-                      <h4 style={{ marginTop: 0 }}>Evidencias</h4>
-                      <p>{detalle.periodo.cantidadArchivos || 0} archivos adjuntos</p>
-                    </div>
-                  </div>
-                  {detalle.periodo.comentarios && (
-                    <div className="card" style={{ padding: '1rem', marginTop: '1rem' }}>
-                      <h4 style={{ marginTop: 0 }}>Comentarios</h4>
-                      <p style={{ whiteSpace: 'pre-wrap' }}>{detalle.periodo.comentarios}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Paginación */}
-          {totalElements > size && (
-            <div className="pagination">
+          {/* Paginación Mejorada */}
+          {!loading && totalElements > size && (
+            <div className="paginacion-mejorada">
               <button 
-                className="btn-secondary"
+                className="btn-pag"
                 disabled={page === 0}
                 onClick={() => setPage(p => Math.max(0, p - 1))}
               >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
                 Anterior
               </button>
-              <span style={{ padding: '0.5rem 1rem', color: 'var(--neutral-600)' }}>
-                Página {page + 1} de {Math.ceil(totalElements / size)}
-              </span>
+              <div className="pag-info">
+                <span className="pag-actual">Página {page + 1}</span>
+                <span className="pag-separador">de</span>
+                <span className="pag-total">{Math.ceil(totalElements / size)}</span>
+              </div>
               <button 
-                className="btn-secondary"
+                className="btn-pag"
                 disabled={(page + 1) * size >= totalElements}
                 onClick={() => setPage(p => p + 1)}
               >
                 Siguiente
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
               </button>
             </div>
           )}
-        </>
+          
+        </div>
+
+      </div>
+
+      {/* Modal Detalle Ultra Mejorado CON DISEÑO DE 2 COLUMNAS */}
+      {detalle.open && detalle.periodo && (
+        <div className="modal-overlay-mejorado" onClick={() => setDetalle({ open: false, periodo: null })}>
+          <div className="modal-detalle-dos-columnas" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header Mejorado */}
+            <div className="modal-header-dos-col">
+              <div className="header-left-dos-col">
+                <div className="icon-reporte-grande">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div className="header-info-dos-col">
+                  <h2 className="titulo-modal-dos-col">{detalle.periodo.reporteNombre || 'Reporte'}</h2>
+                  <p className="subtitulo-modal-dos-col">{detalle.periodo.periodoTipo} · {detalle.periodo.periodoInicio}</p>
+                </div>
+              </div>
+              <div className="header-right-dos-col">
+                <span className={`badge-estado-modal ${getEstadoBadge(detalle.periodo.estado).clase}`}>
+                  {getEstadoBadge(detalle.periodo.estado).texto}
+                </span>
+                <button className="btn-close-modal" onClick={() => setDetalle({ open: false, periodo: null })}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Body con 2 Columnas */}
+            <div className="modal-body-dos-col">
+              
+              {/* Columna Izquierda */}
+              <div className="columna-izq">
+                
+                {/* Tarjeta Fechas del Período */}
+                <div className="tarjeta-modal">
+                  <div className="tarjeta-header-modal">
+                    <div className="icono-tarjeta naranja">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                    </div>
+                    <h3 className="titulo-tarjeta-modal">Fechas del Período</h3>
+                  </div>
+                  <div className="tarjeta-body-modal">
+                    <div className="dato-fila">
+                      <span className="dato-label">Inicio:</span>
+                      <span className="dato-value">{detalle.periodo.periodoInicio || '-'}</span>
+                    </div>
+                    <div className="dato-fila">
+                      <span className="dato-label">Fin:</span>
+                      <span className="dato-value">{detalle.periodo.periodoFin || '-'}</span>
+                    </div>
+                    <div className="dato-fila">
+                      <span className="dato-label">Vencimiento:</span>
+                      <span className="dato-value destaque-naranja">{detalle.periodo.fechaVencimientoCalculada || '-'}</span>
+                    </div>
+                    {detalle.periodo.fechaEnvioReal && (
+                      <div className="dato-fila">
+                        <span className="dato-label">Enviado:</span>
+                        <span className="dato-value destaque-verde">{detalle.periodo.fechaEnvioReal}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tarjeta Evidencias/Archivos */}
+                <div className="tarjeta-modal">
+                  <div className="tarjeta-header-modal">
+                    <div className="icono-tarjeta verde">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                    </div>
+                    <h3 className="titulo-tarjeta-modal">Evidencias</h3>
+                  </div>
+                  <div className="tarjeta-body-modal">
+                    {(detalle.periodo.cantidadArchivos || 0) > 0 ? (
+                      <div className="evidencias-contenedor">
+                        <div className="evidencias-icono-grande">
+                          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                          </svg>
+                        </div>
+                        <div className="evidencias-numero">{detalle.periodo.cantidadArchivos}</div>
+                        <div className="evidencias-texto">
+                          {detalle.periodo.cantidadArchivos === 1 ? 'Archivo adjunto' : 'Archivos adjuntos'}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="evidencias-vacio">
+                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                          <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <p className="vacio-mensaje">No hay archivos adjuntos</p>
+                        <p className="vacio-sub">El responsable debe adjuntar evidencias antes de su revisión</p>
+                      </div>
+                    )}
+                    {typeof detalle.periodo.diasDesviacion === 'number' && (
+                      <div className="dato-fila" style={{marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0'}}>
+                        <span className="dato-label">Desviación:</span>
+                        <span className={`dato-value ${detalle.periodo.diasDesviacion > 0 ? 'destaque-rojo' : 'destaque-verde'}`}>
+                          {detalle.periodo.diasDesviacion > 0 ? '+' : ''}{detalle.periodo.diasDesviacion} días
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Columna Derecha */}
+              <div className="columna-der">
+                
+                {/* Tarjeta Equipo Responsable */}
+                <div className="tarjeta-modal">
+                  <div className="tarjeta-header-modal">
+                    <div className="icono-tarjeta azul">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                    </div>
+                    <h3 className="titulo-tarjeta-modal">Equipo Responsable</h3>
+                  </div>
+                  <div className="tarjeta-body-modal">
+                    <div className="responsable-item">
+                      <div className="avatar-responsable elabora">E</div>
+                      <div className="responsable-datos">
+                        <div className="responsable-rol">Elabora</div>
+                        <div className="responsable-nombre">{detalle.periodo.responsableElaboracion?.nombreCompleto || 'Sin asignar'}</div>
+                      </div>
+                    </div>
+                    <div className="responsable-item">
+                      <div className="avatar-responsable supervisa">S</div>
+                      <div className="responsable-datos">
+                        <div className="responsable-rol">Supervisa</div>
+                        <div className="responsable-nombre">{detalle.periodo.responsableSupervision?.nombreCompleto || 'Sin asignar'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tarjeta Info Adicional */}
+                {detalle.periodo.entidadNombre && (
+                  <div className="tarjeta-modal">
+                    <div className="tarjeta-header-modal">
+                      <div className="icono-tarjeta gris">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        </svg>
+                      </div>
+                      <h3 className="titulo-tarjeta-modal">Entidad</h3>
+                    </div>
+                    <div className="tarjeta-body-modal">
+                      <div className="entidad-nombre-grande">{detalle.periodo.entidadNombre}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Comentarios (si existen) */}
+                {detalle.periodo.comentarios && (
+                  <div className="tarjeta-modal">
+                    <div className="tarjeta-header-modal">
+                      <div className="icono-tarjeta morado">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="titulo-tarjeta-modal">Comentarios</h3>
+                    </div>
+                    <div className="tarjeta-body-modal">
+                      <div className="comentarios-texto">{detalle.periodo.comentarios}</div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+            </div>
+
+            {/* Footer Fijo Inferior */}
+            <div className="modal-footer-fijo">
+              <button className="btn-modal-secundario" onClick={() => setDetalle({ open: false, periodo: null })}>
+                Cerrar
+              </button>
+              {(['pendiente_validacion', 'PENDIENTE_VALIDACION'].includes(detalle.periodo.estado)) && (
+                <button 
+                  className="btn-modal-primario"
+                  onClick={() => {
+                    setModalValidar({ open: true, periodo: detalle.periodo });
+                    setDetalle({ open: false, periodo: null });
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9 11 12 14 22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                  Revisar Reporte
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
       )}
 
       {/* Modal de Validación */}
@@ -494,369 +715,642 @@ export default function SupervisorReportesClient() {
       )}
 
       <style>{`
+        /* ================================================ */
+        /* DISEÑO MEJORADO - VISTA PRINCIPAL REPORTES */
+        /* Max-width 1200px, Filtros en tarjeta, Grid 3 columnas */
+        /* ================================================ */
+
         .reportes-page {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          padding: 2rem 1.5rem;
+        }
+
+        /* Contenedor centrado con max-width */
+        .reportes-container {
+          max-width: 1200px;
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 1.75rem;
         }
 
-        .page-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
+        /* ========== SECCIÓN: FILTROS Y ACCIONES ========== */
+        .seccion-filtros {
+          padding: 0;
         }
 
-        .page-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--neutral-900);
-          margin: 0;
-        }
-
-        .page-description {
-          font-size: 0.875rem;
-          color: var(--neutral-500);
-          margin: 0.25rem 0 0;
-        }
-
-        .status-tabs {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .status-tab {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.25rem;
+        .filtros-card {
           background: white;
-          border: 1px solid var(--neutral-200);
-          border-radius: 8px;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--neutral-600);
+          border-radius: 16px;
+          padding: 2rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border: 1px solid #e2e8f0;
+        }
+
+        /* Fila 1: Chips de Estado */
+        .chips-estados {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .chip-estado {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.625rem;
+          padding: 0.875rem 1.5rem;
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 12px;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          color: #475569;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .status-tab:hover {
-          background: var(--neutral-100);
+        .chip-estado:hover {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .status-tab.active {
-          background: var(--role-accent, #10b981);
-          border-color: var(--role-accent, #10b981);
+        .chip-estado.active {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          border-color: #10b981;
           color: white;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
-        .tab-count {
-          padding: 0.125rem 0.5rem;
-          background: var(--neutral-200);
-          border-radius: 10px;
-          font-size: 0.75rem;
+        .chip-label {
           font-weight: 600;
         }
 
-        .status-tab.active .tab-count {
-          background: rgba(255,255,255,0.3);
-        }
-
-        .tab-count.warning {
-          background: var(--warning-yellow-200);
-          color: var(--warning-yellow-800);
-        }
-
-        .tab-count.success {
-          background: var(--success-green-200);
-          color: var(--success-green-800);
-        }
-
-        .tab-count.danger {
-          background: var(--error-red-200);
-          color: var(--error-red-800);
-        }
-
-        .filters-bar {
-          display: flex;
-          justify-content: space-between;
+        .chip-count {
+          display: inline-flex;
           align-items: center;
-          gap: 1rem;
-          padding: 1rem 1.25rem;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .search-box {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.625rem 1rem;
-          background: var(--neutral-100);
+          justify-content: center;
+          min-width: 28px;
+          padding: 0.25rem 0.625rem;
+          background: rgba(148, 163, 184, 0.15);
           border-radius: 8px;
-          flex: 1;
-          max-width: 400px;
+          font-size: 0.8125rem;
+          font-weight: 700;
         }
 
-        .search-box svg {
-          color: var(--neutral-400);
+        .chip-estado.active .chip-count {
+          background: rgba(255, 255, 255, 0.25);
+          color: white;
+        }
+
+        .chip-count.warning {
+          background: #fff7ed;
+          color: #ea580c;
+        }
+
+        .chip-count.success {
+          background: #f0fdf4;
+          color: #16a34a;
+        }
+
+        .chip-count.danger {
+          background: #fef2f2;
+          color: #dc2626;
+        }
+
+        .chip-count.sent {
+          background: #eff6ff;
+          color: #2563eb;
+        }
+
+        /* Separador visual */
+        .filtros-separador {
+          height: 1px;
+          background: linear-gradient(90deg, transparent 0%, #cbd5e1 50%, transparent 100%);
+          margin: 1.5rem 0;
+        }
+
+        /* Fila 2: B\u00fasqueda y Filtros Secundarios */
+        .fila-busqueda {
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+        }
+
+        .search-box-principal {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 12px;
+          transition: all 0.2s;
+        }
+
+        .search-box-principal:focus-within {
+          background: white;
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-box-principal svg {
+          color: #94a3b8;
           flex-shrink: 0;
         }
 
-        .search-input {
+        .search-input-principal {
           border: none;
           background: transparent;
           outline: none;
-          font-size: 0.875rem;
+          font-size: 0.9375rem;
           width: 100%;
+          color: #0f172a;
+          font-weight: 500;
         }
 
-        .filters {
+        .search-input-principal::placeholder {
+          color: #94a3b8;
+        }
+
+        .filtros-secundarios {
           display: flex;
           gap: 0.75rem;
         }
 
-        .filter-select {
-          padding: 0.625rem 1rem;
-          border: 1px solid var(--neutral-200);
-          border-radius: 8px;
-          font-size: 0.875rem;
-          background: white;
-          cursor: pointer;
-        }
-
-        .reports-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1rem;
-        }
-
-        .report-card {
-          background: white;
+        .filter-select-mejorado {
+          padding: 1rem 1.25rem;
+          border: 2px solid #e2e8f0;
           border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .report-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .card-status-bar {
-          height: 4px;
-          background: var(--neutral-200);
-        }
-
-        .card-status-bar.pending { background: var(--warning-yellow-500); }
-        .card-status-bar.success { background: var(--success-green-500); }
-        .card-status-bar.danger { background: var(--error-red-500); }
-        .card-status-bar.sent { background: var(--color-primary-500, #3b82f6); }
-
-        .card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1rem 0;
-        }
-
-        .card-badges {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .badge {
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.6875rem;
+          font-size: 0.875rem;
           font-weight: 600;
-        }
-
-        .badge.entity {
-          background: var(--color-primary-100, #dbeafe);
-          color: var(--color-primary-700, #1d4ed8);
-        }
-
-        .badge.status {
-          background: var(--neutral-100);
-          color: var(--neutral-600);
-        }
-
-        .badge.status.pending {
-          background: var(--warning-yellow-100);
-          color: var(--warning-yellow-700);
-        }
-
-        .badge.status.success {
-          background: var(--success-green-100);
-          color: var(--success-green-700);
-        }
-
-        .badge.status.danger {
-          background: var(--error-red-100);
-          color: var(--error-red-700);
-        }
-
-        .badge.status.sent {
-          background: var(--color-primary-100, #dbeafe);
-          color: var(--color-primary-700, #1d4ed8);
-        }
-
-        .card-date {
-          font-size: 0.75rem;
-          color: var(--neutral-500);
-        }
-
-        .card-date.vencido, .card-date.hoy {
-          color: var(--error-red-600);
-          font-weight: 600;
-        }
-
-        .card-date.urgente {
-          color: var(--warning-yellow-700);
-          font-weight: 500;
-        }
-
-        .card-body {
-          padding: 1rem;
-          flex: 1;
-        }
-
-        .card-title {
-          font-size: 0.9375rem;
-          font-weight: 600;
-          color: var(--neutral-800);
-          margin: 0 0 0.25rem;
-        }
-
-        .card-code {
-          font-size: 0.75rem;
-          color: var(--neutral-500);
-          margin: 0 0 0.75rem;
-        }
-
-        .card-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          font-size: 0.75rem;
-          color: var(--neutral-500);
-        }
-
-        .card-files {
-          margin-top: 0.75rem;
-          font-size: 0.75rem;
-          color: var(--neutral-600);
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-        }
-
-        .card-footer {
-          display: flex;
-          gap: 0.5rem;
-          padding: 1rem;
-          border-top: 1px solid var(--neutral-100);
-        }
-
-        .card-footer button {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.375rem;
-          padding: 0.5rem;
-          border-radius: 6px;
-          font-size: 0.8125rem;
-          font-weight: 500;
+          background: white;
+          color: #475569;
           cursor: pointer;
           transition: all 0.2s;
+          min-width: 180px;
         }
 
-        .btn-secondary {
-          background: var(--neutral-100);
-          border: none;
-          color: var(--neutral-600);
+        .filter-select-mejorado:hover {
+          border-color: #cbd5e1;
         }
 
-        .btn-secondary:hover:not(:disabled) {
-          background: var(--neutral-200);
+        .filter-select-mejorado:focus {
+          outline: none;
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        .btn-secondary:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+        /* ========== SECCIÓN 3: LISTA DE REPORTES ========== */
+        .seccion-reportes {
+          min-height: 400px;
         }
 
-        .btn-primary {
-          background: var(--role-accent, #10b981);
-          border: none;
-          color: white;
-        }
-
-        .btn-primary:hover {
-          filter: brightness(0.9);
-        }
-
-        .pagination {
-          display: flex;
-          justify-content: center;
-          gap: 0.5rem;
-          margin-top: 2rem;
-          padding-bottom: 2rem;
+        /* Loading */
+        .loading-container {
+          text-align: center;
+          padding: 4rem 2rem;
         }
 
         .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid var(--neutral-200);
-          border-top-color: var(--role-accent, #10b981);
+          width: 48px;
+          height: 48px;
+          border: 4px solid #e2e8f0;
+          border-top-color: #10b981;
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          animation: spin 0.8s linear infinite;
+          margin: 0 auto 1.5rem;
         }
 
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
 
+        .loading-text {
+          color: #64748b;
+          font-size: 1rem;
+          font-weight: 500;
+          margin: 0;
+        }
+
+        /* Empty State */
+        .empty-state {
+          text-align: center;
+          padding: 4rem 2rem;
+          color: #94a3b8;
+        }
+
+        .empty-state svg {
+          margin: 0 auto 1.5rem;
+          display: block;
+        }
+
+        .empty-text {
+          font-size: 1.0625rem;
+          font-weight: 600;
+          color: #64748b;
+          margin: 0;
+        }
+
+        /* Grid de Reportes Mejorado - 3 COLUMNAS */
+        .reports-grid-mejorado {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.25rem;
+        }
+
+        /* Tarjetas Compactas y Mejoradas */
+        .report-card-mejorada {
+          background: white;
+          border-radius: 14px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          border: 1px solid #e2e8f0;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .report-card-mejorada:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+          border-color: #cbd5e1;
+        }
+
+        .card-barra-estado {
+          height: 5px;
+          background: #cbd5e1;
+        }
+
+        .card-barra-estado.pending {
+          background: linear-gradient(90deg, #f59e0b 0%, #ea580c 100%);
+        }
+
+        .card-barra-estado.success {
+          background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+
+        .card-barra-estado.danger {
+          background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .card-barra-estado.sent {
+          background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        /* Header de tarjeta */
+        .card-header-mejorado {
+          padding: 1.25rem 1.25rem 0.75rem;
+        }
+
+        .card-info-superior {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 0.75rem;
+          margin-bottom: 0.625rem;
+        }
+
+        .card-titulo-mejorado {
+          font-size: 1.0625rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0;
+          line-height: 1.4;
+          flex: 1;
+        }
+
+        .badge-estado-mejorado {
+          padding: 0.375rem 0.75rem;
+          border-radius: 8px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: capitalize;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .badge-estado-mejorado.pending {
+          background: #fff7ed;
+          color: #ea580c;
+          border: 1px solid #fed7aa;
+        }
+
+        .badge-estado-mejorado.success {
+          background: #f0fdf4;
+          color: #16a34a;
+          border: 1px solid #bbf7d0;
+        }
+
+        .badge-estado-mejorado.danger {
+          background: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
+        }
+
+        .badge-estado-mejorado.sent {
+          background: #eff6ff;
+          color: #2563eb;
+          border: 1px solid #bfdbfe;
+        }
+
+        .card-meta-superior {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.8125rem;
+        }
+
+        .meta-frecuencia {
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .meta-separador {
+          color: #cbd5e1;
+        }
+
+        .meta-vencimiento {
+          font-weight: 600;
+        }
+
+        .meta-vencimiento.vencido,
+        .meta-vencimiento.hoy {
+          color: #dc2626;
+        }
+
+        .meta-vencimiento.urgente {
+          color: #ea580c;
+        }
+
+        .meta-vencimiento.proximo {
+          color: #f59e0b;
+        }
+
+        .meta-vencimiento.normal {
+          color: #10b981;
+        }
+
+        /* Body de tarjeta */
+        .card-body-mejorado {
+          padding: 0 1.25rem 1.25rem;
+          flex: 1;
+        }
+
+        .info-clave {
+          display: flex;
+          flex-direction: column;
+          gap: 0.625rem;
+        }
+
+        .info-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.8125rem;
+        }
+
+        .info-item svg {
+          color: #94a3b8;
+          flex-shrink: 0;
+        }
+
+        .info-label {
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .info-value {
+          color: #0f172a;
+          font-weight: 600;
+          flex: 1;
+        }
+
+        .info-value.negativo {
+          color: #dc2626;
+        }
+
+        .info-value.positivo {
+          color: #10b981;
+        }
+
+        .info-value.evidencias {
+          color: #2563eb;
+        }
+
+        /* Footer de tarjeta */
+        .card-footer-mejorado {
+          display: flex;
+          gap: 0.625rem;
+          padding: 1rem 1.25rem;
+          border-top: 1px solid #f1f5f9;
+          background: #f8fafc;
+        }
+
+        .btn-detalle-mejorado,
+        .btn-revisar-mejorado {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.625rem 1rem;
+          border-radius: 10px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+        }
+
+        .btn-detalle-mejorado {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        .btn-detalle-mejorado:hover {
+          background: #e2e8f0;
+          transform: translateY(-1px);
+        }
+
+        .btn-revisar-mejorado {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-revisar-mejorado:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Paginación Mejorada */
+        .paginacion-mejorada {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 1.5rem;
+          margin-top: 2.5rem;
+          padding: 1.5rem;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .btn-pag {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.25rem;
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #475569;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-pag:hover:not(:disabled) {
+          background: white;
+          border-color: #cbd5e1;
+          transform: translateY(-2px);
+        }
+
+        .btn-pag:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .pag-info {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9375rem;
+          font-weight: 600;
+        }
+
+        .pag-actual {
+          color: #0f172a;
+        }
+
+        .pag-separador {
+          color: #94a3b8;
+        }
+
+        .pag-total {
+          color: #64748b;
+        }
+
+        /* Overlay para modal */
+        .modal-overlay-fullscreen {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(15, 23, 42, 0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 1rem;
+        }
+
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 1200px) {
-          .reports-grid {
+          .reports-grid-mejorado {
             grid-template-columns: repeat(2, 1fr);
+          }
+
+          .reportes-container {
+            max-width: 960px;
           }
         }
 
         @media (max-width: 768px) {
-          .reports-grid {
-            grid-template-columns: 1fr;
+          .reportes-page {
+            padding: 1.5rem 1rem;
           }
 
-          .filters-bar {
-            flex-direction: column;
-            align-items: stretch;
+          .reportes-container {
+            gap: 1.5rem;
           }
 
-          .search-box {
-            max-width: 100%;
+          .seccion-header {
+            padding: 1rem 0;
           }
 
-          .filters {
-            flex-wrap: wrap;
+          .page-title {
+            font-size: 1.5rem;
           }
 
-          .status-tabs {
+          .page-description {
+            font-size: 0.875rem;
+          }
+
+          .filtros-card {
+            padding: 1.5rem;
+          }
+
+          .chips-estados {
             overflow-x: auto;
             flex-wrap: nowrap;
             padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+          }
+
+          .chip-estado {
+            flex-shrink: 0;
+            padding: 0.75rem 1.25rem;
+          }
+
+          .fila-busqueda {
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+
+          .filtros-secundarios {
+            width: 100%;
+            flex-direction: column;
+          }
+
+          .filter-select-mejorado {
+            width: 100%;
+            min-width: auto;
+          }
+
+          .reports-grid-mejorado {
+            grid-template-columns: 1fr;
+          }
+
+          .paginacion-mejorada {
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          .btn-pag {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .page-title {
+            font-size: 1.25rem;
+          }
+
+          .card-footer-mejorado {
+            flex-direction: column;
+          }
+
+          .btn-detalle-mejorado,
+          .btn-revisar-mejorado {
+            width: 100%;
           }
         }
       `}</style>

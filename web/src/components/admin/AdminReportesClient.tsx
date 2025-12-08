@@ -188,10 +188,10 @@ export default function AdminReportesClient() {
         <div style={{ textAlign: 'center', padding: '4rem' }}>
           <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
           <p style={{ marginTop: '1rem', color: 'var(--neutral-600)' }}>Cargando reportes...</p>
-        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (error) {
     return (

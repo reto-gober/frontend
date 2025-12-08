@@ -2,6 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
+
+type ModoVista = "responsable" | "supervisor" | "admin";
+
+interface MisReportesClientProps {
+  modo?: ModoVista;
+}
 import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
 import {
   esEstadoPendiente,
@@ -270,7 +276,7 @@ const agruparPorReporteVigencia = (items: ReportePeriodo[]) => {
   return Array.from(mapa.values());
 };
 
-export default function MisReportesClient() {
+export default function MisReportesClient({ modo = "responsable" }: MisReportesClientProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
   const [archivosMap, setArchivosMap] = useState<Map<string, ArchivoDTO[]>>(new Map());
@@ -333,41 +339,26 @@ export default function MisReportesClient() {
 
   useEffect(() => {
     loadPeriodos();
-  }, []);
+  }, [activeFilter, page, modo]);
 
   useEffect(() => {
-    if (!pendingEntrega) return;
-    const targetPeriodo = periodos.find(
-      (p) => p.periodoId === pendingEntrega.periodoId
-    );
-    if (!targetPeriodo) return;
+    setPage(0);
+  }, [modo]);
 
-    const params = new URLSearchParams({ periodoId: targetPeriodo.periodoId });
-    const reporteIdToUse = pendingEntrega.reporteId || targetPeriodo.reporteId;
-    if (reporteIdToUse) params.append("reporteId", reporteIdToUse);
-
-    const reporteNombreToUse =
-      pendingEntrega.reporteNombre || (targetPeriodo as any).reporteNombre;
-    if (reporteNombreToUse) params.append("reporteNombre", reporteNombreToUse);
-
-    // Limpiar el query param para no re-disparar
-    const url = new URL(window.location.href);
-    url.searchParams.delete("abrirEntrega");
-    url.searchParams.delete("reporteId");
-    url.searchParams.delete("reporteNombre");
-    window.history.replaceState({}, "", url);
-
-    window.location.href = `/roles/responsable/entrega?${params.toString()}`;
-    setPendingEntrega(null);
-  }, [pendingEntrega, periodos]);
-
-  useEffect(() => {
-    if (!highlightPeriodoId || periodos.length === 0) return;
-    const target = document.getElementById(`periodo-${highlightPeriodoId}`);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
+  const fetchAllPeriodos = async (): Promise<ReportePeriodo[]> => {
+    if (modo === "responsable") {
+      const response = await flujoReportesService.misPeriodos(0, 1000);
+      return response.content;
     }
-  }, [highlightPeriodoId, periodos]);
+
+    if (modo === "admin") {
+      const response = await flujoReportesService.supervisionConFiltros(0, 1000);
+      return response.content;
+    }
+
+    const response = await flujoReportesService.supervisionSupervisor(0, 1000);
+    return response.content;
+  };
 
   const loadPeriodos = async () => {
     try {
@@ -415,6 +406,13 @@ export default function MisReportesClient() {
       }).length;
 
       const inactivos = gruposCompletos.length - activos;
+      const allPeriodos = await fetchAllPeriodos();
+
+      // Calcular contadores
+      const now = new Date();
+      const threeDaysFromNow = new Date(
+        now.getTime() + 3 * 24 * 60 * 60 * 1000
+      );
 
       const newCounts = {
         todos: gruposCompletos.length,
@@ -584,6 +582,18 @@ export default function MisReportesClient() {
     setPage(bounded);
   };
 
+  const titulos: Record<ModoVista, string> = {
+    responsable: "Mis Reportes",
+    supervisor: "Reportes Supervisados",
+    admin: "Reportes del Sistema",
+  };
+
+  const descripciones: Record<ModoVista, string> = {
+    responsable: "Reportes asignados a tu cargo",
+    supervisor: "Sube o gestiona los reportes que supervisas y adjunta evidencias",
+    admin: "Revisa y carga reportes de cualquier responsable y sus evidencias",
+  };
+
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -602,8 +612,8 @@ export default function MisReportesClient() {
         {/* Header */}
         <div className="page-header">
           <div className="header-info">
-            <h1 className="page-title">Mis Reportes</h1>
-            <p className="page-description">Reportes asignados a tu cargo</p>
+            <h1 className="page-title">{titulos[modo]}</h1>
+            <p className="page-description">{descripciones[modo]}</p>
           </div>
         </div>
 
@@ -672,13 +682,15 @@ export default function MisReportesClient() {
                 marginBottom: "0.5rem",
               }}
             >
-              {activeFilter === "todos" && "No tienes reportes asignados"}
+              {activeFilter === "todos" && (modo === "responsable" ? "No tienes reportes asignados" : "No hay reportes disponibles")}
               {activeFilter === "activos" && "No hay reportes activos"}
               {activeFilter === "inactivos" && "No hay reportes inactivos"}
             </h3>
             <p style={{ fontSize: "0.875rem", color: "var(--neutral-500)" }}>
               {activeFilter === "todos" &&
-                "Cuando se te asignen reportes, aparecerán aquí"}
+                (modo === "responsable"
+                  ? "Cuando se te asignen reportes, aparecerán aquí"
+                  : "Crea o asigna reportes para comenzar a gestionarlos")}
               {activeFilter === "activos" &&
                 "No hay reportes dentro de una vigencia activa"}
               {activeFilter === "inactivos" &&
@@ -688,6 +700,13 @@ export default function MisReportesClient() {
         ) : (
           <>
             <div className="reportes-list">
+              {periodos.map((periodo) => (
+                <TarjetaPeriodo
+                  key={periodo.periodoId}
+                  periodo={periodo}
+                  onAccion={handleAccion}
+                  mostrarResponsables={modo !== "responsable"}
+                />
               {gruposPagina.map((grupo) => (
                 <div
                   key={grupo.key}

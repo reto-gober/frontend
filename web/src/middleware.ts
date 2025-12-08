@@ -91,19 +91,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
           `[Middleware] ${primaryUserRole} intenta acceder a ${requiredRole} - DENEGADO`
         );
         
-        // Redirigir al dashboard del usuario (o vista seleccionada)
-        let redirectDashboard = `/roles/${primaryUserRole}/dashboard`;
-        
-        // Si hay una vista seleccionada válida, usar esa
-        try {
-          const selectedViewCookie = cookies.get('selectedView')?.value;
-          if (selectedViewCookie && allowedRoles.includes(selectedViewCookie)) {
-            redirectDashboard = `/roles/${selectedViewCookie}/dashboard`;
-          }
-        } catch (e) {
-          // Ignorar errores de cookie
-        }
-        
+        // Redirigir al dashboard del usuario
+        const redirectDashboard = `/roles/${primaryUserRole}/dashboard`;
         return redirect(redirectDashboard);
       }
 

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { flujoReportesService } from "../../lib/services";
 import { esEstadoEnviado } from "../../lib/utils/estados";
 
 const menuItems = [
@@ -74,7 +73,6 @@ const menuItems = [
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
-    badgeKey: "alertas",
   },
   {
     label: "Calendario",
@@ -100,7 +98,6 @@ const menuItems = [
 export default function SidebarResponsable() {
   const [collapsed, setCollapsed] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
-  const [badges, setBadges] = useState<Record<string, number>>({});
 
   useEffect(() => {
     // Establecer el path actual solo en el cliente
@@ -208,21 +205,16 @@ export default function SidebarResponsable() {
 
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            className={`nav-link ${currentPath === item.href ? "active" : ""}`}
-            title={collapsed ? item.label : undefined}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            {!collapsed && <span className="nav-label">{item.label}</span>}
-            {!collapsed &&
-              item.badgeKey &&
-              badges[item.badgeKey] !== undefined && (
-                <span className="nav-badge">{badges[item.badgeKey]}</span>
-              )}
-          </a>
-        ))}
+        <a
+          key={item.href}
+          href={item.href}
+          className={`nav-link ${currentPath === item.href ? "active" : ""}`}
+          title={collapsed ? item.label : undefined}
+        >
+          <span className="nav-icon">{item.icon}</span>
+          {!collapsed && <span className="nav-label">{item.label}</span>}
+        </a>
+      ))}
       </nav>
 
       <div className="sidebar-footer">

@@ -20,14 +20,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Jerarquía de roles: cada rol puede actuar como los roles inferiores
-const roleHierarchy: Record<string, string[]> = {
-  admin: ['admin', 'supervisor', 'responsable'],
-  supervisor: ['supervisor', 'responsable'],
-  responsable: ['responsable'],
-  auditor: ['auditor'] // Solo puede actuar como auditor (sin jerarquía)
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ConfiguracionRolResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,17 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadConfig = async () => {
     try {
-      const userData = await fetchCached<ConfiguracionRolResponse>('user', '/config/ui');
-      setUser(userData);
-      
-      // Establecer rol activo por defecto (el rol principal del usuario)
-      const primaryRole = userData.roles[0];
-      const savedRole = localStorage.getItem('activeRole');
-      
-      // Si hay un rol guardado y es válido para este usuario, usarlo
-      if (savedRole && userData.roles.includes(savedRole)) {
-        setActiveRole(savedRole);
-      } else {
+      const response = await api.get('/api/config/ui');
+      if (response.data.success) {
+        const userData = response.data.data;
+        setUser(userData);
+
+        // El rol activo siempre es el rol principal reportado por backend
+        const primaryRole = userData.roles[0];
         setActiveRole(primaryRole);
         localStorage.setItem('activeRole', primaryRole);
       }
@@ -103,40 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user?.roles?.includes(rol) ?? false;
   };
 
-  // Obtener roles disponibles según jerarquía
-  const getAvailableRoles = (): string[] => {
-    if (!user) return [];
-    
-    const rolesSet = new Set<string>();
-    
-    // Para cada rol del usuario, agregar roles accesibles según jerarquía
-    user.roles.forEach(userRole => {
-      const accessible = roleHierarchy[userRole] || [userRole];
-      accessible.forEach(role => rolesSet.add(role));
-    });
-    
-    return Array.from(rolesSet);
-  };
+  // Roles disponibles reportados por backend (sin sistema de cambio de vista)
+  const availableRoles = user?.roles ?? [];
 
-  const availableRoles = getAvailableRoles();
-
-  // Verificar si puede cambiar a un rol específico
-  const canSwitchTo = (role: string): boolean => {
-    return availableRoles.includes(role);
-  };
-
-  // Cambiar de rol activo
+  // El cambio manual de rol queda deshabilitado para mantener una sola vista unificada
+  const canSwitchTo = (_role: string) => false;
   const switchRole = (role: string) => {
-    if (!canSwitchTo(role)) {
-      console.error(`No tienes permisos para actuar como ${role}`);
-      return;
-    }
-    
-    setActiveRole(role);
-    localStorage.setItem('activeRole', role);
-    
-    // Recargar la página para aplicar el nuevo contexto de rol
-    window.location.reload();
+    console.info(`El cambio de vista a "${role}" está deshabilitado. Usa la vista unificada con todas las capacidades permitidas.`);
   };
 
   const isAuthenticated = !!user;

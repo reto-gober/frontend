@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../BaseLayout.astro';
 import SidebarSupervisor from '../../components/sidebar/SidebarSupervisor';
-import ViewSelector from '../../components/ViewSelector';
+import NotificationsBell from '../../components/common/NotificationsBell';
 
 export interface Props {
   title: string;
@@ -54,6 +54,19 @@ const { title } = Astro.props;
           <h1 class="page-title">{title}</h1>
         </div>
         <div class="topbar-right">
+          <div class="pill-badge pill-supervisor" title="Vista unificada">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>Supervisor · vista completa</span>
+          </div>
+          <NotificationsBell client:load role="supervisor" />
+          
+          <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span class="status-text">Sistema operativo</span>
+          </div>
           <div class="user-section">
             <span class="user-name-display" id="user-name-display">Supervisor Demo</span>
             <button class="btn-logout" id="btn-logout">
@@ -119,6 +132,26 @@ const { title } = Astro.props;
     display: flex;
     align-items: center;
     gap: 1rem;
+  }
+
+  .pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border: 1px solid var(--neutral-200);
+    color: var(--neutral-700);
+    background: var(--neutral-50);
+    white-space: nowrap;
+  }
+
+  .pill-supervisor {
+    border-color: var(--success-green-200);
+    background: var(--success-green-50);
+    color: var(--success-green-800);
   }
 
   .status-indicator {

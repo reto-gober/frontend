@@ -1,5 +1,4 @@
 import { useAuth } from '../../lib/contexts/AuthContext';
-import { RoleSwitcher } from './RoleSwitcher';
 import { useState } from 'react';
 import * as React from 'react';
 
@@ -52,8 +51,19 @@ export function Sidebar() {
         padding: '1.5rem',
         borderBottom: '1px solid var(--color-border)'
       }}>
-        {/* Role Switcher */}
-        <RoleSwitcher />
+        <div style={{
+          marginBottom: '0.75rem',
+          padding: '0.75rem',
+          borderRadius: '0.75rem',
+          backgroundColor: 'var(--neutral-50)',
+          border: '1px solid var(--neutral-200)',
+          color: 'var(--neutral-700)',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          lineHeight: 1.4
+        }}>
+          Vista unificada ({user.rolPrincipal})
+        </div>
         
         <div style={{
           backgroundColor: getRoleBadgeColor(),

@@ -2,7 +2,7 @@ import { useAuth } from '../../lib/contexts/AuthContext';
 import { Shield, CheckCircle, XCircle, Info } from 'lucide-react';
 
 export function RoleInfo() {
-  const { user, activeRole, availableRoles } = useAuth();
+  const { user, activeRole } = useAuth();
 
   if (!user || !activeRole) return null;
 
@@ -14,7 +14,7 @@ export function RoleInfo() {
         'Gestionar usuarios y asignar roles',
         'Configurar entidades y estructura organizacional',
         'Crear y modificar tipos de reportes',
-        'Acceder a todas las vistas (Supervisor, Responsable)',
+        'Supervisar y operar tareas de responsables desde la misma vista',
         'Ver estadísticas globales del sistema',
         'Gestionar permisos y configuraciones',
         'Auditoría completa del sistema'
@@ -28,7 +28,7 @@ export function RoleInfo() {
         'Aprobar o rechazar reportes',
         'Solicitar correcciones con comentarios',
         'Ver reportes de su equipo',
-        'Actuar como Responsable cuando sea necesario',
+        'Gestionar tareas de Responsable sin cambiar de vista',
         'Ver estadísticas de supervisión',
         'Gestionar responsables asignados'
       ]
@@ -154,7 +154,7 @@ export function RoleInfo() {
         </ul>
       </div>
 
-      {availableRoles.length > 1 && (
+      {(activeRole === 'admin' || activeRole === 'supervisor') && (
         <div style={{
           marginTop: '1rem',
           padding: '0.75rem',
@@ -170,9 +170,7 @@ export function RoleInfo() {
             color: 'var(--color-primary-700)',
             lineHeight: '1.4'
           }}>
-            Puedes cambiar entre las vistas disponibles usando el selector en el menú lateral.
-            {activeRole === 'admin' && ' Como administrador, tienes acceso a todas las vistas del sistema.'}
-            {activeRole === 'supervisor' && ' Como supervisor, puedes cambiar a la vista de responsable para gestionar reportes directamente.'}
+            Esta vista ya integra las capacidades de tus roles dependientes, sin necesidad de cambiar de pantalla.
           </span>
         </div>
       )}
