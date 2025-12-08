@@ -528,7 +528,10 @@ export default function MisReportesClient() {
   }, [grupos, currentPage]);
 
   const handlePageChange = (nextPage: number) => {
-    const bounded = Math.max(0, Math.min(nextPage, Math.max(0, totalPages - 1)));
+    const bounded = Math.max(
+      0,
+      Math.min(nextPage, Math.max(0, totalPages - 1))
+    );
     setPage(bounded);
   };
 
@@ -938,6 +941,12 @@ export default function MisReportesClient() {
           color: #276749;
         }
 
+        .estado-chip.activo {
+          border-color: #c6f6d5;
+          background: #f0fff4;
+          color: #276749;
+        }
+
         .estado-chip.info {
           border-color: #bee3f8;
           background: #ebf8ff;
@@ -951,6 +960,12 @@ export default function MisReportesClient() {
         }
 
         .estado-chip.danger {
+          border-color: #fed7d7;
+          background: #fff5f5;
+          color: #c53030;
+        }
+
+        .estado-chip.inactivo {
           border-color: #fed7d7;
           background: #fff5f5;
           color: #c53030;
