@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { flujoReportesService, type ReportePeriodo, type Page } from '../../lib/services';
+import { flujoReportesService, type ReportePeriodo } from '../../lib/services';
+import { ModalEnviarReporte } from '../modales/ModalEnviarReporte';
 import notifications from '../../lib/notifications';
 
 type TabStatus = 'all' | 'pendiente' | 'en_progreso' | 'completado' | 'vencido';
@@ -243,6 +244,15 @@ export default function SupervisorGestionReportesClient() {
     return estado || 'ACTIVO';
   };
 
+  const abrirEnvio = (periodo: ReportePeriodo) => {
+    setModalEnviar({
+      isOpen: true,
+      periodoId: periodo.periodoId,
+      reporteNombre: periodo.reporteNombre || 'Reporte',
+      esCorreccion: (periodo.estado || '').toLowerCase().includes('correccion'),
+    });
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '4rem' }}>
@@ -324,6 +334,9 @@ export default function SupervisorGestionReportesClient() {
         
         <select 
           className="filter-select"
+                        <button className="btn-link" onClick={() => abrirEnvio(periodo)}>
+                          Cargar reporte / evidencias
+                        </button>
           value={filtroEntidad}
           onChange={(e) => setFiltroEntidad(e.target.value)}
         >
@@ -446,5 +459,18 @@ export default function SupervisorGestionReportesClient() {
         </div>
       )}
     </div>
+
+    <ModalEnviarReporte
+      periodoId={modalEnviar.periodoId}
+      reporteNombre={modalEnviar.reporteNombre}
+      isOpen={modalEnviar.isOpen}
+      esCorreccion={modalEnviar.esCorreccion}
+      onClose={() => setModalEnviar((prev) => ({ ...prev, isOpen: false }))}
+      onSuccess={() => {
+        setModalEnviar((prev) => ({ ...prev, isOpen: false }));
+        cargarPeriodos();
+      }}
+      onError={(msg) => notifications.error(msg)}
+    />
   );
 }

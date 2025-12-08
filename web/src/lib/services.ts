@@ -1261,6 +1261,35 @@ export const flujoReportesService = {
     }
   },
 
+  // Obtener periodos por reporte (ADMIN/AUDITOR)
+  async periodosPorReporte(
+    reporteId: string,
+    page = 0,
+    size = 50
+  ): Promise<Page<ReportePeriodo>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+
+    const url = `/api/flujo-reportes/reportes/${reporteId}/periodos?${params}`;
+
+    try {
+      const response = await api.get(url);
+
+      if (response.data?.data) {
+        return response.data.data;
+      }
+      if (response.data?.content) {
+        return response.data;
+      }
+      throw new Error("Formato de respuesta no reconocido al listar periodos por reporte");
+    } catch (error) {
+      console.error("❌ [flujoReportesService] Error listando periodos del reporte", reporteId, error);
+      throw error;
+    }
+  },
+
   // Obtener periodos pendientes
   async misPeriodosPendientes(
     page = 0,

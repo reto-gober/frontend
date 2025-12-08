@@ -1,8 +1,13 @@
 ---
 import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
-import MisReportesClient from '../../../components/responsable/MisReportesClient';
----
 
-<AdminLayout title="Subir Reportes">
-  <MisReportesClient modo="admin" client:load />
+const redirect = '/roles/admin/reportes';
+<AdminLayout title="Gestión de Reportes">
+  <script>
+    // Redirigir al módulo unificado de gestión de reportes
+    window.location.href = redirect;
+  </script>
+  <div style="padding: 2rem; text-align: center; color: var(--neutral-700);">
+    Redirigiendo a Gestión de Reportes...
+  </div>
 </AdminLayout>
