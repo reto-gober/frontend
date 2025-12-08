@@ -425,9 +425,6 @@ export default function MisReportesClient() {
       setCounts(newCounts);
       setPeriodos(allPeriodos);
 
-      // Cargar archivos para los periodos paginados
-      await loadArchivos(paginatedPeriodos);
-
       console.log("✅ [MisReportes] Datos cargados exitosamente");
       console.log("📈 [MisReportes] Contadores:", newCounts);
       console.log("📋 [MisReportes] Periodos totales:", allPeriodos.length);
@@ -494,9 +491,8 @@ export default function MisReportesClient() {
     window.history.pushState({}, "", url);
   };
 
-  const handleVerReporte = (periodoId?: string) => {
-    if (!periodoId) return;
-    window.location.href = `/mis-reportes/${periodoId}`;
+  const handleVerEntregas = () => {
+    window.location.href = '/roles/responsable/mis-tareas';
   };
 
   const handleEnvioExitoso = () => {
@@ -755,9 +751,7 @@ export default function MisReportesClient() {
                     <div className="agrupado-actions">
                       <button
                         className="btn btn-secondary btn-with-icon"
-                        onClick={() =>
-                          handleVerReporte(grupo.periodoReferencia?.periodoId)
-                        }
+                        onClick={handleVerEntregas}
                       >
                         <svg
                           width="16"
@@ -767,10 +761,14 @@ export default function MisReportesClient() {
                           stroke="currentColor"
                           strokeWidth="2"
                         >
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
+                          <line x1="8" y1="6" x2="21" y2="6"></line>
+                          <line x1="8" y1="12" x2="21" y2="12"></line>
+                          <line x1="8" y1="18" x2="21" y2="18"></line>
+                          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                          <line x1="3" y1="18" x2="3.01" y2="18"></line>
                         </svg>
-                        Ver detalle
+                        Ver entregas
                       </button>
                     </div>
                   )}
