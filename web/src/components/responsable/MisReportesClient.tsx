@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { TarjetaPeriodo } from "../flujo/TarjetaPeriodo";
 import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
 import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
-import { esEstadoPendiente, esEstadoEnviado } from "../../lib/utils/estados";
+import {
+  esEstadoPendiente,
+  esEstadoEnviado,
+  normalizarEstado,
+} from "../../lib/utils/estados";
 
 type FilterType =
   | "todos"
@@ -14,6 +17,206 @@ type FilterType =
   | "enRevision"
   | "vencidos"
   | "porVencer";
+
+type EstadoGeneral = {
+  code: string;
+  label: string;
+  badgeClass: string;
+};
+
+const obtenerVigenciaTexto = (periodo: ReportePeriodo): string => {
+  return (
+    (periodo as any).vigencia ||
+    (periodo as any).vigenciaNombre ||
+    (periodo as any).reporteVigencia ||
+    (periodo as any).anioVigencia ||
+    (periodo as any).periodicidad ||
+    periodo.periodoTipo ||
+    "Vigencia sin definir"
+  );
+};
+
+const construirClaveGrupo = (periodo: ReportePeriodo): string => {
+  return `${periodo.reporteId || "sin-reporte"}::${obtenerVigenciaTexto(periodo)}`;
+};
+
+const formatearFechaCorta = (fecha?: string | null): string => {
+  if (!fecha) return "—";
+  return new Date(fecha).toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const calcularResumenPeriodos = (items: ReportePeriodo[]) => {
+  const vencidos = items.filter((p) => {
+    if (!p.fechaVencimientoCalculada) return false;
+    return (
+      esFechaVencida(p.fechaVencimientoCalculada) && !esEstadoEnviado(p.estado)
+    );
+  }).length;
+
+  const porVencer = items.filter((p) => {
+    if (!p.fechaVencimientoCalculada) return false;
+    const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+    return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
+  }).length;
+
+  return {
+    total: items.length,
+    pendientes: items.filter((p) => esEstadoPendiente(p.estado)).length,
+    enviados: items.filter((p) => esEstadoEnviado(p.estado)).length,
+    vencidos,
+    porVencer,
+  };
+};
+
+const determinarEstadoGeneral = (items: ReportePeriodo[]): EstadoGeneral => {
+  const estadosNormalizados = items.map((p) => normalizarEstado(p.estado));
+
+  const hayVencido = items.some((p) => {
+    if (!p.fechaVencimientoCalculada) return false;
+    return (
+      esFechaVencida(p.fechaVencimientoCalculada) && !esEstadoEnviado(p.estado)
+    );
+  });
+  if (hayVencido)
+    return { code: "vencido", label: "Vencido", badgeClass: "danger" };
+
+  const hayPorVencer = items.some((p) => {
+    if (!p.fechaVencimientoCalculada) return false;
+    const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
+    return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
+  });
+  if (hayPorVencer)
+    return { code: "por_vencer", label: "Por vencer", badgeClass: "warning" };
+
+  const prioridad: Array<[string, EstadoGeneral]> = [
+    [
+      "requiere_correccion",
+      {
+        code: "requiere_correccion",
+        label: "Requiere corrección",
+        badgeClass: "warning",
+      },
+    ],
+    [
+      "en_revision",
+      { code: "en_revision", label: "En revisión", badgeClass: "info" },
+    ],
+    [
+      "en_elaboracion",
+      {
+        code: "en_elaboracion",
+        label: "En elaboración",
+        badgeClass: "neutral",
+      },
+    ],
+    [
+      "pendiente",
+      { code: "pendiente", label: "Pendiente", badgeClass: "neutral" },
+    ],
+    [
+      "enviado_tarde",
+      { code: "enviado_tarde", label: "Enviado tarde", badgeClass: "info" },
+    ],
+    [
+      "enviado_a_tiempo",
+      { code: "enviado", label: "Enviado", badgeClass: "success" },
+    ],
+    [
+      "aprobado",
+      { code: "aprobado", label: "Aprobado", badgeClass: "success" },
+    ],
+  ];
+
+  const encontrado = prioridad.find(([code]) =>
+    estadosNormalizados.includes(code)
+  );
+  return (
+    encontrado?.[1] || {
+      code: "sin_estado",
+      label: "Sin estado",
+      badgeClass: "neutral",
+    }
+  );
+};
+
+const obtenerPeriodoReferencia = (
+  items: ReportePeriodo[]
+): ReportePeriodo | undefined => {
+  if (items.length === 0) return undefined;
+
+  const pendientesOrdenados = [...items]
+    .filter((p) => !esEstadoEnviado(p.estado))
+    .sort((a, b) => {
+      const fa = a.fechaVencimientoCalculada
+        ? new Date(a.fechaVencimientoCalculada).getTime()
+        : Number.MAX_SAFE_INTEGER;
+      const fb = b.fechaVencimientoCalculada
+        ? new Date(b.fechaVencimientoCalculada).getTime()
+        : Number.MAX_SAFE_INTEGER;
+      return fa - fb;
+    });
+
+  if (pendientesOrdenados.length > 0) return pendientesOrdenados[0];
+
+  return [...items].sort((a, b) => {
+    const fa = a.fechaVencimientoCalculada
+      ? new Date(a.fechaVencimientoCalculada).getTime()
+      : new Date(a.createdAt).getTime();
+    const fb = b.fechaVencimientoCalculada
+      ? new Date(b.fechaVencimientoCalculada).getTime()
+      : new Date(b.createdAt).getTime();
+    return fa - fb;
+  })[0];
+};
+
+const agruparPorReporteVigencia = (items: ReportePeriodo[]) => {
+  const mapa = new Map<
+    string,
+    {
+      key: string;
+      reporteId: string;
+      nombre: string;
+      entidad: string;
+      vigencia: string;
+      periodoTipo: string;
+      periodos: ReportePeriodo[];
+    }
+  >();
+
+  items.forEach((periodo) => {
+    const key = construirClaveGrupo(periodo);
+    const nombre =
+      (periodo as any).reporteNombre || periodo.reporteNombre || "Reporte";
+    const entidad =
+      (periodo as any).entidadNombre || periodo.entidadNombre || "";
+    const vigencia = obtenerVigenciaTexto(periodo);
+    const periodoTipo =
+      (periodo as any).periodoTipo ||
+      (periodo as any).frecuencia ||
+      periodo.periodoTipo ||
+      "";
+
+    if (!mapa.has(key)) {
+      mapa.set(key, {
+        key,
+        reporteId: periodo.reporteId,
+        nombre,
+        entidad,
+        vigencia,
+        periodoTipo,
+        periodos: [],
+      });
+    }
+
+    mapa.get(key)!.periodos.push(periodo);
+  });
+
+  return Array.from(mapa.values());
+};
 
 export default function MisReportesClient() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
@@ -76,7 +279,7 @@ export default function MisReportesClient() {
 
   useEffect(() => {
     loadPeriodos();
-  }, [activeFilter]);
+  }, []);
 
   useEffect(() => {
     if (!pendingEntrega) return;
@@ -150,77 +353,40 @@ export default function MisReportesClient() {
         return;
       }
 
-      // Calcular contadores
-      const now = new Date();
-      const threeDaysFromNow = new Date(
-        now.getTime() + 3 * 24 * 60 * 60 * 1000
-      );
+      const gruposCompletos = agruparPorReporteVigencia(allPeriodos);
 
       const newCounts = {
-        todos: allPeriodos.length,
-        pendientes: allPeriodos.filter((p) => esEstadoPendiente(p.estado))
-          .length,
-        enviados: allPeriodos.filter((p) => esEstadoEnviado(p.estado)).length,
-        vencidos: allPeriodos.filter((p) => {
-          if (!p.fechaVencimientoCalculada) return false;
-          return (
-            esFechaVencida(p.fechaVencimientoCalculada) &&
-            !esEstadoEnviado(p.estado)
-          );
-        }).length,
-        porVencer: allPeriodos.filter((p) => {
-          if (!p.fechaVencimientoCalculada) return false;
-          const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
-          return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
-        }).length,
-      };
-
-      setCounts(newCounts);
-
-      // Filtrar según el filtro activo
-      let filteredPeriodos = allPeriodos;
-
-      switch (activeFilter) {
-        case "pendientes":
-          filteredPeriodos = allPeriodos.filter((p) =>
-            esEstadoPendiente(p.estado)
-          );
-          break;
-        case "enviados":
-          filteredPeriodos = allPeriodos.filter((p) =>
-            esEstadoEnviado(p.estado)
-          );
-          break;
-        case "vencidos":
-          filteredPeriodos = allPeriodos.filter((p) => {
+        todos: gruposCompletos.length,
+        pendientes: gruposCompletos.filter((g) =>
+          g.periodos.some((p) => esEstadoPendiente(p.estado))
+        ).length,
+        enviados: gruposCompletos.filter((g) =>
+          g.periodos.some((p) => esEstadoEnviado(p.estado))
+        ).length,
+        vencidos: gruposCompletos.filter((g) =>
+          g.periodos.some((p) => {
             if (!p.fechaVencimientoCalculada) return false;
             return (
               esFechaVencida(p.fechaVencimientoCalculada) &&
               !esEstadoEnviado(p.estado)
             );
-          });
-          break;
-        case "porVencer":
-          filteredPeriodos = allPeriodos.filter((p) => {
+          })
+        ).length,
+        porVencer: gruposCompletos.filter((g) =>
+          g.periodos.some((p) => {
             if (!p.fechaVencimientoCalculada) return false;
             const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
             return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
-          });
-          break;
-          break;
-        case "todos":
-        default:
-          // Ya está asignado
-          break;
-      }
-      setPeriodos(filteredPeriodos);
+          })
+        ).length,
+      };
+
+      setCounts(newCounts);
+      setPeriodos(allPeriodos);
 
       console.log("✅ [MisReportes] Datos cargados exitosamente");
       console.log("📈 [MisReportes] Contadores:", newCounts);
-      console.log(
-        "📋 [MisReportes] Periodos filtrados:",
-        filteredPeriodos.length
-      );
+      console.log("📋 [MisReportes] Periodos totales:", allPeriodos.length);
     } catch (err: any) {
       console.error("❌ [MisReportes] Error cargando periodos:", err);
       console.error(
@@ -247,26 +413,9 @@ export default function MisReportesClient() {
     window.history.pushState({}, "", url);
   };
 
-  const handleAccion = async (accion: string, periodoId: string) => {
-    const periodo = periodos.find((p) => p.periodoId === periodoId);
-    if (!periodo) return;
-
-    if (accion === "ver") {
-      window.location.href = `/mis-reportes/${periodoId}`;
-      return;
-    }
-
-    if (accion === "enviar" || accion === "corregir") {
-      const params = new URLSearchParams({
-        periodoId: periodo.periodoId,
-        reporteId: periodo.reporteId,
-      });
-      if ((periodo as any).reporteNombre) {
-        params.append("reporteNombre", (periodo as any).reporteNombre);
-      }
-      window.location.href = `/roles/responsable/entrega?${params.toString()}`;
-      return;
-    }
+  const handleVerReporte = (periodoId?: string) => {
+    if (!periodoId) return;
+    window.location.href = `/mis-reportes/${periodoId}`;
   };
 
   const handleEnvioExitoso = () => {
@@ -295,54 +444,71 @@ export default function MisReportesClient() {
   ];
 
   const grupos = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        key: string;
-        nombre: string;
-        entidad: string;
-        periodos: ReportePeriodo[];
-      }
-    >();
+    const agrupados = agruparPorReporteVigencia(periodos).map((grupo) => {
+      const resumen = calcularResumenPeriodos(grupo.periodos);
+      const estadoGeneral = determinarEstadoGeneral(grupo.periodos);
+      const periodoReferencia = obtenerPeriodoReferencia(grupo.periodos);
+      const vigenciaInicio = grupo.periodos.reduce<string | null>((acc, p) => {
+        const inicio =
+          (p as any).fechaInicioVigencia ||
+          (p as any).vigenciaInicio ||
+          p.periodoInicio ||
+          null;
+        if (!inicio) return acc;
+        if (!acc) return inicio;
+        return new Date(inicio) < new Date(acc) ? inicio : acc;
+      }, null);
 
-    periodos.forEach((periodo) => {
-      const key =
-        periodo.reporteId ||
-        (periodo as any).reporteId ||
-        (periodo as any).reporteNombre ||
-        (periodo as any).nombreReporte ||
-        "sin-reporte";
+      const vigenciaFin = grupo.periodos.reduce<string | null>((acc, p) => {
+        const fin =
+          (p as any).fechaFinVigencia ||
+          (p as any).vigenciaFin ||
+          p.periodoFin ||
+          null;
+        if (!fin) return acc;
+        if (!acc) return fin;
+        return new Date(fin) > new Date(acc) ? fin : acc;
+      }, null);
 
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          nombre:
-            (periodo as any).reporteNombre ||
-            (periodo as any).nombreReporte ||
-            "Reporte",
-          entidad: (periodo as any).entidadNombre || "",
-          periodos: [],
-        });
-      }
+      const resaltarId =
+        highlightPeriodoId &&
+        grupo.periodos.some((p) => p.periodoId === highlightPeriodoId)
+          ? highlightPeriodoId
+          : undefined;
 
-      map.get(key)!.periodos.push(periodo);
+      return {
+        ...grupo,
+        resumen,
+        estadoGeneral,
+        periodoReferencia,
+        vigenciaInicio,
+        vigenciaFin,
+        resaltarId,
+      };
     });
 
-    return Array.from(map.values())
-      .map((grupo) => ({
-        ...grupo,
-        periodos: [...grupo.periodos].sort((a, b) => {
-          const fa = a.fechaVencimientoCalculada
-            ? new Date(a.fechaVencimientoCalculada).getTime()
-            : 0;
-          const fb = b.fechaVencimientoCalculada
-            ? new Date(b.fechaVencimientoCalculada).getTime()
-            : 0;
-          return fa - fb;
-        }),
-      }))
-      .sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [periodos]);
+    const filtrados = agrupados.filter((grupo) => {
+      switch (activeFilter) {
+        case "pendientes":
+          return grupo.resumen.pendientes > 0;
+        case "enviados":
+          return grupo.resumen.enviados > 0;
+        case "vencidos":
+          return grupo.resumen.vencidos > 0;
+        case "porVencer":
+          return grupo.resumen.porVencer > 0;
+        case "todos":
+        default:
+          return true;
+      }
+    });
+
+    return filtrados.sort((a, b) => {
+      const nombre = a.nombre.localeCompare(b.nombre);
+      if (nombre !== 0) return nombre;
+      return a.vigencia.localeCompare(b.vigencia);
+    });
+  }, [periodos, activeFilter, highlightPeriodoId]);
 
   return (
     <>
@@ -402,7 +568,7 @@ export default function MisReportesClient() {
               }}
             />
           </div>
-        ) : periodos.length === 0 ? (
+        ) : grupos.length === 0 ? (
           <div
             style={{
               textAlign: "center",
@@ -452,47 +618,92 @@ export default function MisReportesClient() {
             </p>
           </div>
         ) : (
-          <>
-            <div className="reportes-list">
-              {grupos.map((grupo) => (
-                <div key={grupo.key} className="reporte-grupo">
-                  <div className="grupo-header">
-                    <div>
-                      <h2 className="grupo-title">{grupo.nombre}</h2>
-                      {grupo.entidad && (
-                        <p className="grupo-entidad">{grupo.entidad}</p>
-                      )}
-                    </div>
-                    <span className="grupo-count">
-                      {grupo.periodos.length} periodo
-                      {grupo.periodos.length !== 1 ? "s" : ""}
+          <div className="reportes-list">
+            {grupos.map((grupo) => (
+              <div
+                key={grupo.key}
+                id={
+                  grupo.resaltarId ? `periodo-${grupo.resaltarId}` : undefined
+                }
+                className={`reporte-agrupado ${grupo.resaltarId ? "periodo-resaltado" : ""}`}
+              >
+                <div className="agrupado-top">
+                  <div>
+                    <h2 className="grupo-title">{grupo.nombre}</h2>
+                    {grupo.entidad && (
+                      <p className="grupo-entidad">{grupo.entidad}</p>
+                    )}
+                  </div>
+                  <span
+                    className={`estado-chip ${grupo.estadoGeneral.badgeClass}`}
+                  >
+                    {grupo.estadoGeneral.label}
+                  </span>
+                </div>
+
+                <div className="agrupado-meta">
+                  <div>
+                    <span className="meta-label">Vigencia</span>
+                    <span className="meta-value">{`${formatearFechaCorta(grupo.vigenciaInicio)} - ${formatearFechaCorta(grupo.vigenciaFin)}`}</span>
+                    <span className="meta-subvalue">{grupo.vigencia}</span>
+                  </div>
+                  <div>
+                    <span className="meta-label">Periodicidad</span>
+                    <span className="meta-value">
+                      {grupo.periodoTipo || "—"}
                     </span>
                   </div>
-
-                  <div className="grupo-periodos">
-                    {grupo.periodos.map((periodo) => {
-                      const esResaltado =
-                        highlightPeriodoId === periodo.periodoId;
-                      return (
-                        <div
-                          key={periodo.periodoId}
-                          id={`periodo-${periodo.periodoId}`}
-                          className={`reporte-wrapper ${esResaltado ? "periodo-resaltado" : ""}`}
-                        >
-                          <TarjetaPeriodo
-                            periodo={periodo}
-                            onAccion={handleAccion}
-                            mostrarResponsables={false}
-                            resaltar={esResaltado}
-                          />
-                        </div>
-                      );
-                    })}
+                  <div>
+                    <span className="meta-label">Periodos</span>
+                    <span className="meta-value">{grupo.resumen.total}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+
+                <div className="agrupado-resumen">
+                  <div>
+                    <strong>{grupo.resumen.pendientes}</strong>
+                    <span>Pendientes</span>
+                  </div>
+                  <div>
+                    <strong>{grupo.resumen.vencidos}</strong>
+                    <span>Vencidos</span>
+                  </div>
+                  <div>
+                    <strong>{grupo.resumen.porVencer}</strong>
+                    <span>Por vencer (3 días)</span>
+                  </div>
+                  <div>
+                    <strong>{grupo.resumen.enviados}</strong>
+                    <span>Enviados</span>
+                  </div>
+                </div>
+
+                {grupo.periodoReferencia && (
+                  <div className="agrupado-actions">
+                    <button
+                      className="btn btn-secondary btn-with-icon"
+                      onClick={() =>
+                        handleVerReporte(grupo.periodoReferencia?.periodoId)
+                      }
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      Ver detalle
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -583,20 +794,27 @@ export default function MisReportesClient() {
           gap: 1rem;
         }
 
-        .reporte-grupo {
+        .reporte-agrupado {
           background: white;
           border-radius: 12px;
           box-shadow: var(--shadow-card);
-          padding: 1rem;
+          padding: 1.25rem;
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
+          transition: box-shadow 0.2s ease, transform 0.2s ease;
         }
 
-        .grupo-header {
+        .reporte-agrupado.periodo-resaltado {
+          box-shadow: 0 0 0 2px var(--role-accent), 0 10px 24px rgba(0, 0, 0, 0.12);
+          background: var(--role-accent-light, #fff7ed);
+          animation: pulse-resaltado 0.6s ease-in-out 2;
+        }
+
+        .agrupado-top {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           gap: 1rem;
         }
 
@@ -613,64 +831,104 @@ export default function MisReportesClient() {
           font-size: 0.9rem;
         }
 
-        .grupo-count {
-          background: var(--neutral-100);
-          color: var(--neutral-700);
-          padding: 0.25rem 0.75rem;
+        .estado-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.35rem 0.75rem;
           border-radius: 999px;
           font-weight: 700;
           font-size: 0.85rem;
+          border: 1px solid var(--neutral-200);
+          background: var(--neutral-50);
+          color: var(--neutral-800);
         }
 
-        .grupo-periodos {
-          display: flex;
-          flex-direction: column;
+        .estado-chip.success {
+          border-color: #c6f6d5;
+          background: #f0fff4;
+          color: #276749;
+        }
+
+        .estado-chip.info {
+          border-color: #bee3f8;
+          background: #ebf8ff;
+          color: #2c5282;
+        }
+
+        .estado-chip.warning {
+          border-color: #fefcbf;
+          background: #fffbeb;
+          color: #92400e;
+        }
+
+        .estado-chip.danger {
+          border-color: #fed7d7;
+          background: #fff5f5;
+          color: #c53030;
+        }
+
+        .agrupado-meta {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
           gap: 0.75rem;
         }
 
-        .reporte-wrapper {
-          scroll-margin-top: 80px;
-          transition: transform 0.2s ease;
+        .meta-label {
+          display: block;
+          font-size: 0.75rem;
+          color: var(--neutral-500);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 0.2rem;
         }
 
-        .reporte-wrapper.periodo-resaltado .card {
-          box-shadow: 0 0 0 2px var(--role-accent), 0 10px 24px rgba(0, 0, 0, 0.12);
-          background: var(--role-accent-light, #fff7ed);
+        .meta-value {
+          display: block;
+          font-weight: 700;
+          color: var(--neutral-900);
+          font-size: 0.95rem;
         }
 
-        .reporte-wrapper.periodo-resaltado {
-          animation: pulse-resaltado 0.6s ease-in-out 2;
+        .meta-subvalue {
+          display: block;
+          font-size: 0.8rem;
+          color: var(--neutral-500);
+          margin-top: 0.1rem;
+        }
+
+        .agrupado-resumen {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 0.75rem;
+          background: var(--neutral-50);
+          border: 1px dashed var(--neutral-200);
+          border-radius: 10px;
+          padding: 0.85rem 1rem;
+        }
+
+        .agrupado-resumen div {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+          color: var(--neutral-700);
+        }
+
+        .agrupado-resumen strong {
+          font-size: 1.2rem;
+          color: var(--neutral-900);
+        }
+
+        .agrupado-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 0.5rem;
         }
 
         @keyframes pulse-resaltado {
           0% { transform: scale(1); }
           50% { transform: scale(1.01); }
           100% { transform: scale(1); }
-        }
-
-        .btn-action {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.625rem 1rem;
-          border: 1px solid var(--neutral-300);
-          border-radius: 8px;
-          background: white;
-          color: var(--neutral-700);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .btn-action:hover:not(:disabled) {
-          background: var(--neutral-50);
-          border-color: var(--neutral-400);
-        }
-
-        .btn-action:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
       `}</style>
     </>
