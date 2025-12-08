@@ -468,6 +468,7 @@ export default function MisReportesClient() {
   const grupos = useMemo(() => {
     const agrupados = agruparPorReporteVigencia(periodos).map((grupo) => {
       const resumen = calcularResumenPeriodos(grupo.periodos);
+      const estadoGeneral = determinarEstadoGeneral(grupo.periodos);
       const periodoReferencia = obtenerPeriodoReferencia(grupo.periodos);
       const { vigenciaInicio, vigenciaFin } = obtenerRangoVigencia(
         grupo.periodos
@@ -483,6 +484,7 @@ export default function MisReportesClient() {
       return {
         ...grupo,
         resumen,
+        estadoGeneral,
         periodoReferencia,
         vigenciaInicio,
         vigenciaFin,
