@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { flujoReportesService } from "../../lib/services";
 
 const menuItems = [
   {
@@ -73,7 +72,6 @@ const menuItems = [
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
-    badgeKey: "alertas",
   },
   {
     label: "Calendario",
@@ -99,57 +97,12 @@ const menuItems = [
 export default function SidebarResponsable() {
   const [collapsed, setCollapsed] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
-  const [badges, setBadges] = useState<Record<string, number>>({});
 
   useEffect(() => {
     // Establecer el path actual solo en el cliente
     if (typeof window !== "undefined") {
       setCurrentPath(window.location.pathname);
     }
-  }, []);
-
-  useEffect(() => {
-    // Cargar contadores de alertas
-    const loadBadges = async () => {
-      try {
-        const response = await flujoReportesService.misPeriodos(0, 1000);
-        const periodos = response.content;
-
-        const now = new Date();
-        const tresDias = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-        let alertasCount = 0;
-
-        periodos.forEach((periodo) => {
-          if (!periodo.fechaVencimientoCalculada) return;
-
-          const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
-          const esEnviado =
-            periodo.estado === "ENVIADO" || periodo.estado === "APROBADO";
-
-          // Contar alertas críticas - Reportes vencidos
-          if (fechaVenc < now && !esEnviado) {
-            alertasCount++;
-          }
-
-          // Contar alertas de advertencia - Por vencer en 3 días
-          if (fechaVenc >= now && fechaVenc <= tresDias && !esEnviado) {
-            alertasCount++;
-          }
-
-          // Contar alertas de corrección requerida
-          if (periodo.estado === "REQUIERE_CORRECCION") {
-            alertasCount++;
-          }
-        });
-
-        setBadges({ alertas: alertasCount });
-      } catch (err) {
-        console.error("Error al cargar badges:", err);
-        setBadges({ alertas: 0 });
-      }
-    };
-
-    loadBadges();
   }, []);
 
   useEffect(() => {
@@ -208,21 +161,16 @@ export default function SidebarResponsable() {
 
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            className={`nav-link ${currentPath === item.href ? "active" : ""}`}
-            title={collapsed ? item.label : undefined}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            {!collapsed && <span className="nav-label">{item.label}</span>}
-            {!collapsed &&
-              item.badgeKey &&
-              badges[item.badgeKey] !== undefined && (
-                <span className="nav-badge">{badges[item.badgeKey]}</span>
-              )}
-          </a>
-        ))}
+        <a
+          key={item.href}
+          href={item.href}
+          className={`nav-link ${currentPath === item.href ? "active" : ""}`}
+          title={collapsed ? item.label : undefined}
+        >
+          <span className="nav-icon">{item.icon}</span>
+          {!collapsed && <span className="nav-label">{item.label}</span>}
+        </a>
+      ))}
       </nav>
 
       <div className="sidebar-footer">

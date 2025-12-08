@@ -65,8 +65,7 @@ const menuItems = [
         <line x1="12" y1="9" x2="12" y2="13"/>
         <line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
-    ),
-    badge: 5
+    )
   },
   { 
     label: 'Calendario', 
@@ -141,9 +140,6 @@ export default function SidebarSupervisor() {
           >
             <span className="nav-icon">{item.icon}</span>
             {!collapsed && <span className="nav-label">{item.label}</span>}
-            {!collapsed && item.badge && (
-              <span className="nav-badge warning">{item.badge}</span>
-            )}
           </a>
         ))}
       </nav>
