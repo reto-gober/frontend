@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TarjetaPeriodo } from "../flujo/TarjetaPeriodo";
 import { ModalEnviarReporte } from "../modales/ModalEnviarReporte";
 import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
@@ -19,9 +19,14 @@ export default function MisReportesClient() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
+  const [pendingEntrega, setPendingEntrega] = useState<{
+    periodoId: string;
+    reporteId?: string;
+    reporteNombre?: string;
+  } | null>(null);
+  const [highlightPeriodoId, setHighlightPeriodoId] = useState<string | null>(
+    null
+  );
   const [modalEnviar, setModalEnviar] = useState<{
     isOpen: boolean;
     periodoId: string;
@@ -46,11 +51,66 @@ export default function MisReportesClient() {
     if (filtroParam) {
       setActiveFilter(filtroParam as FilterType);
     }
+
+    const highlightParam = params.get("resaltarPeriodo");
+    if (highlightParam) {
+      setHighlightPeriodoId(highlightParam);
+      setActiveFilter("todos");
+    }
+
+    const abrirEntrega = params.get("abrirEntrega");
+    if (abrirEntrega) {
+      setPendingEntrega({
+        periodoId: abrirEntrega,
+        reporteId: params.get("reporteId") || undefined,
+        reporteNombre: params.get("reporteNombre") || undefined,
+      });
+    }
+
+    if (highlightParam) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("resaltarPeriodo");
+      window.history.replaceState({}, "", url);
+    }
   }, []);
 
   useEffect(() => {
     loadPeriodos();
-  }, [activeFilter, page]);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    if (!pendingEntrega) return;
+    const targetPeriodo = periodos.find(
+      (p) => p.periodoId === pendingEntrega.periodoId
+    );
+    if (!targetPeriodo) return;
+
+    const params = new URLSearchParams({ periodoId: targetPeriodo.periodoId });
+    const reporteIdToUse = pendingEntrega.reporteId || targetPeriodo.reporteId;
+    if (reporteIdToUse) params.append("reporteId", reporteIdToUse);
+
+    const reporteNombreToUse =
+      pendingEntrega.reporteNombre || (targetPeriodo as any).reporteNombre;
+    if (reporteNombreToUse) params.append("reporteNombre", reporteNombreToUse);
+
+    // Limpiar el query param para no re-disparar
+    const url = new URL(window.location.href);
+    url.searchParams.delete("abrirEntrega");
+    url.searchParams.delete("reporteId");
+    url.searchParams.delete("reporteNombre");
+    window.history.replaceState({}, "", url);
+
+    window.location.href = `/roles/responsable/entrega?${params.toString()}`;
+    setPendingEntrega(null);
+  }, [pendingEntrega, periodos]);
+
+  useEffect(() => {
+    if (!highlightPeriodoId || periodos.length === 0) return;
+    const target = document.getElementById(`periodo-${highlightPeriodoId}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightPeriodoId, periodos]);
 
   const loadPeriodos = async () => {
     try {
@@ -86,8 +146,6 @@ export default function MisReportesClient() {
           vencidos: 0,
           porVencer: 0,
         });
-        setTotalElements(0);
-        setTotalPages(0);
         setLoading(false);
         return;
       }
@@ -155,14 +213,7 @@ export default function MisReportesClient() {
           // Ya está asignado
           break;
       }
-      // Aplicar paginación manual
-      const startIndex = page * 10;
-      const endIndex = startIndex + 10;
-      const paginatedPeriodos = filteredPeriodos.slice(startIndex, endIndex);
-
-      setPeriodos(paginatedPeriodos);
-      setTotalElements(filteredPeriodos.length);
-      setTotalPages(Math.ceil(filteredPeriodos.length / 10));
+      setPeriodos(filteredPeriodos);
 
       console.log("✅ [MisReportes] Datos cargados exitosamente");
       console.log("📈 [MisReportes] Contadores:", newCounts);
@@ -190,7 +241,6 @@ export default function MisReportesClient() {
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
-    setPage(0);
     // Actualizar URL sin recargar la página
     const url = new URL(window.location.href);
     url.searchParams.set("filtro", filter);
@@ -206,23 +256,15 @@ export default function MisReportesClient() {
       return;
     }
 
-    if (accion === "enviar") {
-      setModalEnviar({
-        isOpen: true,
-        periodoId,
-        reporteNombre: periodo.reporteNombre,
-        esCorreccion: false,
+    if (accion === "enviar" || accion === "corregir") {
+      const params = new URLSearchParams({
+        periodoId: periodo.periodoId,
+        reporteId: periodo.reporteId,
       });
-      return;
-    }
-
-    if (accion === "corregir") {
-      setModalEnviar({
-        isOpen: true,
-        periodoId,
-        reporteNombre: periodo.reporteNombre,
-        esCorreccion: true,
-      });
+      if ((periodo as any).reporteNombre) {
+        params.append("reporteNombre", (periodo as any).reporteNombre);
+      }
+      window.location.href = `/roles/responsable/entrega?${params.toString()}`;
       return;
     }
   };
@@ -251,6 +293,56 @@ export default function MisReportesClient() {
     },
     { id: "enviados" as FilterType, label: "Enviados", count: counts.enviados },
   ];
+
+  const grupos = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        key: string;
+        nombre: string;
+        entidad: string;
+        periodos: ReportePeriodo[];
+      }
+    >();
+
+    periodos.forEach((periodo) => {
+      const key =
+        periodo.reporteId ||
+        (periodo as any).reporteId ||
+        (periodo as any).reporteNombre ||
+        (periodo as any).nombreReporte ||
+        "sin-reporte";
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          nombre:
+            (periodo as any).reporteNombre ||
+            (periodo as any).nombreReporte ||
+            "Reporte",
+          entidad: (periodo as any).entidadNombre || "",
+          periodos: [],
+        });
+      }
+
+      map.get(key)!.periodos.push(periodo);
+    });
+
+    return Array.from(map.values())
+      .map((grupo) => ({
+        ...grupo,
+        periodos: [...grupo.periodos].sort((a, b) => {
+          const fa = a.fechaVencimientoCalculada
+            ? new Date(a.fechaVencimientoCalculada).getTime()
+            : 0;
+          const fb = b.fechaVencimientoCalculada
+            ? new Date(b.fechaVencimientoCalculada).getTime()
+            : 0;
+          return fa - fb;
+        }),
+      }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [periodos]);
 
   return (
     <>
@@ -362,62 +454,44 @@ export default function MisReportesClient() {
         ) : (
           <>
             <div className="reportes-list">
-              {periodos.map((periodo) => (
-                <TarjetaPeriodo
-                  key={periodo.periodoId}
-                  periodo={periodo}
-                  onAccion={handleAccion}
-                  mostrarResponsables={false}
-                />
+              {grupos.map((grupo) => (
+                <div key={grupo.key} className="reporte-grupo">
+                  <div className="grupo-header">
+                    <div>
+                      <h2 className="grupo-title">{grupo.nombre}</h2>
+                      {grupo.entidad && (
+                        <p className="grupo-entidad">{grupo.entidad}</p>
+                      )}
+                    </div>
+                    <span className="grupo-count">
+                      {grupo.periodos.length} periodo
+                      {grupo.periodos.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  <div className="grupo-periodos">
+                    {grupo.periodos.map((periodo) => {
+                      const esResaltado =
+                        highlightPeriodoId === periodo.periodoId;
+                      return (
+                        <div
+                          key={periodo.periodoId}
+                          id={`periodo-${periodo.periodoId}`}
+                          className={`reporte-wrapper ${esResaltado ? "periodo-resaltado" : ""}`}
+                        >
+                          <TarjetaPeriodo
+                            periodo={periodo}
+                            onAccion={handleAccion}
+                            mostrarResponsables={false}
+                            resaltar={esResaltado}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginTop: "1rem",
-                }}
-              >
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="btn-action"
-                  style={{
-                    opacity: page === 0 ? 0.5 : 1,
-                    cursor: page === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Anterior
-                </button>
-                <span
-                  style={{
-                    padding: "0 1rem",
-                    fontSize: "0.875rem",
-                    color: "var(--neutral-600)",
-                  }}
-                >
-                  Página {page + 1} de {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setPage((p) => Math.min(totalPages - 1, p + 1))
-                  }
-                  disabled={page >= totalPages - 1}
-                  className="btn-action"
-                  style={{
-                    opacity: page >= totalPages - 1 ? 0.5 : 1,
-                    cursor: page >= totalPages - 1 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -507,6 +581,71 @@ export default function MisReportesClient() {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+        }
+
+        .reporte-grupo {
+          background: white;
+          border-radius: 12px;
+          box-shadow: var(--shadow-card);
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .grupo-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .grupo-title {
+          margin: 0;
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: var(--neutral-900);
+        }
+
+        .grupo-entidad {
+          margin: 0.15rem 0 0;
+          color: var(--neutral-600);
+          font-size: 0.9rem;
+        }
+
+        .grupo-count {
+          background: var(--neutral-100);
+          color: var(--neutral-700);
+          padding: 0.25rem 0.75rem;
+          border-radius: 999px;
+          font-weight: 700;
+          font-size: 0.85rem;
+        }
+
+        .grupo-periodos {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .reporte-wrapper {
+          scroll-margin-top: 80px;
+          transition: transform 0.2s ease;
+        }
+
+        .reporte-wrapper.periodo-resaltado .card {
+          box-shadow: 0 0 0 2px var(--role-accent), 0 10px 24px rgba(0, 0, 0, 0.12);
+          background: var(--role-accent-light, #fff7ed);
+        }
+
+        .reporte-wrapper.periodo-resaltado {
+          animation: pulse-resaltado 0.6s ease-in-out 2;
+        }
+
+        @keyframes pulse-resaltado {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.01); }
+          100% { transform: scale(1); }
         }
 
         .btn-action {

@@ -81,10 +81,18 @@ export default function CalendarioResponsableClient() {
   };
 
   const proximosVencimientos = eventos
-    .filter(
-      (e) =>
-        e.tipo === "vencido" || e.tipo === "porVencer" || e.tipo === "pendiente"
-    )
+    .filter((e) => {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const limiteNoventaDias = new Date(hoy);
+      limiteNoventaDias.setDate(limiteNoventaDias.getDate() + 90);
+
+      return (
+        e.tipo !== "enviado" &&
+        e.fecha.getTime() >= hoy.getTime() &&
+        e.fecha.getTime() <= limiteNoventaDias.getTime()
+      );
+    })
     .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
     .slice(0, 5);
 
@@ -244,7 +252,13 @@ export default function CalendarioResponsableClient() {
     if (tipo === "enviado") return "En revisión";
     if (tipo === "vencido") return "Completar (Vencido)";
     if (tipo === "porVencer") return "Completar urgente";
-    return "Completar / Enviar";
+    return "Toca para ver más detalles";
+  };
+
+  const irAMisReportes = (periodoId: string) => {
+    if (!periodoId) return;
+    const params = new URLSearchParams({ resaltarPeriodo: periodoId });
+    window.location.href = `/roles/responsable/mis-reportes?${params.toString()}`;
   };
 
   const esHoy = (fecha: Date) => {
@@ -254,6 +268,22 @@ export default function CalendarioResponsableClient() {
       fecha.getMonth() === hoy.getMonth() &&
       fecha.getFullYear() === hoy.getFullYear()
     );
+  };
+
+  const manejarClickDiaMes = (dia: {
+    fecha: Date;
+    esDelMes: boolean;
+    eventos: EventoCalendario[];
+  }) => {
+    if (!dia.esDelMes) return;
+    setDiaSeleccionado(dia.fecha);
+  };
+
+  const manejarClickDiaSemana = (dia: {
+    fecha: Date;
+    eventos: EventoCalendario[];
+  }) => {
+    setDiaSeleccionado(dia.fecha);
   };
 
   if (loading) {
@@ -339,6 +369,8 @@ export default function CalendarioResponsableClient() {
                     <div
                       key={evento.periodoId}
                       className={`evento-item ${esUrgente ? (evento.tipo === "vencido" ? "urgent" : "warning") : ""}`}
+                      onClick={() => irAMisReportes(evento.periodoId)}
+                      role="button"
                     >
                       <div className="evento-date">
                         <span className="date-day">
@@ -473,6 +505,7 @@ export default function CalendarioResponsableClient() {
                     const tienePorVencer = dia.eventos.some(
                       (e) => e.tipo === "porVencer"
                     );
+                    const eventosPreview = dia.eventos.slice(0, 2);
                     const hoy = esHoy(dia.fecha);
                     const seleccionado =
                       diaSeleccionado &&
@@ -487,26 +520,31 @@ export default function CalendarioResponsableClient() {
                           ${!dia.esDelMes ? "other-month" : ""} 
                           ${hoy ? "today" : ""} 
                           ${tieneVencido ? "has-urgent" : tienePorVencer ? "has-warning" : ""}
+                          ${tieneEventos ? "has-events" : ""}
                           ${seleccionado ? "selected" : ""}
                         `}
-                        onClick={() =>
-                          dia.esDelMes && setDiaSeleccionado(dia.fecha)
-                        }
+                        onClick={() => manejarClickDiaMes(dia)}
                       >
                         <span className="day-number">
                           {dia.fecha.getDate()}
                         </span>
                         {tieneEventos && (
                           <div className="day-events">
-                            {dia.eventos.map((evento) => (
+                            {eventosPreview.map((evento) => (
                               <div
                                 key={evento.periodoId}
-                                className={`event-dot ${evento.tipo}`}
-                                style={{
-                                  backgroundColor: getColorEvento(evento.tipo),
-                                }}
-                              />
+                                className={`event-mini ${evento.tipo}`}
+                              >
+                                <div className="event-mini-title">
+                                  {evento.titulo}
+                                </div>
+                              </div>
                             ))}
+                            {dia.eventos.length > 2 && (
+                              <span className="event-overflow">
+                                +{dia.eventos.length - 2}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -526,12 +564,14 @@ export default function CalendarioResponsableClient() {
                     dia.fecha.getDate() === diaSeleccionado.getDate() &&
                     dia.fecha.getMonth() === diaSeleccionado.getMonth() &&
                     dia.fecha.getFullYear() === diaSeleccionado.getFullYear();
+                  const tieneEventos = dia.eventos.length > 0;
+                  const eventosPreview = dia.eventos.slice(0, 2);
 
                   return (
                     <div
                       key={index}
-                      className={`week-day ${hoy ? "today" : ""} ${seleccionado ? "selected" : ""}`}
-                      onClick={() => setDiaSeleccionado(dia.fecha)}
+                      className={`week-day ${hoy ? "today" : ""} ${seleccionado ? "selected" : ""} ${tieneEventos ? "has-events" : ""}`}
+                      onClick={() => manejarClickDiaSemana(dia)}
                     >
                       <div className="week-day-header">
                         <span className="week-day-name">
@@ -544,33 +584,27 @@ export default function CalendarioResponsableClient() {
                         >
                           {dia.fecha.getDate()}
                         </span>
-                      </div>
-                      <div className="week-day-events">
-                        {dia.eventos.length === 0 ? (
-                          <div className="no-events">Sin reportes</div>
-                        ) : (
-                          dia.eventos.map((evento) => (
-                            <div
-                              key={evento.periodoId}
-                              className={`week-event ${evento.tipo}`}
-                            >
-                              <div className="week-event-time">
-                                {getDiasRestantes(evento.fecha) === 0
-                                  ? "Hoy"
-                                  : getDiasRestantes(evento.fecha) < 0
-                                    ? `Vencido ${Math.abs(getDiasRestantes(evento.fecha))}d`
-                                    : `En ${getDiasRestantes(evento.fecha)}d`}
+                        {tieneEventos && (
+                          <div className="week-day-dots">
+                            {eventosPreview.map((evento) => (
+                              <div
+                                key={`${evento.periodoId}-${evento.tipo}`}
+                                className={`event-mini ${evento.tipo}`}
+                              >
+                                <div className="event-mini-title">
+                                  {evento.titulo}
+                                </div>
                               </div>
-                              <div className="week-event-title">
-                                {evento.titulo}
-                              </div>
-                              <div className="week-event-entity">
-                                {evento.entidad}
-                              </div>
-                            </div>
-                          ))
+                            ))}
+                            {dia.eventos.length > 2 && (
+                              <span className="event-overflow">
+                                +{dia.eventos.length - 2}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
+                      <div className="week-day-events" aria-hidden="true" />
                     </div>
                   );
                 })}
@@ -604,6 +638,7 @@ export default function CalendarioResponsableClient() {
                       <div
                         key={evento.periodoId}
                         className={`list-event ${evento.tipo}`}
+                        onClick={() => irAMisReportes(evento.periodoId)}
                       >
                         <div className="list-event-date">
                           <span className="list-date-day">
@@ -671,34 +706,44 @@ export default function CalendarioResponsableClient() {
                     <p>No hay reportes para este día</p>
                   </div>
                 ) : (
-                  eventosDelDia.map((evento) => (
-                    <div
-                      key={evento.periodoId}
-                      className={`detail-event ${evento.tipo}`}
-                    >
-                      <div className="event-time">
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12,6 12,12 16,14" />
-                        </svg>
-                        Vencimiento
+                  eventosDelDia
+                    .slice()
+                    .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
+                    .map((evento) => (
+                      <div
+                        key={evento.periodoId}
+                        className={`list-event ${evento.tipo}`}
+                        onClick={() => irAMisReportes(evento.periodoId)}
+                      >
+                        <div className="list-event-date">
+                          <span className="list-date-day">
+                            {evento.fecha.getDate()}
+                          </span>
+                          <span className="list-date-month">
+                            {evento.fecha.toLocaleDateString("es-CO", {
+                              month: "short",
+                            })}
+                          </span>
+                          <span className="list-date-year">
+                            {evento.fecha.getFullYear()}
+                          </span>
+                        </div>
+                        <div className="list-event-content">
+                          <h4>{evento.titulo}</h4>
+                          <p>{evento.entidad}</p>
+                          <div className={`list-event-status ${evento.tipo}`}>
+                            {getAccionTexto(evento.tipo, evento.estado)}
+                          </div>
+                        </div>
+                        <div className="list-event-badge">
+                          {evento.tipo === "vencido"
+                            ? `Vencido hace ${Math.abs(getDiasRestantes(evento.fecha))} día${Math.abs(getDiasRestantes(evento.fecha)) !== 1 ? "s" : ""}`
+                            : evento.tipo === "enviado"
+                              ? "Enviado"
+                              : `En ${getDiasRestantes(evento.fecha)} día${getDiasRestantes(evento.fecha) !== 1 ? "s" : ""}`}
+                        </div>
                       </div>
-                      <div className="event-content">
-                        <h4>{evento.titulo}</h4>
-                        <p>{evento.entidad}</p>
-                      </div>
-                      <div className={`event-status ${evento.tipo}`}>
-                        {getAccionTexto(evento.tipo, evento.estado)}
-                      </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
             </div>
@@ -1009,6 +1054,12 @@ export default function CalendarioResponsableClient() {
           position: relative;
         }
 
+        .calendar-day.has-events {
+          background: linear-gradient(180deg, var(--neutral-50) 0%, white 70%);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+          border: 1px solid var(--neutral-200);
+        }
+
         .calendar-day:hover {
           background: var(--neutral-50);
         }
@@ -1052,17 +1103,64 @@ export default function CalendarioResponsableClient() {
           color: var(--neutral-700);
         }
 
+        .calendar-day.has-events .day-number {
+          font-weight: 700;
+          color: var(--neutral-900);
+        }
+
         .day-events {
           display: flex;
-          gap: 4px;
-          margin-top: 0.5rem;
+          gap: 6px;
+          margin-top: 0.4rem;
           flex-wrap: wrap;
         }
 
-        .event-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
+        .calendar-day.has-events .day-events {
+          padding: 0.35rem 0.45rem;
+          border-radius: 10px;
+          background: rgba(0,0,0,0.02);
+          box-shadow: inset 0 0 0 1px var(--neutral-200);
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+
+        .event-mini {
+          background: white;
+          border: 1px solid var(--neutral-200);
+          border-left: 3px solid var(--neutral-300);
+          border-radius: 8px;
+          padding: 0.35rem 0.45rem;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          pointer-events: none;
+        }
+
+        .event-mini.vencido { border-left-color: var(--error-red-500); background: var(--error-red-50); }
+        .event-mini.porVencer { border-left-color: var(--warning-yellow-500); background: var(--warning-yellow-50); }
+        .event-mini.pendiente { border-left-color: var(--role-accent); }
+        .event-mini.enviado { border-left-color: var(--success-green-500); background: var(--success-green-50); }
+
+        .event-mini-title {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--neutral-800);
+          line-height: 1.2;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .event-overflow {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: var(--neutral-600);
+          padding: 0.15rem 0.55rem;
+          background: var(--neutral-100);
+          border-radius: 999px;
+          align-self: flex-start;
+          box-shadow: inset 0 0 0 1px var(--neutral-200);
         }
 
         .event-dot.vencido { background: var(--error-red-500); }
@@ -1256,6 +1354,11 @@ export default function CalendarioResponsableClient() {
           transition: all 0.2s;
         }
 
+        .week-day.has-events .week-day-header {
+          background: var(--neutral-50);
+          border-bottom-color: var(--neutral-200);
+        }
+
         .week-day:hover .week-day-header {
           background: rgba(0, 0, 0, 0.02);
         }
@@ -1287,6 +1390,18 @@ export default function CalendarioResponsableClient() {
           font-weight: 700;
         }
 
+        .week-day-dots {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+          margin-top: 0.5rem;
+          padding: 0.35rem 0.45rem;
+          border-radius: 10px;
+          background: rgba(0,0,0,0.02);
+          box-shadow: inset 0 0 0 1px var(--neutral-200);
+          pointer-events: none;
+        }
+
         .week-day-events {
           flex: 1;
           padding: 0.5rem;
@@ -1307,14 +1422,12 @@ export default function CalendarioResponsableClient() {
           border-radius: 6px;
           border-left: 3px solid;
           background: var(--neutral-50);
-          cursor: pointer;
-          transition: all 0.2s;
+          cursor: default;
+          transition: background 0.2s;
         }
 
         .week-event:hover {
           background: var(--neutral-100);
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-card);
         }
 
         .week-event.vencido {
