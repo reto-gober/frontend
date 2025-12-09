@@ -274,9 +274,10 @@ export default function SupervisorGestionReportesClient() {
   }
 
   return (
-    <div className="reportes-page">
-      {/* Header */}
-      <div className="page-header">
+    <>
+      <div className="reportes-page">
+        {/* Header */}
+        <div className="page-header">
         <div className="header-info">
           <h1 className="page-title">Gestión de Reportes</h1>
           <p className="page-description">Vista global de todos los reportes del sistema</p>
@@ -469,5 +470,6 @@ export default function SupervisorGestionReportesClient() {
       }}
       onError={(msg) => notifications.error(msg)}
     />
+    </>
   );
 }

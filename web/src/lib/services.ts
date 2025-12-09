@@ -799,7 +799,7 @@ export interface ArchivoDTO {
   tipoArchivo: string;
   nombreOriginal: string;
   linkStorage: string;
-  urlPublica?: string | null;
+  urlPublica: string | null;
   tamanoBytes: number;
   mimeType: string;
   hashIntegridad?: string;

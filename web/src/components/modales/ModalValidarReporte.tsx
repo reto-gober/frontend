@@ -93,7 +93,7 @@ export function ModalValidarReporte({
     try {
       const request: ValidarReporteRequest = {
         periodoId,
-        accion,
+        accion: accion === 'corregir' ? 'rechazar' : accion as 'aprobar' | 'rechazar' | 'revisar',
         comentarios: comentarios.trim() || undefined,
         motivoRechazo: (accion === 'rechazar' || accion === 'corregir') ? motivoRechazo.trim() : undefined
       };

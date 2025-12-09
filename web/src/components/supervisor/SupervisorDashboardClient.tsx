@@ -330,8 +330,9 @@ export default function SupervisorDashboardClient() {
           subtitle="Días promedio"
           invert={true}
           tipo="warning"
-          onClick={() => redirectGestion('en_revision')}}
+          onClick={() => redirectGestion('en_revision')}
         />
+        
       </section>
 
       {/* Grid de Secciones */}

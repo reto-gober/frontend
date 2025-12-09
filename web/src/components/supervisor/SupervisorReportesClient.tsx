@@ -146,7 +146,7 @@ export default function SupervisorReportesClient() {
     try {
       await archivosService.descargarArchivo(periodoId, archivoId, nombreArchivo);
     } catch (err) {
-      mostrarToast('error', 'Error al descargar el archivo');
+      console.error('Error al descargar el archivo');
     }
   };
 

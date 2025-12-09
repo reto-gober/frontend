@@ -8,19 +8,8 @@ import {
   FileSpreadsheet,
   AlertCircle
 } from 'lucide-react';
+import type { ArchivoDTO } from '../../lib/services';
 import '../../styles/files-list.css';
-
-interface ArchivoDTO {
-  archivoId: string;
-  tipoArchivo: string;
-  nombreOriginal: string;
-  tamanoBytes: number;
-  mimeType: string;
-  subidoPor: string;
-  subidoPorEmail: string;
-  subidoEn: string;
-  urlPublica: string | null;
-}
 
 interface FilesListProps {
   periodoId: string;
