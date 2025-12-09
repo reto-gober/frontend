@@ -23,7 +23,7 @@ export default function AdminCumplimientoClient() {
   const [showAllResponsables, setShowAllResponsables] = useState(false);
 
   // Construye un cumplimientoGlobal derivado cuando el backend aún no envía el nuevo DTO
-  const buildFallbackCumplimientoGlobal = (payload: AdminCumplimientoDTO): CumplimientoGlobalDTO | null => {
+  const buildFallbackCumplimientoGlobal = (payload: AdminCumplimientoDTO): CumplimientoGlobalDTO | undefined => {
     const { adminMetrics, kpisGenerales, distribucionPorEntidad = [], cargaPorResponsable = [] } = payload;
 
     const totalReportesFromEntidades = distribucionPorEntidad.reduce((acc, e) => acc + (e.totalReportes || 0), 0);
@@ -392,17 +392,15 @@ export default function AdminCumplimientoClient() {
     // Usar cumplimientoGlobal o fallback a data
     let dist = cumplimientoGlobal?.distribucionPorEstado;
     
-    // Fallback: calcular distribución desde adminMetrics o kpisGenerales
-    if (!dist && data) {
-      const metrics = data.adminMetrics || data.kpisGenerales;
-      if (metrics) {
-        dist = {
-          a_tiempo: metrics.aprobados || metrics.reportesAprobados || 0,
-          enviados_tarde: metrics.enRevision || metrics.reportesEnRevision || 0,
-          no_reportado: metrics.atrasados || metrics.reportesAtrasados || 0,
-          pendientes: metrics.pendientes || metrics.reportesPendientes || 0
-        };
-      }
+    // Fallback: calcular distribución desde kpisGenerales
+    if (!dist && data?.kpisGenerales) {
+      const kpis = data.kpisGenerales;
+      dist = {
+        a_tiempo: 0, // No disponible en kpisGenerales
+        enviados_tarde: kpis.reportesEnRevision || 0,
+        no_reportado: kpis.reportesAtrasados || 0,
+        pendientes: kpis.reportesPendientes || 0
+      };
     }
     
     if (!dist) return null;
@@ -546,7 +544,12 @@ export default function AdminCumplimientoClient() {
         entidadId: e.entidadId,
         nombreEntidad: e.nombreEntidad,
         totalReportes: e.totalReportes,
+        enviados: e.aprobados,
         enviadosATiempo: e.aprobados,
+        enviadosTarde: 0,
+        pendientes: e.pendientes,
+        vencidos: 0,
+        enRevision: e.enRevision,
         porcentajeCumplimiento: e.totalReportes > 0 ? (e.aprobados / e.totalReportes) * 100 : 0
       }));
     }
@@ -623,7 +626,12 @@ export default function AdminCumplimientoClient() {
         responsableId: r.responsableId,
         nombreCompleto: r.nombreCompleto,
         email: r.email,
+        cargo: r.cargo,
         asignados: r.totalReportes,
+        pendientes: r.pendientes,
+        enRevision: r.enRevision,
+        aprobados: r.aprobados,
+        atrasados: r.atrasados,
         vencidos: r.atrasados,
         porcentajeCumplimiento: r.porcentajeCumplimiento
       }));
