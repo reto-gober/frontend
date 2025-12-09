@@ -1277,7 +1277,7 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: "aprobar" | "rechazar" | 'revisar';
+  accion: "aprobar" | "rechazar" | "revisar" | "corregir";
   comentarios?: string;
   motivoRechazo?: string; // Obligatorio para "rechazar" y "corregir"
 }
