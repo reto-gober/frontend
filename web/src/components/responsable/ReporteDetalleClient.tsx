@@ -1,50 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Loader2, AlertCircle, Calendar, Clock, User, FileText } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Loader2, AlertCircle, Calendar, Clock, User, FileText, Send, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 import FilesList from '../reportes/FilesList';
 import FileViewer from '../reportes/FileViewer';
+import FileUploadZone from '../common/FileUploadZone';
+import { useToast, ToastContainer } from '../Toast';
+import { flujoReportesService, evidenciasService } from '../../lib/services';
+import { normalizarEstado } from '../../lib/utils/estados';
+import type { ReportePeriodo, ArchivoDTO, ComentarioInfo } from '../../lib/services';
 import '../../styles/reporte-detalle.css';
-
-interface ArchivoDTO {
-  archivoId: string;
-  tipoArchivo: string;
-  nombreOriginal: string;
-  tamanoBytes: number;
-  mimeType: string;
-  subidoPor: string;
-  subidoPorEmail: string;
-  subidoEn: string;
-  urlPublica: string | null;
-}
-
-interface ResponsableInfo {
-  nombre: string;
-  email: string;
-  cargo: string;
-}
-
-interface ComentarioDTO {
-  autor: string;
-  fecha: string;
-  texto: string;
-  accion: string;
-}
-
-interface PeriodoDetalle {
-  periodoId: string;
-  reporteNombre: string;
-  entidadNombre: string;
-  periodoInicio: string;
-  periodoFin: string;
-  fechaVencimientoCalculada: string;
-  fechaEnvioReal: string | null;
-  estado: string;
-  estadoDescripcion: string;
-  diasDesviacion: number | null;
-  responsableElaboracion: ResponsableInfo | null;
-  responsableSupervision: ResponsableInfo | null;
-  comentarios: ComentarioDTO[];
-  archivos: ArchivoDTO[];
-}
 
 interface ReporteDetalleClientProps {
   periodoId: string;
@@ -53,10 +16,24 @@ interface ReporteDetalleClientProps {
 }
 
 export default function ReporteDetalleClient({ periodoId, backHref, backLabel }: ReporteDetalleClientProps) {
-  const [detalle, setDetalle] = useState<PeriodoDetalle | null>(null);
+  const [detalle, setDetalle] = useState<ReportePeriodo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<ArchivoDTO | null>(null);
+  const [mostrarComentarios, setMostrarComentarios] = useState(true);
+  
+  // Estados para la entrega
+  const [archivosNuevos, setArchivosNuevos] = useState<File[]>([]);
+  const [comentarios, setComentarios] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const { toasts, removeToast, success: showSuccess, error: showError } = useToast();
+
+  // Calcular permisos
+  const canSubmit = detalle && (
+    normalizarEstado(detalle.estado) === 'pendiente' ||
+    normalizarEstado(detalle.estado) === 'requiere_correccion'
+  );
 
   useEffect(() => {
     loadDetalle();
@@ -67,22 +44,10 @@ export default function ReporteDetalleClient({ periodoId, backHref, backLabel }:
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/periodos/${periodoId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al cargar el detalle del periodo');
-      }
-
-      const data = await response.json();
-      console.log('📊 Detalle recibido:', data.data);
-      console.log('📎 Archivos encontrados:', data.data.archivos?.length || 0);
-      setDetalle(data.data);
+      const data = await flujoReportesService.obtenerPeriodo(periodoId);
+      console.log('📊 Detalle recibido:', data);
+      console.log('📎 Archivos encontrados:', data.archivos?.length || 0);
+      setDetalle(data);
     } catch (err: any) {
       console.error('❌ Error cargando detalle:', err);
       setError(err.message || 'Error al cargar el detalle');
@@ -109,6 +74,64 @@ export default function ReporteDetalleClient({ periodoId, backHref, backLabel }:
       minute: '2-digit'
     });
   };
+
+  const handleUploadFiles = useCallback((files: File[]) => {
+    setArchivosNuevos(prev => [...prev, ...files]);
+    showSuccess(`${files.length} archivo(s) agregado(s)`);
+  }, [showSuccess]);
+
+  const handleRemoveFile = useCallback((index: number) => {
+    setArchivosNuevos(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit || !detalle) {
+      showError('No tienes permisos para enviar la entrega');
+      return;
+    }
+
+    if (archivosNuevos.length === 0 && (!detalle.archivos || detalle.archivos.length === 0)) {
+      showError('Debes adjuntar al menos un archivo antes de enviar');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // Subir archivos nuevos si los hay
+      const evidenciasIds: string[] = [];
+      for (const file of archivosNuevos) {
+        const response = await evidenciasService.subirPorPeriodo(periodoId, file);
+        evidenciasIds.push(response.id);
+      }
+
+      // Enviar o reenviar según estado
+      const estado = normalizarEstado(detalle.estado);
+      const payload = {
+        periodoId,
+        comentarios: comentarios.trim() || undefined,
+        evidenciasIds: evidenciasIds.length > 0 ? evidenciasIds : undefined,
+      };
+
+      const resultado = estado === 'requiere_correccion'
+        ? await flujoReportesService.corregirReenviar(payload)
+        : await flujoReportesService.enviar(payload);
+
+      showSuccess('Entrega enviada correctamente');
+      setArchivosNuevos([]);
+      setComentarios('');
+      
+      // Recargar detalle
+      setTimeout(() => {
+        loadDetalle();
+      }, 500);
+    } catch (err: any) {
+      console.error('[ReporteDetalle] Error al enviar:', err);
+      showError(err?.response?.data?.message || err?.message || 'Error al enviar la entrega');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [canSubmit, detalle, archivosNuevos, periodoId, comentarios, showSuccess, showError]);
 
   const getEstadoClass = (estado: string): string => {
     const estadoLower = estado.toLowerCase();
@@ -152,6 +175,7 @@ export default function ReporteDetalleClient({ periodoId, backHref, backLabel }:
 
   return (
     <div className="reporte-detalle-container">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="reporte-detalle-wrapper">
         {/* Header con botón de regreso */}
         <div className="reporte-header">
@@ -235,7 +259,7 @@ export default function ReporteDetalleClient({ periodoId, backHref, backLabel }:
               {detalle.responsableElaboracion && (
                 <div className="responsable-card elaboracion">
                   <p className="responsable-role">Elaboración</p>
-                  <p className="responsable-name">{detalle.responsableElaboracion.nombre}</p>
+                  <p className="responsable-name">{detalle.responsableElaboracion.nombreCompleto}</p>
                   <p className="responsable-cargo">{detalle.responsableElaboracion.cargo}</p>
                   <p className="responsable-email">{detalle.responsableElaboracion.email}</p>
                 </div>
@@ -243,7 +267,7 @@ export default function ReporteDetalleClient({ periodoId, backHref, backLabel }:
               {detalle.responsableSupervision && (
                 <div className="responsable-card supervision">
                   <p className="responsable-role">Supervisión</p>
-                  <p className="responsable-name">{detalle.responsableSupervision.nombre}</p>
+                  <p className="responsable-name">{detalle.responsableSupervision.nombreCompleto}</p>
                   <p className="responsable-cargo">{detalle.responsableSupervision.cargo}</p>
                   <p className="responsable-email">{detalle.responsableSupervision.email}</p>
                 </div>
@@ -255,63 +279,496 @@ export default function ReporteDetalleClient({ periodoId, backHref, backLabel }:
           </div>
         </div>
 
-        {/* Archivos */}
-        <div className="info-card">
-          <div className="archivos-header">
-            <h2 className="card-title">
-              <FileText style={{ color: '#16a34a' }} />
-              Archivos Adjuntos
-            </h2>
-            <span className="count-badge">
-              {detalle.archivos.length}
-            </span>
-          </div>
-          {detalle.archivos.length > 0 ? (
-            <FilesList
-              periodoId={detalle.periodoId}
-              archivos={detalle.archivos}
-              onViewFile={setArchivoSeleccionado}
-              compact={false}
-            />
-          ) : (
-            <div className="empty-state">
-              <FileText />
-              <p className="empty-state-title">No hay archivos adjuntos</p>
-              <p className="empty-state-subtitle">Los archivos aparecerán aquí cuando se suban</p>
-            </div>
-          )}
-        </div>
-
-        {/* Comentarios */}
-        {detalle.comentarios.length > 0 && (
+        {/* Archivos Adjuntos - Solo mostrar si ya existe una entrega */}
+        {detalle.fechaEnvioReal && (
           <div className="info-card">
             <div className="archivos-header">
               <h2 className="card-title">
-                <Clock style={{ color: '#4f46e5' }} />
-                Historial de Comentarios
+                <FileText style={{ color: '#16a34a' }} />
+                Archivos Adjuntos
               </h2>
-              <span className="count-badge" style={{ backgroundColor: '#e0e7ff', color: '#3730a3' }}>
-                {detalle.comentarios.length}
+              <span className="count-badge">
+                {detalle.archivos?.length || 0}
               </span>
             </div>
-            <div className="comentarios-list">
-              {detalle.comentarios.map((comentario, index) => (
-                <div key={index} className="comentario-card">
-                  <div className="comentario-header">
-                    <div className="comentario-author-info">
-                      <p className="comentario-author">{comentario.autor}</p>
-                      <p className="comentario-date">{comentario.fecha}</p>
-                    </div>
-                    <span className="comentario-action">
-                      {comentario.accion}
-                    </span>
-                  </div>
-                  <p className="comentario-text">{comentario.texto}</p>
-                </div>
-              ))}
-            </div>
+            {detalle.archivos && detalle.archivos.length > 0 ? (
+              <FilesList
+                periodoId={detalle.periodoId}
+                archivos={detalle.archivos}
+                onViewFile={setArchivoSeleccionado}
+                compact={false}
+              />
+            ) : (
+              <div className="empty-state">
+                <FileText />
+                <p className="empty-state-title">No hay archivos adjuntos</p>
+                <p className="empty-state-subtitle">Los archivos aparecerán aquí cuando se suban</p>
+              </div>
+            )}
           </div>
         )}
+
+        {/* Sección de Entrega de Reporte - Solo cuando puede enviar/corregir Y no tiene entrega previa */}
+        {canSubmit && !detalle.fechaEnvioReal && (
+          <div className="info-card">
+            <div className="archivos-header">
+              <h2 className="card-title">
+                <Send style={{ color: '#059669' }} />
+                Enviar Entrega de Reporte
+              </h2>
+            </div>
+
+            {/* Subir Archivos */}
+            <div style={{ marginBottom: '20px' }}>
+              <FileUploadZone
+                onFilesSelected={handleUploadFiles}
+                selectedFiles={archivosNuevos}
+                onRemoveFile={handleRemoveFile}
+                uploadProgress={uploadProgress}
+                disabled={submitting}
+              />
+            </div>
+
+            {/* Validación de archivos */}
+            {archivosNuevos.length === 0 && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fef3c7', 
+                border: '1px solid #f59e0b',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <AlertCircle size={20} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                <p style={{ margin: 0, color: '#92400e', fontSize: '14px' }}>
+                  Debes adjuntar al menos un archivo para poder enviar la entrega
+                </p>
+              </div>
+            )}
+
+            {/* Comentarios */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontWeight: 500, 
+                fontSize: '14px',
+                color: '#374151'
+              }}>
+                Comentarios {detalle && normalizarEstado(detalle.estado) === 'requiere_correccion' ? '(opcional)' : '(opcional)'}
+              </label>
+              <textarea
+                value={comentarios}
+                onChange={(e) => setComentarios(e.target.value)}
+                placeholder="Agrega comentarios sobre tu entrega..."
+                maxLength={2000}
+                disabled={submitting}
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  opacity: submitting ? 0.6 : 1,
+                  cursor: submitting ? 'not-allowed' : 'text'
+                }}
+              />
+              <p style={{ 
+                fontSize: '12px', 
+                color: '#6b7280', 
+                marginTop: '4px',
+                textAlign: 'right'
+              }}>
+                {comentarios.length}/2000 caracteres
+              </p>
+            </div>
+
+            {/* Botón de envío */}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || archivosNuevos.length === 0}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                backgroundColor: submitting || archivosNuevos.length === 0 
+                  ? '#d1d5db' 
+                  : '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: submitting || archivosNuevos.length === 0 
+                  ? 'not-allowed' 
+                  : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting && archivosNuevos.length > 0) {
+                  e.currentTarget.style.backgroundColor = '#047857';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting && archivosNuevos.length > 0) {
+                  e.currentTarget.style.backgroundColor = '#059669';
+                }
+              }}
+            >
+              <Send size={20} />
+              {submitting ? 'Enviando...' : 'Enviar Entrega'}
+            </button>
+          </div>
+        )}
+
+        {/* Sección de Corrección - Solo cuando requiere corrección Y ya tiene entrega previa */}
+        {detalle.fechaEnvioReal && normalizarEstado(detalle.estado) === 'requiere_correccion' && (
+          <div className="info-card">
+            <div className="archivos-header">
+              <h2 className="card-title">
+                <Send style={{ color: '#dc2626' }} />
+                Reenviar Entrega con Correcciones
+              </h2>
+            </div>
+
+            {/* Subir Archivos para Corrección */}
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
+                📎 Los archivos actuales se mantendrán. Puedes agregar archivos adicionales o corregir solo el reporte sin cambiar archivos.
+              </p>
+              <FileUploadZone
+                onFilesSelected={handleUploadFiles}
+                selectedFiles={archivosNuevos}
+                onRemoveFile={handleRemoveFile}
+                uploadProgress={uploadProgress}
+                disabled={submitting}
+              />
+            </div>
+
+            {/* Comentarios para Corrección */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontWeight: 500, 
+                fontSize: '14px',
+                color: '#374151'
+              }}>
+                Comentarios sobre la corrección (opcional)
+              </label>
+              <textarea
+                value={comentarios}
+                onChange={(e) => setComentarios(e.target.value)}
+                placeholder="Explica qué correcciones realizaste..."
+                maxLength={2000}
+                disabled={submitting}
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  opacity: submitting ? 0.6 : 1,
+                  cursor: submitting ? 'not-allowed' : 'text'
+                }}
+              />
+              <p style={{ 
+                fontSize: '12px', 
+                color: '#6b7280', 
+                marginTop: '4px',
+                textAlign: 'right'
+              }}>
+                {comentarios.length}/2000 caracteres
+              </p>
+            </div>
+
+            {/* Botón de reenvío */}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || (archivosNuevos.length === 0 && (!detalle.archivos || detalle.archivos.length === 0))}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                backgroundColor: submitting || (archivosNuevos.length === 0 && (!detalle.archivos || detalle.archivos.length === 0))
+                  ? '#d1d5db' 
+                  : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: submitting || (archivosNuevos.length === 0 && (!detalle.archivos || detalle.archivos.length === 0))
+                  ? 'not-allowed' 
+                  : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting && (archivosNuevos.length > 0 || (detalle.archivos && detalle.archivos.length > 0))) {
+                  e.currentTarget.style.backgroundColor = '#b91c1c';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting && (archivosNuevos.length > 0 || (detalle.archivos && detalle.archivos.length > 0))) {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                }
+              }}
+            >
+              <Send size={20} />
+              {submitting ? 'Enviando...' : 'Reenviar Entrega'}
+            </button>
+          </div>
+        )}
+
+        {/* Historial de Comentarios y Agregar Comentario */}
+        {(detalle.comentarios && detalle.comentarios.length > 0) || normalizarEstado(detalle.estado) !== 'pendiente' && normalizarEstado(detalle.estado) !== 'requiere_correccion' ? (
+          <div className="info-card">
+            <div className="archivos-header" style={{ cursor: 'pointer' }} onClick={() => setMostrarComentarios(!mostrarComentarios)}>
+              <h2 className="card-title">
+                <MessageCircle style={{ color: '#4f46e5' }} />
+                Historial de Comentarios
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {detalle.comentarios && detalle.comentarios.length > 0 && (
+                  <span className="count-badge" style={{ backgroundColor: '#e0e7ff', color: '#3730a3' }}>
+                    {detalle.comentarios.length}
+                  </span>
+                )}
+                {mostrarComentarios ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </div>
+            </div>
+            
+            {mostrarComentarios && (
+              <>
+                {/* Historial de mensajes estilo chat */}
+                {detalle.comentarios && detalle.comentarios.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    padding: '20px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px',
+                    maxHeight: '500px',
+                    overflowY: 'auto',
+                    marginBottom: '20px'
+                  }}>
+                    {detalle.comentarios.map((comentario: ComentarioInfo, index: number) => (
+                      <div key={`comentario-${comentario.fecha}-${index}`} style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        padding: '16px',
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                        border: '1px solid #e5e7eb',
+                        transition: 'all 0.2s',
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          marginBottom: '8px'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              marginBottom: '4px'
+                            }}>
+                              <div style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                backgroundColor: '#4f46e5',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 600,
+                                fontSize: '14px'
+                              }}>
+                                {comentario.autor.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p style={{
+                                  margin: 0,
+                                  fontWeight: 600,
+                                  fontSize: '14px',
+                                  color: '#111827'
+                                }}>
+                                  {comentario.autor}
+                                </p>
+                                {comentario.cargo && (
+                                  <p style={{
+                                    margin: 0,
+                                    fontSize: '12px',
+                                    color: '#6b7280'
+                                  }}>
+                                    {comentario.cargo}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                            <span style={{
+                              padding: '4px 10px',
+                              borderRadius: '12px',
+                              backgroundColor: '#dbeafe',
+                              color: '#1e40af',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              {comentario.accion}
+                            </span>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '12px',
+                              color: '#9ca3af',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {comentario.fecha}
+                            </p>
+                          </div>
+                        </div>
+                        <p style={{
+                          margin: 0,
+                          fontSize: '14px',
+                          color: '#374151',
+                          lineHeight: '1.6',
+                          whiteSpace: 'pre-wrap',
+                          paddingLeft: '40px'
+                        }}>
+                          {comentario.texto}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Formulario para agregar comentario - siempre al final */}
+                {normalizarEstado(detalle.estado) !== 'pendiente' && normalizarEstado(detalle.estado) !== 'requiere_correccion' && (
+                  <div style={{
+                    padding: '20px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '2px dashed #e5e7eb'
+                  }}>
+                    <label style={{
+                      marginBottom: '12px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      color: '#374151',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <MessageCircle size={18} style={{ color: '#4f46e5' }} />
+                      Agregar nuevo comentario
+                    </label>
+                    <textarea
+                      value={comentarios}
+                      onChange={(e) => setComentarios(e.target.value)}
+                      placeholder="Escribe tu comentario aquí..."
+                      maxLength={2000}
+                      disabled={submitting}
+                      style={{
+                        width: '100%',
+                        minHeight: '100px',
+                        padding: '12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        opacity: submitting ? 0.6 : 1,
+                        cursor: submitting ? 'not-allowed' : 'text',
+                        marginBottom: '8px'
+                      }}
+                    />
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <p style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        margin: 0
+                      }}>
+                        {comentarios.length}/2000 caracteres
+                      </p>
+                      <button
+                        onClick={async () => {
+                          if (!comentarios.trim()) {
+                            showError('Debes escribir un comentario');
+                            return;
+                          }
+                          
+                          setSubmitting(true);
+                          try {
+                            await flujoReportesService.agregarComentario({
+                              periodoId: detalle.periodoId,
+                              texto: comentarios
+                            });
+                            showSuccess('Comentario agregado exitosamente');
+                            setComentarios('');
+                            setTimeout(() => {
+                              loadDetalle();
+                            }, 500);
+                          } catch (error: any) {
+                            showError(error.response?.data?.message || 'Error al agregar comentario');
+                          } finally {
+                            setSubmitting(false);
+                          }
+                        }}
+                        disabled={submitting || !comentarios.trim()}
+                        style={{
+                          padding: '10px 20px',
+                          backgroundColor: submitting || !comentarios.trim() ? '#d1d5db' : '#4f46e5',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          cursor: submitting || !comentarios.trim() ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          transition: 'background-color 0.2s'
+                        }}
+                      >
+                        <Send size={16} />
+                        {submitting ? 'Enviando...' : 'Enviar'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {/* Modal de visualización */}

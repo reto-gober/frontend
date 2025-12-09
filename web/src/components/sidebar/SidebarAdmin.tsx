@@ -13,6 +13,7 @@ const menuItems = [
       </svg>
     )
   },
+ 
   { 
     label: 'Cumplimiento', 
     href: '/roles/admin/cumplimiento',
@@ -172,7 +173,6 @@ export default function SidebarAdmin() {
           <div className="user-info">
             <div className="user-avatar admin">A</div>
             <div className="user-details">
-              <span className="user-name">Admin User</span>
               <span className="user-role">Administrador</span>
             </div>
           </div>

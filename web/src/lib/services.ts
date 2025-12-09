@@ -909,13 +909,31 @@ export const dashboardService = {
     return response.data;
   },
 
-  async dashboardSupervisor(): Promise<DashboardSupervisorResponse> {
-    const response = await api.get("/api/dashboard/supervisor");
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "data" in response.data
-    ) {
+  async dashboardSupervisor(filters?: {
+    entidadId?: string;
+    responsableId?: string;
+    frecuencia?: string;
+    estado?: string;
+    tipoAlerta?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    vistaTemporal?: string;
+    limitePeriodos?: number;
+  }): Promise<DashboardSupervisorResponse> {
+    const params = new URLSearchParams();
+    if (filters?.entidadId) params.append('entidadId', filters.entidadId);
+    if (filters?.responsableId) params.append('responsableId', filters.responsableId);
+    if (filters?.frecuencia) params.append('frecuencia', filters.frecuencia);
+    if (filters?.estado) params.append('estado', filters.estado);
+    if (filters?.tipoAlerta) params.append('tipoAlerta', filters.tipoAlerta);
+    if (filters?.fechaInicio) params.append('fechaInicio', filters.fechaInicio);
+    if (filters?.fechaFin) params.append('fechaFin', filters.fechaFin);
+    if (filters?.vistaTemporal) params.append('vistaTemporal', filters.vistaTemporal);
+    if (filters?.limitePeriodos) params.append('limitePeriodos', filters.limitePeriodos.toString());
+
+    const query = params.toString();
+    const response = await api.get(`/api/supervisor/dashboard${query ? `?${query}` : ''}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }
     return response.data;
@@ -1213,14 +1231,36 @@ export interface ReportePeriodo {
     email: string;
     cargo: string;
   };
-  comentarios: string | null;
+  comentarios: ComentarioInfo[] | null;
+  comentariosTexto?: string | null; // Legacy field
   cantidadArchivos: number;
+  archivos?: ArchivoDTO[];
   puedeEnviar: boolean;
   puedeAprobar: boolean;
   puedeRechazar: boolean;
   puedeCorregir: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ArchivoDTO {
+  archivoId: string;
+  tipoArchivo: string;
+  nombreOriginal: string;
+  tamanoBytes: number;
+  mimeType: string;
+  subidoPor: string;
+  subidoPorEmail: string;
+  subidoEn: string;
+  urlPublica: string | null;
+}
+
+export interface ComentarioInfo {
+  autor: string;
+  cargo: string;
+  fecha: string;
+  accion: string;
+  texto: string;
 }
 
 export interface EnviarReporteRequest {
@@ -1231,7 +1271,7 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: "aprobar" | "aprobado" | "rechazar" | "rechazado" | "corregir";
+  accion: "aprobar" | "rechazar" | 'revisar';
   comentarios?: string;
   motivoRechazo?: string; // Obligatorio para "rechazar" y "corregir"
 }
@@ -1514,6 +1554,23 @@ export const flujoReportesService = {
     const response = await api.get(`/api/flujo-reportes/supervision?${params}`);
     return response.data.data;
   },
+
+  // ==================== COMENTARIOS ====================
+  
+  // Obtener comentarios de un periodo
+  async obtenerComentarios(periodoId: string): Promise<ComentarioInfo[]> {
+    const response = await api.get(`/api/flujo-reportes/periodos/${periodoId}/comentarios`);
+    return response.data.data;
+  },
+
+  // Agregar comentario adicional
+  async agregarComentario(request: {
+    periodoId: string;
+    texto: string;
+  }): Promise<ComentarioInfo> {
+    const response = await api.post("/api/flujo-reportes/comentarios", request);
+    return response.data.data;
+  },
 };
 
 // ==================== EVIDENCIAS SUPERVISOR ====================
@@ -1728,18 +1785,37 @@ export const calendarioService = {
     if (filtros?.fechaFin) params.append("fechaFin", filtros.fechaFin);
     if (filtros?.tipo) params.append("tipo", filtros.tipo);
     if (filtros?.estado) params.append("estado", filtros.estado);
+    if (filtros?.entidadId) params.append('entidadId', filtros.entidadId);
 
-    const response = await api.get(
+    try {
+      const response = await api.get(
       `/api/dashboard/supervisor/calendario?${params.toString()}`
     );
-    if (
+      const data = 
       response.data &&
       typeof response.data === "object" &&
       "data" in response.data
-    ) {
-      return response.data.data;
+    
+        ? response.data.data
+        : response.data;
+
+      // Compatibilidad si el backend envía "incidencias" en lugar de "eventos"
+      if (data && !data.eventos && Array.isArray((data as any).incidencias)) {
+        return { ...data, eventos: (data as any).incidencias };
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[calendarioService.supervisor] Error cargando calendario:', error);
+      return {
+        eventos: [],
+        totalEventosMes: 0,
+        eventosVencidosMes: 0,
+        eventosProximosMes: 0,
+        validacionesPendientes: 0,
+        incidenciasCriticas: 0,
+      };
     }
-    return response.data;
   },
 
   // Calendario Auditor (Consulta)
@@ -1892,3 +1968,56 @@ export const auditoriaService = {
     return response.data;
   },
 };
+
+// ==================== ADMIN ACTIONS ====================
+
+export interface AdminActionSummary {
+  actionId: string;
+  actionType: string;
+  adminNombre: string;
+  responsableAfectado: string;
+  periodoDescripcion: string;
+  reporteNombre: string;
+  motivo: string;
+  createdAt: string;
+  filesCount: number;
+  additionalData?: Record<string, any>;
+}
+
+export const adminActionsService = {
+  /**
+   * Obtener acciones administrativas recientes
+   */
+  async obtenerAcciones(
+    page = 0,
+    size = 10,
+    adminId?: string,
+    actionType?: string,
+    periodoId?: string
+  ): Promise<Page<AdminActionSummary>> {
+    const params: Record<string, any> = { page, size };
+    if (adminId) params.adminId = adminId;
+    if (actionType) params.actionType = actionType;
+    if (periodoId) params.periodoId = periodoId;
+
+    const response = await api.get("/api/admin/actions", { params });
+    
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  /**
+   * Obtener acciones recientes (simplificado para dashboard)
+   */
+  async obtenerActividadReciente(limit = 10): Promise<AdminActionSummary[]> {
+    const result = await this.obtenerAcciones(0, limit);
+    return result.content || [];
+  },
+};
+

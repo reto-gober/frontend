@@ -37,17 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadConfig = async () => {
     try {
-      const userData = await fetchCached<ConfiguracionRolResponse>('user', '/config/ui');
-      setUser(userData);
-      
-      // Establecer rol activo por defecto (el rol principal del usuario)
-      const primaryRole = userData.roles[0];
-      const savedRole = localStorage.getItem('activeRole');
-      
-      // Si hay un rol guardado y es válido para este usuario, usarlo
-      if (savedRole && userData.roles.includes(savedRole)) {
-        setActiveRole(savedRole);
-      } else {
+      const response = await api.get('/api/config/ui');
+      if (response.data.success) {
+        const userData = response.data.data;
+        setUser(userData);
+
+        // El rol activo siempre es el rol principal reportado por backend
+        const primaryRole = userData.roles[0];
         setActiveRole(primaryRole);
         localStorage.setItem('activeRole', primaryRole);
       }

@@ -6,18 +6,19 @@ import {
   type ReportePeriodo,
 } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
-import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
-import {
-  esEstadoPendiente,
-  esEstadoEnviado,
-  normalizarEstado,
-} from "../../lib/utils/estados";
 
 type ModoVista = "responsable" | "supervisor" | "admin";
 
 interface MisReportesClientProps {
   modo?: ModoVista;
 }
+
+import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
+import {
+  esEstadoPendiente,
+  esEstadoEnviado,
+  normalizarEstado,
+} from "../../lib/utils/estados";
 
 const titulos: Record<ModoVista, string> = {
   responsable: "Mis Reportes",
@@ -468,6 +469,13 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
       }).length;
 
       const inactivos = gruposCompletos.length - activos;
+ 
+
+      // Calcular contadores
+      const now = new Date();
+      const threeDaysFromNow = new Date(
+        now.getTime() + 3 * 24 * 60 * 60 * 1000
+      );
 
       const newCounts = {
         todos: gruposCompletos.length,
@@ -476,6 +484,8 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
       };
 
       setCounts(newCounts);
+
+      // Establecer todos los periodos
       setPeriodos(allPeriodos);
 
       // Cargar archivos para los periodos paginados
@@ -548,9 +558,8 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
     window.history.pushState({}, "", url);
   };
 
-  const handleVerReporte = (periodoId?: string) => {
-    if (!periodoId) return;
-    window.location.href = `/mis-reportes/${periodoId}`;
+  const handleVerEntregas = () => {
+    window.location.href = '/roles/responsable/mis-tareas';
   };
 
   const handleEnvioExitoso = () => {
@@ -730,13 +739,15 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
                 marginBottom: "0.5rem",
               }}
             >
-              {activeFilter === "todos" && "No tienes reportes asignados"}
+              {activeFilter === "todos" && (modo === "responsable" ? "No tienes reportes asignados" : "No hay reportes disponibles")}
               {activeFilter === "activos" && "No hay reportes activos"}
               {activeFilter === "inactivos" && "No hay reportes inactivos"}
             </h3>
             <p style={{ fontSize: "0.875rem", color: "var(--neutral-500)" }}>
               {activeFilter === "todos" &&
-                "Cuando se te asignen reportes, aparecerán aquí"}
+                (modo === "responsable"
+                  ? "Cuando se te asignen reportes, aparecerán aquí"
+                  : "Crea o asigna reportes para comenzar a gestionarlos")}
               {activeFilter === "activos" &&
                 "No hay reportes dentro de una vigencia activa"}
               {activeFilter === "inactivos" &&
@@ -809,9 +820,7 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
                     <div className="agrupado-actions">
                       <button
                         className="btn btn-secondary btn-with-icon"
-                        onClick={() =>
-                          handleVerReporte(grupo.periodoReferencia?.periodoId)
-                        }
+                        onClick={handleVerEntregas}
                       >
                         <svg
                           width="16"
@@ -821,10 +830,14 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
                           stroke="currentColor"
                           strokeWidth="2"
                         >
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
+                          <line x1="8" y1="6" x2="21" y2="6"></line>
+                          <line x1="8" y1="12" x2="21" y2="12"></line>
+                          <line x1="8" y1="18" x2="21" y2="18"></line>
+                          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                          <line x1="3" y1="18" x2="3.01" y2="18"></line>
                         </svg>
-                        Ver detalle
+                        Ver entregas
                       </button>
                     </div>
                   )}

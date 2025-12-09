@@ -20,6 +20,7 @@ type Settings = {
   smtpEnabled?: boolean;
   sessionTimeoutMinutes?: number;
   maxLoginAttempts?: number;
+  schedulerNotificationHour?: string;
 };
 
 type SmtpSource = { source?: string } | null;
@@ -51,6 +52,7 @@ type FormState = {
   smtpEnabled: boolean;
   sessionTimeout: string;
   maxAttempts: string;
+  schedulerHour: string;
 };
 
 const initialForm: FormState = {
@@ -67,6 +69,7 @@ const initialForm: FormState = {
   smtpEnabled: false,
   sessionTimeout: '',
   maxAttempts: '',
+  schedulerHour: '08:00',
 };
 
 function mapSettingsToForm(settings: Settings | null): FormState {
@@ -85,6 +88,7 @@ function mapSettingsToForm(settings: Settings | null): FormState {
     smtpEnabled: !!settings.smtpEnabled,
     sessionTimeout: settings.sessionTimeoutMinutes?.toString() ?? '',
     maxAttempts: settings.maxLoginAttempts?.toString() ?? '',
+    schedulerHour: settings.schedulerNotificationHour ?? '08:00',
   };
 }
 
@@ -199,18 +203,10 @@ export default function ConfiguracionPage() {
         companyEmail: form.companyEmail,
         companyPhone: form.companyPhone,
         companyAddress: form.companyAddress,
-        smtpHost: form.smtpHost,
-        smtpPort: Number(form.smtpPort),
-        smtpUsername: form.smtpUsername,
-        smtpPassword: form.smtpPassword === '********' ? settings?.smtpPassword || '' : form.smtpPassword,
-        smtpFromEmail: form.smtpFromEmail,
-        smtpFromName: form.smtpFromName,
-        smtpEnabled: form.smtpEnabled,
-        sessionTimeoutMinutes: Number(form.sessionTimeout),
-        maxLoginAttempts: Number(form.maxAttempts),
+        schedulerNotificationHour: form.schedulerHour,
       };
-      const res = await api.put('/api/admin/settings/system', payload);
-      setSettings(res.data?.data || payload);
+      const res = await api.patch('/api/admin/settings/system', payload);
+      setSettings({ ...settings, ...res.data?.data });
       invalidateCache(['systemSettings']);
       setSaveStatus('Información general guardada correctamente');
     } catch (err: any) {
@@ -231,10 +227,6 @@ export default function ConfiguracionPage() {
     setSaveStatus('Guardando configuración SMTP...');
     try {
       const payload = {
-        companyName: form.companyName,
-        companyEmail: form.companyEmail,
-        companyPhone: form.companyPhone,
-        companyAddress: form.companyAddress,
         smtpHost: form.smtpHost,
         smtpPort: Number(form.smtpPort),
         smtpUsername: form.smtpUsername,
@@ -242,11 +234,9 @@ export default function ConfiguracionPage() {
         smtpFromEmail: form.smtpFromEmail,
         smtpFromName: form.smtpFromName,
         smtpEnabled: form.smtpEnabled,
-        sessionTimeoutMinutes: Number(form.sessionTimeout),
-        maxLoginAttempts: Number(form.maxAttempts),
       };
-      const res = await api.put('/api/admin/settings/system', payload);
-      setSettings(res.data?.data || payload);
+      const res = await api.patch('/api/admin/settings/system', payload);
+      setSettings({ ...settings, ...res.data?.data });
       invalidateCache(['systemSettings']);
       setSaveStatus('Configuración SMTP guardada correctamente');
       setSmtpTestOk(false);
@@ -264,22 +254,11 @@ export default function ConfiguracionPage() {
     setSaveStatus('Guardando configuración de seguridad...');
     try {
       const payload = {
-        companyName: form.companyName,
-        companyEmail: form.companyEmail,
-        companyPhone: form.companyPhone,
-        companyAddress: form.companyAddress,
-        smtpHost: form.smtpHost,
-        smtpPort: Number(form.smtpPort),
-        smtpUsername: form.smtpUsername,
-        smtpPassword: form.smtpPassword === '********' ? settings?.smtpPassword || '' : form.smtpPassword,
-        smtpFromEmail: form.smtpFromEmail,
-        smtpFromName: form.smtpFromName,
-        smtpEnabled: form.smtpEnabled,
         sessionTimeoutMinutes: Number(form.sessionTimeout),
         maxLoginAttempts: Number(form.maxAttempts),
       };
-      const res = await api.put('/api/admin/settings/system', payload);
-      setSettings(res.data?.data || payload);
+      const res = await api.patch('/api/admin/settings/system', payload);
+      setSettings({ ...settings, ...res.data?.data });
       invalidateCache(['systemSettings']);
       setSaveStatus('Configuración de seguridad guardada correctamente');
     } catch (err: any) {
@@ -400,6 +379,26 @@ export default function ConfiguracionPage() {
                 <div className="form-group full-width">
                   <label className="form-label" htmlFor="companyAddress">Dirección</label>
                   <input id="companyAddress" type="text" className="form-input" value={form.companyAddress} onChange={onFieldChange('companyAddress')} placeholder="Dirección" />
+                </div>
+              </div>
+            </div>
+
+            <div className="section-card">
+              <div className="section-header">
+                <h3 className="section-title">Scheduler de notificaciones</h3>
+              </div>
+              <p className="section-hint">Configura la hora en la que el sistema procesará y enviará las notificaciones automáticas.</p>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="schedulerHour">Hora de ejecución</label>
+                  <input 
+                    id="schedulerHour" 
+                    type="time" 
+                    className="form-input" 
+                    value={form.schedulerHour} 
+                    onChange={onFieldChange('schedulerHour')} 
+                  />
+                  <small className="form-help">Las notificaciones se procesarán diariamente a esta hora</small>
                 </div>
               </div>
               <div className="actions-row">

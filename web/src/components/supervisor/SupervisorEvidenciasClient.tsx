@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { evidenciasSupervisorService, type EvidenciaSupervisor, type Page } from '../../lib/services';
+import { evidenciasSupervisorService, evidenciasService, type EvidenciaSupervisor, type Page } from '../../lib/services';
 import notifications from '../../lib/notifications';
 import FileViewer from '../reportes/FileViewer';
 
@@ -113,20 +113,35 @@ export default function SupervisorEvidenciasClient() {
     }
   };
 
-  const handleVisualizarArchivo = (evidencia: EvidenciaSupervisor) => {
-    // Convertir EvidenciaSupervisor a formato compatible con FileViewer
-    const archivoViewer: ArchivoViewer = {
-      archivoId: evidencia.id,
-      tipoArchivo: evidencia.tipoArchivo,
-      nombreOriginal: evidencia.nombreArchivo,
-      tamanoBytes: evidencia.tamanioBytes,
-      mimeType: evidencia.tipoArchivo,
-      subidoPor: evidencia.responsableCarga?.nombreCompleto || 'Desconocido',
-      subidoPorEmail: evidencia.responsableCarga?.email || '',
-      subidoEn: evidencia.fechaCarga,
-      urlPublica: null
-    };
-    setArchivoSeleccionado(archivoViewer);
+  const handleVisualizarArchivo = async (evidencia: EvidenciaSupervisor) => {
+    // Verificar si es visualizable
+    if (!esVisualizable(evidencia.tipoArchivo)) {
+      notifications.info('Este tipo de archivo no se puede visualizar. Usa el botón de descarga.');
+      return;
+    }
+
+    try {
+      // Obtener el blob del archivo usando el servicio
+      const blob = await evidenciasService.obtenerBlob(evidencia.id);
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Convertir EvidenciaSupervisor a formato compatible con FileViewer
+      const archivoViewer: ArchivoViewer = {
+        archivoId: evidencia.id,
+        tipoArchivo: evidencia.tipoArchivo,
+        nombreOriginal: evidencia.nombreArchivo,
+        tamanoBytes: evidencia.tamanioBytes,
+        mimeType: evidencia.tipoArchivo,
+        subidoPor: evidencia.responsableCarga?.nombreCompleto || 'Desconocido',
+        subidoPorEmail: evidencia.responsableCarga?.email || '',
+        subidoEn: evidencia.fechaCarga,
+        urlPublica: blobUrl
+      };
+      setArchivoSeleccionado(archivoViewer);
+    } catch (error) {
+      console.error('Error al visualizar:', error);
+      notifications.error('Error al cargar el archivo para visualización');
+    }
   };
 
   const esVisualizable = (mimeType: string): boolean => {

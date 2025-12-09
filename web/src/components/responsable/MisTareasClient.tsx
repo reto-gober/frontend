@@ -110,19 +110,9 @@ export default function MisTareasClient() {
     if (!periodo) return;
 
     if (accion === "ver") {
+      // Ver detalle del reporte (vista de solo lectura con información completa)
       window.location.href = `/mis-reportes/${periodoId}`;
       return;
-    }
-
-    if (accion === "enviar" || accion === "corregir") {
-      const params = new URLSearchParams({
-        periodoId: periodo.periodoId,
-        reporteId: periodo.reporteId,
-      });
-      if ((periodo as any).reporteNombre) {
-        params.append("reporteNombre", (periodo as any).reporteNombre);
-      }
-      window.location.href = `/roles/responsable/entrega?${params.toString()}`;
     }
   };
 
