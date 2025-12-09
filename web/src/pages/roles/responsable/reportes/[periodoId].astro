@@ -1,0 +1,33 @@
+---
+import ResponsableLayout from '../../../../layouts/roles/ResponsableLayout.astro';
+---
+
+<ResponsableLayout title="Detalle de Reporte">
+  <div id="detalle-reporte-root" data-periodo-id={Astro.params.periodoId}></div>
+</ResponsableLayout>
+
+<script>
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
+  import ReporteDetalleClient from '../../../../components/responsable/ReporteDetalleClient.tsx';
+
+  const container = document.getElementById('detalle-reporte-root');
+  if (container) {
+    const periodoId = container.dataset.periodoId || '';
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const backHref = from === 'mis-reportes'
+      ? '/roles/responsable/mis-reportes'
+      : '/roles/responsable/mis-tareas';
+    const backLabel = from === 'mis-reportes' ? '← Volver a Mis Reportes' : '← Volver a Mis Tareas';
+
+    const root = createRoot(container);
+    root.render(
+      React.createElement(ReporteDetalleClient, {
+        periodoId,
+        backHref,
+        backLabel
+      })
+    );
+  }
+</script>
