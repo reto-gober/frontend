@@ -202,8 +202,20 @@ const determinarEstadoGeneral = (items: ReportePeriodo[]): EstadoGeneral => {
       { code: "enviado", label: "Enviado", badgeClass: "success" },
     ],
     [
+      "pendiente_revision",
+      { code: "en_revision", label: "Pendiente de revisión", badgeClass: "info" },
+    ],
+    [
+      "enviado",
+      { code: "enviado", label: "Enviado", badgeClass: "success" },
+    ],
+    [
       "aprobado",
       { code: "aprobado", label: "Aprobado", badgeClass: "success" },
+    ],
+    [
+      "rechazado",
+      { code: "rechazado", label: "Rechazado", badgeClass: "danger" },
     ],
   ];
 

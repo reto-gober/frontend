@@ -28,8 +28,11 @@ export const esEstadoCompletado = (estado: string): boolean => {
   return [
     "enviado_a_tiempo",
     "enviado_tarde",
+    "pendiente_revision",
     "aprobado",
     "en_revision",
+    "rechazado",
+    "enviado",
   ].includes(estadoNorm);
 };
 
@@ -51,8 +54,11 @@ export const esEstadoEnviado = (estado: string): boolean => {
   return [
     "enviado_a_tiempo",
     "enviado_tarde",
+    "pendiente_revision",
     "aprobado",
     "en_revision",
+    "rechazado",
+    "enviado",
   ].includes(estadoNorm);
 };
 

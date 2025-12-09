@@ -56,6 +56,7 @@ export default function ReporteDetalleClient({
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
     {}
   );
+  const [reemplazarArchivos, setReemplazarArchivos] = useState(false);
   const {
     toasts,
     removeToast,
@@ -67,7 +68,8 @@ export default function ReporteDetalleClient({
   const canSubmitBase =
     detalle &&
     (normalizarEstado(detalle.estado) === "pendiente" ||
-      normalizarEstado(detalle.estado) === "requiere_correccion");
+      normalizarEstado(detalle.estado) === "requiere_correccion" ||
+      normalizarEstado(detalle.estado) === "rechazado");
 
   const canSubmit = !readOnly && canSubmitBase;
 
@@ -87,6 +89,13 @@ export default function ReporteDetalleClient({
     }
     return null;
   }, [detalle?.comentarios]);
+
+  // Ajustar bandera de reemplazo cuando cambia el estado
+  useEffect(() => {
+    if (detalle) {
+      setReemplazarArchivos(normalizarEstado(detalle.estado) === "rechazado");
+    }
+  }, [detalle?.estado]);
 
   useEffect(() => {
     loadDetalle();
@@ -170,8 +179,31 @@ export default function ReporteDetalleClient({
       return;
     }
 
+    if (
+      normalizarEstado(detalle.estado) === "rechazado" &&
+      reemplazarArchivos &&
+      archivosNuevos.length === 0
+    ) {
+      showError("Debes adjuntar nuevos archivos para reemplazar los anteriores");
+      return;
+    }
+
     try {
       setSubmitting(true);
+
+      // Si se marcó reemplazar archivos en un reporte rechazado, elimina evidencias previas
+      if (
+        reemplazarArchivos &&
+        detalle?.archivos &&
+        detalle.archivos.length > 0 &&
+        normalizarEstado(detalle.estado) === "rechazado"
+      ) {
+        for (const archivo of detalle.archivos) {
+          if (archivo.archivoId) {
+            await evidenciasService.eliminar(archivo.archivoId);
+          }
+        }
+      }
 
       // Subir archivos nuevos si los hay
       const evidenciasIds: string[] = [];
@@ -192,7 +224,7 @@ export default function ReporteDetalleClient({
       };
 
       const resultado =
-        estado === "requiere_correccion"
+        estado === "requiere_correccion" || estado === "rechazado"
           ? await flujoReportesService.corregirReenviar(payload)
           : await flujoReportesService.enviar(payload);
 
@@ -222,6 +254,7 @@ export default function ReporteDetalleClient({
     comentarios,
     showSuccess,
     showError,
+    reemplazarArchivos,
   ]);
 
   const getEstadoClass = (estado: string): string => {
@@ -413,7 +446,9 @@ export default function ReporteDetalleClient({
             {comentarioSupervisor && (
               <span
                 className={`comment-badge ${(() => {
-                  const accion = (comentarioSupervisor.accion || "").toLowerCase();
+                  const accion = (
+                    comentarioSupervisor.accion || ""
+                  ).toLowerCase();
                   if (accion.includes("rechaz")) return "rechazo";
                   if (accion.includes("apro")) return "aprobacion";
                   if (accion.includes("valid")) return "validacion";
@@ -433,7 +468,9 @@ export default function ReporteDetalleClient({
                     {comentarioSupervisor.autor || "Supervisor"}
                   </p>
                   {comentarioSupervisor.cargo && (
-                    <p className="supervisor-cargo">{comentarioSupervisor.cargo}</p>
+                    <p className="supervisor-cargo">
+                      {comentarioSupervisor.cargo}
+                    </p>
                   )}
                 </div>
                 <div className="supervisor-meta-right">
@@ -449,7 +486,9 @@ export default function ReporteDetalleClient({
           ) : (
             <div className="empty-state">
               <MessageCircle />
-              <p className="empty-state-title">Sin comentarios del supervisor</p>
+              <p className="empty-state-title">
+                Sin comentarios del supervisor
+              </p>
               <p className="empty-state-subtitle">
                 Aún no hay aprobación o rechazo registrado.
               </p>
@@ -625,15 +664,18 @@ export default function ReporteDetalleClient({
           </div>
         )}
 
-        {/* Sección de Corrección - Solo cuando requiere corrección Y ya tiene entrega previa */}
+        {/* Sección de Corrección/Reenvío - Corrección o rechazo con entrega previa */}
         {!readOnly &&
           detalle.fechaEnvioReal &&
-          normalizarEstado(detalle.estado) === "requiere_correccion" && (
+          (normalizarEstado(detalle.estado) === "requiere_correccion" ||
+            normalizarEstado(detalle.estado) === "rechazado") && (
             <div className="info-card">
               <div className="archivos-header">
                 <h2 className="card-title">
                   <Send style={{ color: "#dc2626" }} />
-                  Reenviar Entrega con Correcciones
+                  {normalizarEstado(detalle.estado) === "rechazado"
+                    ? "Reenviar entrega (reemplazar archivos)"
+                    : "Reenviar Entrega con Correcciones"}
                 </h2>
               </div>
 
@@ -646,10 +688,32 @@ export default function ReporteDetalleClient({
                     marginBottom: "12px",
                   }}
                 >
-                  📎 Los archivos actuales se mantendrán. Puedes agregar
-                  archivos adicionales o corregir solo el reporte sin cambiar
-                  archivos.
+                  {normalizarEstado(detalle.estado) === "rechazado"
+                    ? "📎 Tu entrega fue rechazada. Puedes reemplazar los archivos anteriores y volver a enviarla."
+                    : "📎 Los archivos actuales se mantendrán. Puedes agregar archivos adicionales o corregir solo el reporte sin cambiar archivos."}
                 </p>
+
+                {normalizarEstado(detalle.estado) === "rechazado" && (
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "12px",
+                      fontSize: "14px",
+                      color: "#374151",
+                      fontWeight: 500,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={reemplazarArchivos}
+                      onChange={(e) => setReemplazarArchivos(e.target.checked)}
+                      style={{ width: 16, height: 16 }}
+                    />
+                    Reemplazar archivos anteriores al reenviar
+                  </label>
+                )}
                 <FileUploadZone
                   onFilesSelected={handleUploadFiles}
                   selectedFiles={archivosNuevos}
