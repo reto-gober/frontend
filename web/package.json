@@ -14,6 +14,7 @@
   "license": "ISC",
   "description": "Tracely - Regulatory Reports Management System",
   "dependencies": {
+    "@astrojs/node": "^9.5.1",
     "@astrojs/react": "^4.4.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
