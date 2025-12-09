@@ -63,6 +63,9 @@ export default function AdminAuditoriaClient() {
       'UPLOAD_EVIDENCE': 'Evidencia subida',
       'MARK_COMPLETED': 'Marcado como completado',
       'STATUS_CHANGE': 'Cambio de estado',
+      'CAMBIO_ROL': 'Cambio de rol',
+      'INVITACION_USUARIO': 'Invitación de usuario',
+      'CAMBIO_ESTADO': 'Cambio de estado',
     };
     return types[type] || type;
   };
@@ -73,6 +76,9 @@ export default function AdminAuditoriaClient() {
       'UPLOAD_EVIDENCE': 'success',
       'MARK_COMPLETED': 'purple',
       'STATUS_CHANGE': 'orange',
+      'CAMBIO_ROL': 'blue',
+      'INVITACION_USUARIO': 'green',
+      'CAMBIO_ESTADO': 'orange',
     };
     return colors[type] || 'neutral';
   };
@@ -159,6 +165,9 @@ export default function AdminAuditoriaClient() {
               <option value="UPLOAD_EVIDENCE">Evidencia subida</option>
               <option value="MARK_COMPLETED">Marcado como completado</option>
               <option value="STATUS_CHANGE">Cambio de estado</option>
+              <option value="CAMBIO_ROL">Cambio de rol</option>
+              <option value="INVITACION_USUARIO">Invitación de usuario</option>
+              <option value="CAMBIO_ESTADO">Cambio de estado usuario</option>
             </select>
           </div>
           
@@ -207,7 +216,7 @@ export default function AdminAuditoriaClient() {
           </div>
           <div className="stat-content">
             <div className="stat-value">
-              {acciones?.filter(a => a.actionType === 'OVERRIDE_SUBMIT').length || 0}
+              {acciones?.filter(a => ['OVERRIDE_SUBMIT', 'MARK_COMPLETED'].includes(a.actionType)).length || 0}
             </div>
             <div className="stat-label">Reportes Enviados</div>
           </div>
@@ -222,7 +231,7 @@ export default function AdminAuditoriaClient() {
           </div>
           <div className="stat-content">
             <div className="stat-value">
-              {acciones?.reduce((sum, a) => sum + a.filesCount, 0) || 0}
+              {acciones?.reduce((sum, a) => sum + (a.filesCount || 0), 0) || 0}
             </div>
             <div className="stat-label">Archivos Subidos</div>
           </div>

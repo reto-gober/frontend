@@ -1026,7 +1026,7 @@ export const usuariosService = {
     nuevoRol: string
   ): Promise<UsuarioResponse> {
     const response = await api.patch(
-      `/usuarios/${documentNumber}/rol`,
+      `/api/usuarios/${documentNumber}/rol`,
       null,
       {
         params: { rolCodigo: nuevoRol }

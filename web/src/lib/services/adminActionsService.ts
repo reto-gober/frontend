@@ -36,7 +36,7 @@ class AdminActionsService {
       });
     }
     
-    const response = await api.post<AdminActionDetail>(
+    const response = await api.post<any>(
       `/api/admin/reports/${periodoId}/override-submit`,
       formData,
       {
@@ -46,6 +46,10 @@ class AdminActionsService {
       }
     );
     
+    // Extraer data del wrapper ApiResponse
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   }
 
@@ -68,10 +72,14 @@ class AdminActionsService {
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
     
-    const response = await api.get<PaginatedResponse<AdminActionSummary>>(
+    const response = await api.get<any>(
       `/api/admin/actions?${params.toString()}`
     );
     
+    // Extraer data del wrapper ApiResponse
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   }
 
@@ -79,10 +87,14 @@ class AdminActionsService {
    * Obtener detalle de una acción administrativa
    */
   async getActionDetail(actionId: string): Promise<AdminActionDetail> {
-    const response = await api.get<AdminActionDetail>(
+    const response = await api.get<any>(
       `/api/admin/actions/${actionId}`
     );
     
+    // Extraer data del wrapper ApiResponse
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return response.data.data;
+    }
     return response.data;
   }
 
