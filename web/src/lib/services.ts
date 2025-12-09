@@ -9,6 +9,31 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
+// ==================== PASSWORD RESET ====================
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface VerifyCodeRequest {
+  email: string;
+  code: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface PasswordResetResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  data?: {
+    token?: string;
+  };
+}
+
 export interface Page<T> {
   content: T[];
   totalPages: number;
@@ -2027,3 +2052,39 @@ export const adminActionsService = {
   },
 };
 
+// ==================== PASSWORD RESET SERVICES ====================
+
+export const passwordResetService = {
+  /**
+   * Solicitar código de recuperación de contraseña
+   */
+  async forgotPassword(email: string): Promise<PasswordResetResponse> {
+    const response = await api.post<PasswordResetResponse>(
+      "/api/auth/password/forgot",
+      { email }
+    );
+    return response.data;
+  },
+
+  /**
+   * Verificar código de 6 dígitos
+   */
+  async verifyCode(email: string, code: string): Promise<PasswordResetResponse> {
+    const response = await api.post<PasswordResetResponse>(
+      "/api/auth/password/verify-code",
+      { email, code }
+    );
+    return response.data;
+  },
+
+  /**
+   * Cambiar contraseña con token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<PasswordResetResponse> {
+    const response = await api.post<PasswordResetResponse>(
+      "/api/auth/password/reset",
+      { token, newPassword }
+    );
+    return response.data;
+  },
+};
