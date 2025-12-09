@@ -1,5 +1,9 @@
 /* Importar estilos de notificaciones */
 @import './notifications.css';
+/* Importar estilos responsive */
+@import './responsive.css';
+/* Importar utilidades responsive */
+@import './utilities-responsive.css';
 
 :root {
   /* Tracely Brand Colors */

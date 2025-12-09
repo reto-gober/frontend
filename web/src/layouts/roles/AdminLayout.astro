@@ -53,10 +53,19 @@ const { title } = Astro.props;
   </script>
 
   <div class="role-container role-admin sidebar-expanded">
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
     <SidebarAdmin client:load />
     <div class="role-content">
       <header class="role-topbar">
         <div class="topbar-left">
+          <!-- Botón hamburguesa para móvil -->
+          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Abrir menú">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <h1 class="page-title">{title}</h1>
         </div>
         <div class="topbar-right">
@@ -75,9 +84,41 @@ const { title } = Astro.props;
       </main>
     </div>
   </div>
+  
+  <!-- Script para toggle del sidebar móvil -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      
+      if (mobileMenuBtn && sidebar && overlay) {
+        const toggleSidebar = () => {
+          sidebar.classList.toggle('open');
+          overlay.classList.toggle('active');
+          document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+        };
+        
+        mobileMenuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+        
+        // Cerrar al cambiar de tamaño a desktop
+        window.addEventListener('resize', () => {
+          if (window.innerWidth >= 1024) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+          }
+        });
+      }
+    });
+  </script>
 </BaseLayout>
 
 <style>
+  .mobile-menu-btn {
+    display: none;
+  }
   .role-container {
     display: flex;
     min-height: 100vh;
