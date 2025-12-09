@@ -125,9 +125,67 @@ export interface SupervisorSummaryDTO {
   porcentajeCumplimientoEquipo: number;
 }
 
+// ============ Cumplimiento Global (nuevos DTOs) ============
+
+export interface TendenciaMensualDTO {
+  mes: string;
+  anio: number;
+  mesNumero: number;
+  totalReportes: number;
+  enviadosATiempo: number;
+  enviadosTarde: number;
+  vencidos: number;
+  pendientes: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface CumplimientoEntidadDTO {
+  entidadId: string;
+  nombreEntidad: string;
+  totalReportes: number;
+  enviados: number;
+  enviadosATiempo: number;
+  enviadosTarde: number;
+  pendientes: number;
+  vencidos: number;
+  enRevision: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface CumplimientoResponsableDTO {
+  responsableId: string;
+  nombreCompleto: string;
+  email: string;
+  cargo?: string;
+  asignados: number;
+  pendientes: number;
+  enRevision: number;
+  aprobados: number;
+  atrasados: number;
+  vencidos: number;
+  porcentajeCumplimiento: number;
+}
+
+export interface CumplimientoGlobalDTO {
+  porcentajeCumplimientoGlobal: number;
+  totalReportesAPresentar: number;
+  reportesEnviadosATiempo: number;
+  reportesEnviadosTarde: number;
+  reportesVencidos: number;
+  reportesPendientes: number;
+  totalReportesConfigurados: number;
+  totalEntidades: number;
+  totalResponsables: number;
+  distribucionPorEstado: Record<string, number>;
+  tendenciaHistorica: TendenciaMensualDTO[];
+  cumplimientoPorEntidad: CumplimientoEntidadDTO[];
+  cumplimientoPorResponsable: CumplimientoResponsableDTO[];
+}
+
 export interface AdminCumplimientoDTO {
   kpisGenerales: KpisSupervisorDTO;
   adminMetrics: AdminMetricsDTO;
+  cumplimientoGlobal?: CumplimientoGlobalDTO;
   estadoGeneral: Record<string, number>;
   cargaPorResponsable: CargaResponsableDTO[];
   distribucionPorEntidad: DistribucionEntidadDTO[];
