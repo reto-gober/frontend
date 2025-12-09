@@ -4,6 +4,14 @@ import type {
   FiltrosCumplimientoDTO
 } from '../types/admin';
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+  statusCode: number;
+  timestamp: string;
+}
+
 /**
  * Servicio para el módulo de cumplimiento administrativo
  */
@@ -24,8 +32,8 @@ class AdminCumplimientoService {
       ? `/api/admin/cumplimiento?${queryString}`
       : '/api/admin/cumplimiento';
     
-    const response = await api.get<AdminCumplimientoDTO>(url);
-    return response.data;
+    const response = await api.get<ApiResponse<AdminCumplimientoDTO>>(url);
+    return response.data.data;
   }
 }
 

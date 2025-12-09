@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import adminCumplimientoService from '../../lib/services/adminCumplimientoService';
 import notifications from '../../lib/notifications';
 import type { AdminCumplimientoDTO, FiltrosCumplimientoDTO } from '../../lib/types/admin';
+import '../../styles/cumplimiento.css';
 
 export default function AdminCumplimientoClient() {
   const [data, setData] = useState<AdminCumplimientoDTO | null>(null);
@@ -124,27 +125,16 @@ export default function AdminCumplimientoClient() {
     );
   };
 
+  const handleNavigate = (path: string) => {
+    window.location.href = path;
+  };
+
   const renderAdminMetrics = () => {
     if (!data || !data.adminMetrics) return null;
     
     return (
       <div className="admin-metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon users">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </div>
-          <div className="metric-content">
-            <div className="metric-value">{data.adminMetrics.totalUsuariosActivos}</div>
-            <div className="metric-label">Usuarios Activos</div>
-          </div>
-        </div>
-        
-        <div className="metric-card">
+        <div className="metric-card" onClick={() => handleNavigate('/roles/admin/reportes')}>
           <div className="metric-icon reports">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -159,7 +149,7 @@ export default function AdminCumplimientoClient() {
           </div>
         </div>
         
-        <div className="metric-card">
+        <div className="metric-card" onClick={() => handleNavigate('/roles/admin/entidades')}>
           <div className="metric-icon entities">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -304,19 +294,135 @@ export default function AdminCumplimientoClient() {
     );
   };
 
+  const renderTimeline = () => {
+    if (!data || !data.accionesRecientes || data.accionesRecientes.length === 0) {
+      return (
+        <div className="empty-state">
+          <p>No hay acciones recientes para mostrar</p>
+        </div>
+      );
+    }
+
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    };
+
+    const getStateClass = (actionType: string) => {
+      const typeMap: Record<string, string> = {
+        'override_submit': 'enviado',
+        'override_approve': 'aprobado',
+        'override_reject': 'rechazado',
+        'evidence_upload': 'en_revision',
+        'correction_requested': 'requiere_correccion'
+      };
+      return typeMap[actionType] || 'enviado';
+    };
+
+    const getActionLabel = (actionType: string) => {
+      const labels: Record<string, string> = {
+        'override_submit': 'Reporte Enviado (Admin)',
+        'override_approve': 'Reporte Aprobado (Admin)',
+        'override_reject': 'Reporte Rechazado (Admin)',
+        'evidence_upload': 'Evidencia Subida (Admin)',
+        'correction_requested': 'Corrección Solicitada'
+      };
+      return labels[actionType] || actionType;
+    };
+
+    return (
+      <div className="timeline-container">
+        {data.accionesRecientes.map((accion: any) => (
+          <div key={accion.actionId} className="timeline-item">
+            <div className={`timeline-dot ${getStateClass(accion.actionType)}`} />
+            <div className="timeline-content">
+              <div className="timeline-header">
+                <div className="timeline-title">{getActionLabel(accion.actionType)}</div>
+                <div className="timeline-date">{formatDate(accion.createdAt)}</div>
+              </div>
+              <div className="timeline-meta">
+                {accion.adminNombre && (
+                  <div className="timeline-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <span>{accion.adminNombre}</span>
+                  </div>
+                )}
+                {accion.reporteNombre && (
+                  <div className="timeline-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>{accion.reporteNombre}</span>
+                  </div>
+                )}
+                {accion.responsableAfectado && (
+                  <div className="timeline-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M12 1v6m0 6v6m6-6h-6m6 0h6" />
+                    </svg>
+                    <span>Afectado: {accion.responsableAfectado}</span>
+                  </div>
+                )}
+              </div>
+              {accion.motivo && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#6b7280' }}>
+                  {accion.motivo}
+                </div>
+              )}
+              {accion.filesCount > 0 && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#3b82f6' }}>
+                  📎 {accion.filesCount} archivo{accion.filesCount > 1 ? 's' : ''} adjunto{accion.filesCount > 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderIcon = (icon: string) => {
-    const icons: Record<string, any> = {
-      eye: <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />,
-      alert: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
-      clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
-      'x-circle': <><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></>
+    const iconComponents: Record<string, React.ReactElement> = {
+      eye: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      ),
+      alert: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      ),
+      clock: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      ),
+      'x-circle': (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      )
     };
     
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        {icons[icon]}
-      </svg>
-    );
+    return iconComponents[icon] || null;
   };
 
   if (isLoading) {
@@ -403,11 +509,7 @@ export default function AdminCumplimientoClient() {
       <div className="tab-content">
         {activeTab === 'miembros' && renderTablaMiembros()}
         {activeTab === 'entidades' && renderTablaEntidades()}
-        {activeTab === 'timeline' && (
-          <div className="empty-state">
-            <p>Línea de tiempo en desarrollo</p>
-          </div>
-        )}
+        {activeTab === 'timeline' && renderTimeline()}
       </div>
     </div>
   );
