@@ -792,6 +792,65 @@ export const evidenciasService = {
   },
 };
 
+// ==================== ARCHIVOS DE PERIODOS ====================
+
+export interface ArchivoDTO {
+  archivoId: string;
+  tipoArchivo: string;
+  nombreOriginal: string;
+  linkStorage: string;
+  urlPublica?: string | null;
+  tamanoBytes: number;
+  mimeType: string;
+  hashIntegridad?: string;
+  subidoPorId: string;
+  subidoPorNombre: string;
+  subidoEn: string;
+  esReportePrincipal?: boolean;
+}
+
+export interface PeriodoArchivosResponse {
+  periodoId: string;
+  archivos: ArchivoDTO[];
+}
+
+export interface SignedUrlResponse {
+  url: string;
+  ttlMinutes: number | null;
+}
+
+export const archivosService = {
+  async obtenerArchivosPorPeriodo(periodoId: string): Promise<PeriodoArchivosResponse> {
+    const response = await api.get(`/api/periodos/${periodoId}/archivos`);
+    if (response.data && typeof response.data === "object" && "data" in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async generarUrlTemporal(periodoId: string, archivoId: string, ttlMinutes?: number): Promise<SignedUrlResponse> {
+    const params = ttlMinutes ? `?ttlMinutes=${ttlMinutes}` : '';
+    const response = await api.get(`/api/periodos/${periodoId}/archivos/${archivoId}/url${params}`);
+    if (response.data && typeof response.data === "object" && "data" in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async visualizarArchivo(periodoId: string, archivoId: string) {
+    const urlResponse = await this.generarUrlTemporal(periodoId, archivoId, 10);
+    window.open(urlResponse.url, '_blank');
+  },
+
+  async descargarArchivo(periodoId: string, archivoId: string, nombreArchivo: string) {
+    const urlResponse = await this.generarUrlTemporal(periodoId, archivoId, 5);
+    const a = document.createElement("a");
+    a.href = urlResponse.url;
+    a.download = nombreArchivo;
+    a.click();
+  }
+};
+
 export const dashboardService = {
   async estadisticas(
     periodo?: string,
@@ -1172,9 +1231,9 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: "aprobar" | "rechazar";
+  accion: "aprobar" | "aprobado" | "rechazar" | "rechazado" | "corregir";
   comentarios?: string;
-  motivoRechazo?: string;
+  motivoRechazo?: string; // Obligatorio para "rechazar" y "corregir"
 }
 
 export interface SolicitarCorreccionRequest {

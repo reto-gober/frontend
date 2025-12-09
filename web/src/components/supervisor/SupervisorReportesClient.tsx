@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { flujoReportesService, type ReportePeriodo, type Page } from '../../lib/services';
+import { flujoReportesService, archivosService, type ReportePeriodo, type Page, type ArchivoDTO } from '../../lib/services';
 import { ModalValidarReporte } from '../modales/ModalValidarReporte';
+import FileViewer from '../reportes/FileViewer';
 
 type TabStatus = 'all' | 'pendiente_validacion' | 'aprobado' | 'requiere_correccion' | 'enviado';
 
@@ -18,6 +19,7 @@ export default function SupervisorReportesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportes, setReportes] = useState<ReportePeriodo[]>([]);
+  const [todosLosReportes, setTodosLosReportes] = useState<ReportePeriodo[]>([]); // Guardar todos para filtros
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
   const [size] = useState(12);
@@ -42,6 +44,17 @@ export default function SupervisorReportesClient() {
     periodo: null
   });
   const [toastMessage, setToastMessage] = useState<{type: 'success' | 'error'; message: string} | null>(null);
+  
+  // Estados para archivos del modal de detalle
+  const [archivosDetalle, setArchivosDetalle] = useState<ArchivoDTO[]>([]);
+  const [cargandoArchivosDetalle, setCargandoArchivosDetalle] = useState(false);
+  
+  // Estado para el visor de archivos
+  const [archivoViewer, setArchivoViewer] = useState<{open: boolean; archivo: ArchivoDTO | null; periodoId: string | null}>({
+    open: false,
+    archivo: null,
+    periodoId: null
+  });
 
   // Contadores por tab
   const [contadores, setContadores] = useState({
@@ -60,11 +73,90 @@ export default function SupervisorReportesClient() {
     cargarReportes();
   }, [page, activeTab, filtroResponsable, filtroEntidad]);
 
+  // Recalcular contadores cuando cambien los filtros o reportes
+  useEffect(() => {
+    if (todosLosReportes.length > 0 && !loading) {
+      // Aplicar solo filtros de responsable y entidad para contadores (no búsqueda de texto)
+      let reportesParaContadores = [...todosLosReportes];
+      
+      if (filtroResponsable) {
+        reportesParaContadores = reportesParaContadores.filter(r =>
+          r.responsableElaboracion?.usuarioId === filtroResponsable
+        );
+      }
+      
+      if (filtroEntidad) {
+        reportesParaContadores = reportesParaContadores.filter(r =>
+          r.entidadNombre === filtroEntidad
+        );
+      }
+      
+      actualizarContadores(reportesParaContadores);
+    }
+  }, [filtroResponsable, filtroEntidad, todosLosReportes, loading]);
+
+  const aplicarFiltrosLocales = (reportesBase: ReportePeriodo[]): ReportePeriodo[] => {
+    let resultado = [...reportesBase];
+    
+    // Aplicar filtro de búsqueda
+    if (searchTerm) {
+      const termino = searchTerm.toLowerCase();
+      resultado = resultado.filter(r => 
+        r.reporteNombre?.toLowerCase().includes(termino) ||
+        r.entidadNombre?.toLowerCase().includes(termino) ||
+        r.responsableElaboracion?.nombreCompleto?.toLowerCase().includes(termino) ||
+        r.frecuencia?.toLowerCase().includes(termino) ||
+        getEstadoBadge(r.estado).texto.toLowerCase().includes(termino)
+      );
+    }
+    
+    return resultado;
+  };
+
+  // Cargar archivos cuando se abre el modal de detalle
+  useEffect(() => {
+    if (detalle.open && detalle.periodo) {
+      cargarArchivosDetalle(detalle.periodo.periodoId);
+    } else {
+      setArchivosDetalle([]);
+    }
+  }, [detalle.open, detalle.periodo]);
+
+  const cargarArchivosDetalle = async (periodoId: string) => {
+    setCargandoArchivosDetalle(true);
+    try {
+      const response = await archivosService.obtenerArchivosPorPeriodo(periodoId);
+      setArchivosDetalle(response.archivos || []);
+    } catch (err) {
+      console.error('Error cargando archivos:', err);
+      setArchivosDetalle([]);
+    } finally {
+      setCargandoArchivosDetalle(false);
+    }
+  };
+
+  const handleVisualizarArchivoDetalle = async (periodoId: string, archivoId: string) => {
+    const archivo = archivosDetalle.find(a => a.archivoId === archivoId);
+    if (archivo) {
+      setArchivoViewer({ open: true, archivo, periodoId });
+    }
+  };
+
+  const handleDescargarArchivoDetalle = async (periodoId: string, archivoId: string, nombreArchivo: string) => {
+    try {
+      await archivosService.descargarArchivo(periodoId, archivoId, nombreArchivo);
+    } catch (err) {
+      mostrarToast('error', 'Error al descargar el archivo');
+    }
+  };
+
   const cargarDatosIniciales = async () => {
     try {
       // Cargar todos los reportes para extraer filtros y contadores
-      const todosData = await flujoReportesService.supervisionSupervisor(0, 200);
+      const todosData = await flujoReportesService.supervisionSupervisor(0, 1000);
       const todos = todosData.content;
+      
+      setTodosLosReportes(todos);
       
       // Extraer responsables únicos de los reportes
       const responsablesUnicos = new Map<string, string>();
@@ -84,17 +176,25 @@ export default function SupervisorReportesClient() {
       });
       setEntidades(Array.from(entidadesUnicas).map((nombre) => ({ id: nombre, nombre })));
       
-      // Calcular contadores
-      setContadores({
-        all: todos.length,
-        pendiente_validacion: todos.filter(r => ['pendiente_validacion', 'PENDIENTE_VALIDACION'].includes(r.estado)).length,
-        aprobado: todos.filter(r => ['aprobado', 'APROBADO'].includes(r.estado)).length,
-        requiere_correccion: todos.filter(r => ['requiere_correccion', 'REQUIERE_CORRECCION'].includes(r.estado)).length,
-        enviado: todos.filter(r => ['enviado', 'ENVIADO'].includes(r.estado)).length
-      });
+      actualizarContadores(todos);
     } catch (err) {
       console.error('Error al cargar datos iniciales:', err);
     }
+  };
+
+  const actualizarContadores = (reportes: ReportePeriodo[]) => {
+    // Calcular contadores - incluir nuevo estado pendiente_revision
+    setContadores({
+      all: reportes.length,
+      pendiente_validacion: reportes.filter(r => 
+        ['pendiente_validacion', 'PENDIENTE_VALIDACION', 'pendiente_revision', 'PENDIENTE_REVISION'].includes(r.estado)
+      ).length,
+      aprobado: reportes.filter(r => ['aprobado', 'APROBADO'].includes(r.estado)).length,
+      requiere_correccion: reportes.filter(r => 
+        ['requiere_correccion', 'REQUIERE_CORRECCION', 'corregir', 'CORREGIR'].includes(r.estado)
+      ).length,
+      enviado: reportes.filter(r => ['enviado', 'ENVIADO'].includes(r.estado)).length
+    });
   };
 
   const cargarReportes = async () => {
@@ -102,24 +202,61 @@ export default function SupervisorReportesClient() {
       setLoading(true);
       setError(null);
 
-      let data: Page<ReportePeriodo>;
-      
-      if (activeTab === 'all') {
-        data = await flujoReportesService.supervisionSupervisor(
-          page, size, undefined, 
-          filtroResponsable || undefined, 
-          filtroEntidad || undefined
-        );
-      } else {
-        data = await flujoReportesService.supervisionSupervisor(
-          page, size, activeTab,
-          filtroResponsable || undefined,
-          filtroEntidad || undefined
-        );
+      // Si no hay datos iniciales cargados, cargarlos primero
+      let reportesBase = todosLosReportes;
+      if (reportesBase.length === 0) {
+        const data = await flujoReportesService.supervisionSupervisor(0, 1000);
+        reportesBase = data.content;
+        setTodosLosReportes(reportesBase);
       }
       
-      setReportes(data.content);
-      setTotalElements(data.totalElements);
+      let reportesFiltrados = [...reportesBase];
+
+      // Aplicar filtro por estado (tab activo)
+      if (activeTab !== 'all') {
+        if (activeTab === 'pendiente_validacion') {
+          reportesFiltrados = reportesFiltrados.filter(r =>
+            ['pendiente_validacion', 'PENDIENTE_VALIDACION', 'pendiente_revision', 'PENDIENTE_REVISION'].includes(r.estado)
+          );
+        } else if (activeTab === 'aprobado') {
+          reportesFiltrados = reportesFiltrados.filter(r =>
+            ['aprobado', 'APROBADO'].includes(r.estado)
+          );
+        } else if (activeTab === 'requiere_correccion') {
+          reportesFiltrados = reportesFiltrados.filter(r =>
+            ['requiere_correccion', 'REQUIERE_CORRECCION', 'corregir', 'CORREGIR'].includes(r.estado)
+          );
+        } else if (activeTab === 'enviado') {
+          reportesFiltrados = reportesFiltrados.filter(r =>
+            ['enviado', 'ENVIADO'].includes(r.estado)
+          );
+        }
+      }
+
+      // Aplicar filtro por responsable
+      if (filtroResponsable) {
+        reportesFiltrados = reportesFiltrados.filter(r =>
+          r.responsableElaboracion?.usuarioId === filtroResponsable
+        );
+      }
+
+      // Aplicar filtro por entidad
+      if (filtroEntidad) {
+        reportesFiltrados = reportesFiltrados.filter(r =>
+          r.entidadNombre === filtroEntidad
+        );
+      }
+
+      // Actualizar contadores basados en los reportes filtrados (sin búsqueda de texto)
+      actualizarContadores(reportesFiltrados);
+
+      // Aplicar paginación manual
+      const inicio = page * size;
+      const fin = inicio + size;
+      const reportesPaginados = reportesFiltrados.slice(inicio, fin);
+
+      setReportes(reportesPaginados);
+      setTotalElements(reportesFiltrados.length);
 
     } catch (err: any) {
       console.error('Error al cargar reportes:', err);
@@ -171,14 +308,20 @@ export default function SupervisorReportesClient() {
 
   const getEstadoBadge = (estado: string) => {
     const estados: Record<string, { clase: string; texto: string }> = {
+      'pendiente_revision': { clase: 'pending', texto: 'Pendiente Revisión' },
+      'PENDIENTE_REVISION': { clase: 'pending', texto: 'Pendiente Revisión' },
       'pendiente_validacion': { clase: 'pending', texto: 'Pendiente Revisión' },
       'PENDIENTE_VALIDACION': { clase: 'pending', texto: 'Pendiente Revisión' },
       'en_revision': { clase: 'warning', texto: 'En Revisión' },
       'EN_REVISION': { clase: 'warning', texto: 'En Revisión' },
       'aprobado': { clase: 'success', texto: 'Aprobado' },
       'APROBADO': { clase: 'success', texto: 'Aprobado' },
+      'corregir': { clase: 'danger', texto: 'Requiere Corrección' },
+      'CORREGIR': { clase: 'danger', texto: 'Requiere Corrección' },
       'requiere_correccion': { clase: 'danger', texto: 'Requiere Corrección' },
       'REQUIERE_CORRECCION': { clase: 'danger', texto: 'Requiere Corrección' },
+      'rechazado': { clase: 'rejected', texto: 'Rechazado' },
+      'RECHAZADO': { clase: 'rejected', texto: 'Rechazado' },
       'enviado': { clase: 'sent', texto: 'Enviado a Entidad' },
       'ENVIADO': { clase: 'sent', texto: 'Enviado a Entidad' }
     };
@@ -191,7 +334,9 @@ export default function SupervisorReportesClient() {
     return reportes.filter(r => 
       r.reporteNombre?.toLowerCase().includes(termino) ||
       r.entidadNombre?.toLowerCase().includes(termino) ||
-      r.responsableElaboracion?.nombreCompleto?.toLowerCase().includes(termino)
+      r.responsableElaboracion?.nombreCompleto?.toLowerCase().includes(termino) ||
+      r.frecuencia?.toLowerCase().includes(termino) ||
+      getEstadoBadge(r.estado).texto.toLowerCase().includes(termino)
     );
   };
 
@@ -422,16 +567,9 @@ export default function SupervisorReportesClient() {
 
                     {/* Footer Compacto */}
                     <div className="card-footer-mejorado">
-                      <button className="btn-detalle-mejorado" onClick={() => setDetalle({ open: true, periodo: reporte })}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver Detalle
-                      </button>
-                      {puedeValidar && (
+                      {puedeValidar ? (
                         <button 
-                          className="btn-revisar-mejorado"
+                          className="btn-revisar-mejorado btn-primary-action"
                           onClick={() => setModalValidar({ open: true, periodo: reporte })}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
@@ -439,6 +577,14 @@ export default function SupervisorReportesClient() {
                             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                           </svg>
                           Revisar
+                        </button>
+                      ) : (
+                        <button className="btn-detalle-mejorado" onClick={() => setDetalle({ open: true, periodo: reporte })}>
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                          Ver Detalle
                         </button>
                       )}
                     </div>
@@ -556,7 +702,7 @@ export default function SupervisorReportesClient() {
                   </div>
                 </div>
 
-                {/* Tarjeta Evidencias/Archivos */}
+                {/* Tarjeta Archivos - Separando Reporte y Evidencias */}
                 <div className="tarjeta-modal">
                   <div className="tarjeta-header-modal">
                     <div className="icono-tarjeta verde">
@@ -564,32 +710,94 @@ export default function SupervisorReportesClient() {
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                       </svg>
                     </div>
-                    <h3 className="titulo-tarjeta-modal">Evidencias</h3>
+                    <h3 className="titulo-tarjeta-modal">Archivos</h3>
                   </div>
                   <div className="tarjeta-body-modal">
-                    {(detalle.periodo.cantidadArchivos || 0) > 0 ? (
-                      <div className="evidencias-contenedor">
-                        <div className="evidencias-icono-grande">
-                          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-                            <polyline points="13 2 13 9 20 9"/>
-                          </svg>
-                        </div>
-                        <div className="evidencias-numero">{detalle.periodo.cantidadArchivos}</div>
-                        <div className="evidencias-texto">
-                          {detalle.periodo.cantidadArchivos === 1 ? 'Archivo adjunto' : 'Archivos adjuntos'}
-                        </div>
+                    {cargandoArchivosDetalle ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: '0.5rem' }}>
+                          <line x1="12" y1="2" x2="12" y2="6"></line>
+                          <line x1="12" y1="18" x2="12" y2="22"></line>
+                          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                          <line x1="2" y1="12" x2="6" y2="12"></line>
+                          <line x1="18" y1="12" x2="22" y2="12"></line>
+                          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                        </svg>
+                        <p>Cargando archivos...</p>
                       </div>
                     ) : (
-                      <div className="evidencias-vacio">
-                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-                          <polyline points="13 2 13 9 20 9"/>
-                        </svg>
-                        <p className="vacio-mensaje">No hay archivos adjuntos</p>
-                        <p className="vacio-sub">El responsable debe adjuntar evidencias antes de su revisión</p>
+                      <div className="archivo-seccion">
+                        <div className="archivo-seccion-header">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                          </svg>
+                          <span className="archivo-seccion-titulo">Archivos Adjuntos</span>
+                        </div>
+                        {archivosDetalle.length > 0 ? (
+                          <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                            {archivosDetalle.map((archivo, index) => (
+                              <div
+                                key={archivo.archivoId}
+                                style={{
+                                  padding: '0.75rem',
+                                  borderBottom: index < archivosDetalle.length - 1 ? '1px solid #e5e7eb' : 'none',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  backgroundColor: 'white'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                    <polyline points="13 2 13 9 20 9"/>
+                                  </svg>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 500, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {archivo.nombreOriginal}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
+                                      {(archivo.tamanoBytes / 1024).toFixed(2)} KB
+                                    </div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => handleVisualizarArchivoDetalle(detalle.periodo!.periodoId, archivo.archivoId)}
+                                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
+                                    title="Ver archivo"
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                      <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDescargarArchivoDetalle(detalle.periodo!.periodoId, archivo.archivoId, archivo.nombreOriginal)}
+                                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
+                                    title="Descargar archivo"
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                      <polyline points="7 10 12 15 17 10"></polyline>
+                                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="evidencias-vacio">
+                            <span className="vacio-icono-info">ℹ</span>
+                            <span>No hay archivos adjuntos</span>
+                          </div>
+                        )}
                       </div>
                     )}
+
                     {typeof detalle.periodo.diasDesviacion === 'number' && (
                       <div className="dato-fila" style={{marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0'}}>
                         <span className="dato-label">Desviación:</span>
@@ -680,7 +888,7 @@ export default function SupervisorReportesClient() {
               <button className="btn-modal-secundario" onClick={() => setDetalle({ open: false, periodo: null })}>
                 Cerrar
               </button>
-              {(['pendiente_validacion', 'PENDIENTE_VALIDACION'].includes(detalle.periodo.estado)) && (
+              {(['pendiente_validacion', 'PENDIENTE_VALIDACION', 'pendiente_revision', 'PENDIENTE_REVISION'].includes(detalle.periodo.estado)) && (
                 <button 
                   className="btn-modal-primario"
                   onClick={() => {
@@ -1353,7 +1561,144 @@ export default function SupervisorReportesClient() {
             width: 100%;
           }
         }
+
+        /* ========== ESTILOS PARA SECCIONES DE ARCHIVOS ========== */
+        .archivo-seccion {
+          margin-bottom: 1rem;
+        }
+
+        .archivo-seccion:last-child {
+          margin-bottom: 0;
+        }
+
+        .archivo-seccion-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid #e2e8f0;
+        }
+
+        .archivo-seccion-header svg {
+          color: #64748b;
+        }
+
+        .archivo-seccion-titulo {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #334155;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .archivo-principal {
+          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+          padding: 1rem;
+          border-radius: 8px;
+          border: 1px solid #bbf7d0;
+        }
+
+        .archivo-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .archivo-item.principal svg {
+          color: #10b981;
+        }
+
+        .archivo-nombre {
+          flex: 1;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #166534;
+        }
+
+        .archivo-badge {
+          padding: 0.25rem 0.75rem;
+          background: #10b981;
+          color: white;
+          font-size: 0.75rem;
+          font-weight: 600;
+          border-radius: 12px;
+        }
+
+        .archivo-vacio-mensaje {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: #fef2f2;
+          color: #991b1b;
+          font-size: 0.875rem;
+          border-radius: 8px;
+          border: 1px solid #fecaca;
+        }
+
+        .vacio-icono {
+          font-size: 1.25rem;
+        }
+
+        .archivo-separador {
+          height: 1px;
+          background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+          margin: 1.25rem 0;
+        }
+
+        .evidencias-lista {
+          padding: 0.75rem 1rem;
+          background: #f8fafc;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .evidencias-contador {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          color: #475569;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+
+        .evidencias-contador svg {
+          color: #64748b;
+        }
+
+        .evidencias-vacio {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #64748b;
+          font-size: 0.875rem;
+        }
+
+        .vacio-icono-info {
+          font-size: 1.125rem;
+          color: #94a3b8;
+        }
+
+        .btn-primary-action {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary-action:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
       `}</style>
+
+      {/* Visor de archivos */}
+      {archivoViewer.open && archivoViewer.archivo && archivoViewer.periodoId && (
+        <FileViewer
+          archivo={archivoViewer.archivo}
+          periodoId={archivoViewer.periodoId}
+          onClose={() => setArchivoViewer({ open: false, archivo: null, periodoId: null })}
+        />
+      )}
     </div>
   );
 }

@@ -8,10 +8,11 @@ interface ArchivoDTO {
   nombreOriginal: string;
   tamanoBytes: number;
   mimeType: string;
-  subidoPor: string;
-  subidoPorEmail: string;
+  subidoPorNombre?: string;
+  subidoPor?: string;
+  subidoPorEmail?: string;
   subidoEn: string;
-  urlPublica: string | null;
+  urlPublica?: string | null;
 }
 
 interface FileViewerProps {
@@ -188,7 +189,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ archivo, periodoId, onClose }) 
         {/* Footer con metadata */}
         <div className="file-viewer-footer">
           <p className="file-viewer-footer-text">
-            <span className="label">Subido por:</span> {archivo.subidoPor} ({archivo.subidoPorEmail})
+            <span className="label">Subido por:</span> {archivo.subidoPorNombre || archivo.subidoPor || 'Desconocido'} 
+            {archivo.subidoPorEmail && ` (${archivo.subidoPorEmail})`}
           </p>
         </div>
       </div>

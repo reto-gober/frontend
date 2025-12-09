@@ -159,8 +159,6 @@ const FilesList: React.FC<FilesListProps> = ({
             <h4 className="file-item-name">{archivo.nombreOriginal}</h4>
             <div className="file-item-metadata">
               <span>{formatSize(archivo.tamanoBytes)}</span>
-              <span>•</span>
-              <span className="file-item-badge">{archivo.tipoArchivo}</span>
             </div>
           </div>
 
