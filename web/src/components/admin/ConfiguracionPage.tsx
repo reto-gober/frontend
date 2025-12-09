@@ -128,9 +128,21 @@ export default function ConfiguracionPage() {
     const load = async () => {
       setSaveStatus('Cargando...');
       try {
+        interface SmtpSourceResponse {
+          source?: string;
+        }
+
+        interface SettingsResponse {
+          data: Settings;
+        }
+        
+        interface SmtpSourceApiResponse {
+          data: SmtpSourceResponse;
+        }
+
         const [settingsData, smtpSourceData] = await Promise.all([
           fetchCached<Settings>('systemSettings', '/api/admin/settings/system'),
-          api.get('/api/admin/settings/smtp/source').then((r) => r.data as SmtpSource),
+          api.get<SmtpSourceApiResponse>('/api/admin/settings/smtp/source').then((r: { data: SmtpSourceApiResponse }) => r.data.data),
         ]);
 
         if (!mounted) return;
