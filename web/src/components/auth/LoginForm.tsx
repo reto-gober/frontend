@@ -70,7 +70,7 @@ export default function LoginForm() {
       <div className="login-box">
         {/* Logo */}
         <div className="login-logo">
-          <img src="/src/media/llanogas.png" alt="Llanogas" />
+          <img src="/images/llanogas.png" alt="Llanogas" />
         </div>
 
         {/* Título */}
