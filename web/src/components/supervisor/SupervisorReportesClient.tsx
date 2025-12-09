@@ -666,7 +666,21 @@ export default function SupervisorReportesClient() {
                       <h3 className="titulo-tarjeta-modal">Comentarios</h3>
                     </div>
                     <div className="tarjeta-body-modal">
-                      <div className="comentarios-texto">{detalle.periodo.comentarios}</div>
+                      {detalle.periodo.comentarios && detalle.periodo.comentarios.length > 0 ? (
+                        <div className="comentarios-lista">
+                          {detalle.periodo.comentarios.map((comentario, idx) => (
+                            <div key={idx} className="comentario-item">
+                              <div className="comentario-header">
+                                {comentario.autor} · {comentario.cargo} · {comentario.fecha}
+                              </div>
+                              <div className="comentario-accion">{comentario.accion}</div>
+                              <div className="comentario-texto">{comentario.texto}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: '#64748b' }}>Sin comentarios</p>
+                      )}
                     </div>
                   </div>
                 )}

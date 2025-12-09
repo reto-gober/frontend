@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { reportesService, ReporteResponse, Page } from "../../lib/services";
+import { reportesService, type ReporteResponse, type Page } from "../../lib/services";
 import { esEstadoEnviado } from "../../lib/utils/estados";
 
 interface EntidadCumplimiento {

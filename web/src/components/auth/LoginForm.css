@@ -22,7 +22,20 @@
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
-/* Avatar */
+/* Logo */
+.login-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.login-logo img {
+  max-width: 180px;
+  height: auto;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+/* Avatar (Deprecated - replaced by logo) */
 .login-avatar {
   display: flex;
   justify-content: center;

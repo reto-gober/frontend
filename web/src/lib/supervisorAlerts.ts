@@ -98,7 +98,9 @@ export function buildSupervisorAlerts(periodos: ReportePeriodo[]): SupervisorAle
         'critica',
         'correccion',
         `Corrección requerida: ${periodo.reporteNombre}`,
-        periodo.comentarios || 'Se solicitaron correcciones en la última revisión.'
+        periodo.comentarios && periodo.comentarios.length > 0 
+          ? periodo.comentarios[periodo.comentarios.length - 1].texto 
+          : 'Se solicitaron correcciones en la última revisión.'
       );
     } else if (estado === 'PENDIENTE_VALIDACION' || estado === 'EN_REVISION') {
       const esCritico = diasRestantes !== null && diasRestantes <= 0;

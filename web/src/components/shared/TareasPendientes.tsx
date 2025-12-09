@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { flujoReportesService, ReportePeriodo } from '../../lib/services';
+import { flujoReportesService, type ReportePeriodo } from '../../lib/services';
 
 interface Tarea {
   id: string;

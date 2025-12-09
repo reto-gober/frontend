@@ -1,11 +1,11 @@
 ---
 import SupervisorLayout from '../../../layouts/roles/SupervisorLayout.astro';
 
-const redirect = '/roles/supervisor/gestion-reportes';
+const redirectUrl = '/roles/supervisor/gestion-reportes';
 ---
 <SupervisorLayout title="Gestión de Reportes">
-  <script>
-    window.location.href = redirect;
+  <script define:vars={{ redirectUrl }}>
+    window.location.href = redirectUrl;
   </script>
   <div style="padding: 2rem; text-align: center; color: var(--neutral-700);">
     Redirigiendo a Gestión de Reportes...

@@ -68,14 +68,9 @@ export default function LoginForm() {
   return (
     <div className="login-container">
       <div className="login-box">
-        {/* Avatar */}
-        <div className="login-avatar">
-          <div className="avatar-circle">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
+        {/* Logo */}
+        <div className="login-logo">
+          <img src="/src/media/llanogas.png" alt="Llanogas" />
         </div>
 
         {/* Título */}

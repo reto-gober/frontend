@@ -325,7 +325,6 @@ export default function SupervisorDashboardClient() {
           title="% cumplimiento"
           value={`${(kpis.porcentajeCumplimientoATiempo || 0).toFixed(1)}%`}
           subtitle="Vs periodo anterior"
-          delta={kpis.deltaPorcentajeCumplimiento}
           tipo="success"
           onClick={() => redirectGestion('enviado_a_tiempo')}
         />
@@ -333,7 +332,6 @@ export default function SupervisorDashboardClient() {
           title="A tiempo"
           value={kpis.totalEnviadosATiempo}
           subtitle="Enviados a tiempo"
-          delta={kpis.deltaPorcentajeCumplimiento}
           tipo="success"
           onClick={() => redirectGestion('enviado_a_tiempo')}
         />
@@ -354,20 +352,19 @@ export default function SupervisorDashboardClient() {
           onClick={() => redirectGestion('vencido')}
         />
         <KpiCard
-          title="Proximos"
-          value={kpis.totalProximosVencer}
-          subtitle="Plazo <= 7 dias"
+          title="Pendientes"
+          value={kpis.totalPendientes || 0}
+          subtitle="Por enviar"
           tipo="info"
           onClick={() => redirectGestion('pendiente')}
         />
         <KpiCard
           title="Retraso prom."
           value={`${(kpis.diasRetrasoPromedio || 0).toFixed(1)} d`}
-          subtitle="Vs periodo anterior"
-          delta={kpis.deltaDiasRetrasoPromedio}
+          subtitle="Días promedio"
           invert={true}
           tipo="warning"
-          onClick={() => redirectGestion('en_revision')}
+          onClick={() => redirectGestion('en_revision')}}
         />
       </section>
 
@@ -406,7 +403,7 @@ export default function SupervisorDashboardClient() {
                     );
                     return { offset: offset + length, elements: [...acc.elements, segment] };
                   },
-                  { offset: 0, elements: [] as JSX.Element[] }
+                  { offset: 0, elements: [] as React.JSX.Element[] }
                 ).elements}
                 <text x="110" y="105" textAnchor="middle" fontSize="26" fontWeight="700" fill="#111827">
                   {totalDistribucion}

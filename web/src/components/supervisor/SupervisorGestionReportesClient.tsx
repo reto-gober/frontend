@@ -334,9 +334,6 @@ export default function SupervisorGestionReportesClient() {
         
         <select 
           className="filter-select"
-                        <button className="btn-link" onClick={() => abrirEnvio(periodo)}>
-                          Cargar reporte / evidencias
-                        </button>
           value={filtroEntidad}
           onChange={(e) => setFiltroEntidad(e.target.value)}
         >

@@ -411,10 +411,17 @@ export default function AdminReportesEnviados({ onIntervenir }: Props) {
 
                     <div className="detalle-tarjeta">
                       <h4>Historial de comentarios</h4>
-                      {reporte.comentarios ? (
-                        <div className="comentario-item">
-                          <div className="comentario-header">Sistema · {formatearFecha(reporte.updatedAt)}</div>
-                          <div className="comentario-texto">{reporte.comentarios}</div>
+                      {reporte.comentarios && reporte.comentarios.length > 0 ? (
+                        <div className="comentarios-lista">
+                          {reporte.comentarios.map((comentario, idx) => (
+                            <div key={idx} className="comentario-item">
+                              <div className="comentario-header">
+                                {comentario.autor} · {comentario.cargo} · {comentario.fecha}
+                              </div>
+                              <div className="comentario-accion">{comentario.accion}</div>
+                              <div className="comentario-texto">{comentario.texto}</div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <p style={{ color: '#64748b' }}>Sin comentarios registrados</p>

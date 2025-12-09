@@ -45,16 +45,16 @@ export default function SupervisorCalendarioClient() {
           : [];
 
       const eventosFiltrados = supervisorId
-        ? eventosBase.filter(e => !e.supervisorId || e.supervisorId === supervisorId)
+        ? eventosBase.filter((e: any) => !e.supervisorId || e.supervisorId === supervisorId)
         : eventosBase;
 
       setCalendario({
         ...response,
         eventos: eventosFiltrados,
         totalEventosMes: response?.totalEventosMes ?? eventosFiltrados.length,
-        eventosVencidosMes: response?.eventosVencidosMes ?? eventosFiltrados.filter(e => e.estado === 'vencido').length,
-        eventosProximosMes: response?.eventosProximosMes ?? eventosFiltrados.filter(e => e.estado === 'pendiente').length,
-        validacionesPendientes: response?.validacionesPendientes ?? eventosFiltrados.filter(e => e.estado === 'en_revision' || e.estado === 'pendiente_validacion').length,
+        eventosVencidosMes: response?.eventosVencidosMes ?? eventosFiltrados.filter((e: any) => e.estado === 'vencido').length,
+        eventosProximosMes: response?.eventosProximosMes ?? eventosFiltrados.filter((e: any) => e.estado === 'pendiente').length,
+        validacionesPendientes: response?.validacionesPendientes ?? eventosFiltrados.filter((e: any) => e.estado === 'en_revision' || e.estado === 'pendiente_validacion').length,
         incidenciasCriticas: response?.incidenciasCriticas,
       });
     } catch (err: any) {
@@ -450,7 +450,7 @@ export default function SupervisorCalendarioClient() {
                   </div>
 
                   {/* Responsables */}
-                  {(reporteSeleccionado.responsableElabora || reporteSeleccionado.responsableSupervisa) && (
+                  {reporteSeleccionado.responsables && reporteSeleccionado.responsables.length > 0 && (
                     <div className="detail-section">
                       <h4 className="section-title">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
@@ -462,24 +462,30 @@ export default function SupervisorCalendarioClient() {
                         Responsables
                       </h4>
                       <div className="responsables-grid">
-                        {reporteSeleccionado.responsableElabora && (
-                          <div className="responsable-item">
-                            <div className="responsable-badge elabora">E</div>
-                            <div>
-                              <div className="responsable-label">Elabora</div>
-                              <div className="responsable-nombre">{reporteSeleccionado.responsableElabora}</div>
+                        {reporteSeleccionado.responsables
+                          .filter(r => r.tipoResponsabilidad === 'elaboracion')
+                          .map((responsable, idx) => (
+                            <div key={`elab-${idx}`} className="responsable-item">
+                              <div className="responsable-badge elabora">E</div>
+                              <div>
+                                <div className="responsable-label">Elabora</div>
+                                <div className="responsable-nombre">{responsable.nombreCompleto}</div>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {reporteSeleccionado.responsableSupervisa && (
-                          <div className="responsable-item">
-                            <div className="responsable-badge supervisa">S</div>
-                            <div>
-                              <div className="responsable-label">Supervisa</div>
-                              <div className="responsable-nombre">{reporteSeleccionado.responsableSupervisa}</div>
+                          ))
+                        }
+                        {reporteSeleccionado.responsables
+                          .filter(r => r.tipoResponsabilidad === 'supervision')
+                          .map((responsable, idx) => (
+                            <div key={`super-${idx}`} className="responsable-item">
+                              <div className="responsable-badge supervisa">S</div>
+                              <div>
+                                <div className="responsable-label">Supervisa</div>
+                                <div className="responsable-nombre">{responsable.nombreCompleto}</div>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          ))
+                        }
                       </div>
                     </div>
                   )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { flujoReportesService, ReportePeriodo } from '../../lib/services';
+import { flujoReportesService, type ReportePeriodo } from '../../lib/services';
 
 interface Alerta {
   id: string;
@@ -25,12 +25,16 @@ const mapPeriodoToAlerta = (periodo: ReportePeriodo): Alerta => {
     tipo = 'urgente';
     prioridad = 'alta';
     titulo = `Corrección requerida: ${periodo.reporteNombre}`;
-    descripcion = periodo.comentarios || 'El reporte requiere correcciones';
+    descripcion = periodo.comentarios && periodo.comentarios.length > 0 
+      ? periodo.comentarios[periodo.comentarios.length - 1].texto 
+      : 'El reporte requiere correcciones';
   } else if (periodo.estado === 'rechazado') {
     tipo = 'urgente';
     prioridad = 'alta';
     titulo = `Reporte rechazado: ${periodo.reporteNombre}`;
-    descripcion = periodo.comentarios || 'El reporte fue rechazado';
+    descripcion = periodo.comentarios && periodo.comentarios.length > 0 
+      ? periodo.comentarios[periodo.comentarios.length - 1].texto 
+      : 'El reporte fue rechazado';
   } else if (diasRestantes < 0) {
     tipo = 'vencimiento';
     prioridad = 'alta';

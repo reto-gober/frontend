@@ -134,7 +134,7 @@ export const authService = {
     return '/login';
   },
 
-  async validateToken(): boolean {
+  async validateToken(): Promise<boolean> {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (!token) {

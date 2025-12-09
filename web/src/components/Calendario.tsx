@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { reportesService, type ReporteResponse } from '../lib/services';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 
@@ -133,7 +133,7 @@ export default function Calendario() {
               ) : (
                 <div className="sidebar-reportes">
                   {getSelectedDayReportes().map(reporte => (
-                    <div key={reporte.id} className="sidebar-reporte">
+                    <div key={reporte.reporteId} className="sidebar-reporte">
                       <div className="sidebar-reporte-header">
                         <span className={`badge ${reporte.estado === 'ENVIADO' ? 'badge-enviado' : 'badge-pendiente'}`}>
                           {reporte.estado.replace('_', ' ')}
@@ -144,9 +144,9 @@ export default function Calendario() {
                           </span>
                         )}
                       </div>
-                      <h4 className="sidebar-reporte-title">{reporte.titulo}</h4>
+                      <h4 className="sidebar-reporte-title">{reporte.nombre}</h4>
                       <p className="sidebar-reporte-info">{reporte.entidadNombre}</p>
-                      <a href={`/reportes/${reporte.id}`} className="btn btn-sm btn-green" style={{ marginTop: '0.5rem' }}>
+                      <a href={`/reportes/${reporte.reporteId}`} className="btn btn-sm btn-green" style={{ marginTop: '0.5rem' }}>
                         Ver detalles
                       </a>
                     </div>
