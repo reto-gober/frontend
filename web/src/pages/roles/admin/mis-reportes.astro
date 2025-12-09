@@ -1,11 +1,12 @@
 ---
 import AdminLayout from '../../../layouts/roles/AdminLayout.astro';
 
-const redirect = '/roles/admin/reportes';
+const redirectUrl = '/roles/admin/reportes';
+---
 <AdminLayout title="Gestión de Reportes">
-  <script>
+  <script define:vars={{ redirectUrl }}>
     // Redirigir al módulo unificado de gestión de reportes
-    window.location.href = redirect;
+    window.location.href = redirectUrl;
   </script>
   <div style="padding: 2rem; text-align: center; color: var(--neutral-700);">
     Redirigiendo a Gestión de Reportes...
