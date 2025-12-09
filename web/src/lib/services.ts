@@ -288,6 +288,11 @@ export interface KpisSupervisor {
   totalVencidos: number;
   totalPendientes: number;
   diasRetrasoPromedio: number;
+  porcentajeCumplimientoAnterior?: number;
+  deltaPorcentajeCumplimiento?: number;
+  diasRetrasoPromedioAnterior?: number;
+  deltaDiasRetrasoPromedio?: number;
+  totalProximosVencer?: number;
 }
 
 export interface CargaResponsable {
