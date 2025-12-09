@@ -66,6 +66,42 @@ export interface EntidadResponse {
   updatedAt: string;
 }
 
+export interface EntidadImportPreview {
+  nit: string;
+  nombre: string;
+  paginaWeb?: string;
+  baseLegal?: string;
+  observaciones?: string;
+  estado: string;
+}
+
+export interface EntidadImportError {
+  fila: number;
+  mensaje: string;
+}
+
+export interface EntidadImportResponseDto {
+  valid: boolean;
+  errores: EntidadImportError[];
+  preview: EntidadImportPreview[];
+  totalRegistros: number;
+  registrosValidos: number;
+  registrosInvalidos: number;
+  filasIgnoradas: number;
+}
+
+export interface EntidadImportLogResponse {
+  id: string;
+  usuarioId: string;
+  usuarioNombre: string;
+  usuarioEmail: string;
+  archivoNombre: string;
+  totalRegistros: number;
+  registrosValidos: number;
+  registrosInvalidos: number;
+  fecha: string;
+}
+
 export interface ResponsableReporte {
   usuarioId: string;
   tipoResponsabilidad: "elaboracion" | "supervision" | "revision";
@@ -726,6 +762,54 @@ export const entidadesService = {
     }
     return response.data;
   },
+
+  async importarArchivo(
+    file: File,
+    confirmar = false
+  ): Promise<EntidadImportResponseDto> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post(`/api/entidades/importar`, formData, {
+      params: { confirmar },
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  async descargarPlantilla(): Promise<Blob> {
+    const response = await api.get(`/api/entidades/importar/plantilla`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
+  async historialImportaciones(
+    page = 0,
+    size = 10,
+    sort = ["createdAt,desc"]
+  ): Promise<Page<EntidadImportLogResponse>> {
+    const response = await api.get(`/api/entidades/importar/historial`, {
+      params: { page, size, sort },
+    });
+
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
 };
 
 export const evidenciasService = {
@@ -1302,7 +1386,7 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: "aprobar" | "rechazar" | "revisar" | "corregir";
+  accion: "aprobar" | "rechazar" | 'revisar';
   comentarios?: string;
   motivoRechazo?: string; // Obligatorio para "rechazar" y "corregir"
 }
@@ -1590,8 +1674,27 @@ export const flujoReportesService = {
   
   // Obtener comentarios de un periodo
   async obtenerComentarios(periodoId: string): Promise<ComentarioInfo[]> {
-    const response = await api.get(`/api/flujo-reportes/periodos/${periodoId}/comentarios`);
-    return response.data.data;
+    const response = await api.get(
+      `/api/flujo-reportes/periodos/${periodoId}/comentarios`
+    );
+
+    const comentarios = (response.data?.data || []) as any[];
+
+    return comentarios.map((comentario) => ({
+      autor: comentario.autor || comentario.autorNombre || "Desconocido",
+      cargo: comentario.cargo || comentario.autorCargo || "",
+      fecha:
+        comentario.fecha ||
+        comentario.fechaComentario ||
+        comentario.createdAt ||
+        "",
+      accion: comentario.accion || "COMENTARIO",
+      texto:
+        comentario.texto ||
+        comentario.motivoRechazo ||
+        comentario.comentario ||
+        "",
+    }));
   },
 
   // Agregar comentario adicional

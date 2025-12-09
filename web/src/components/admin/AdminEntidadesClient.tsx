@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
-import { entidadesService, reportesService, type EntidadResponse, type ReporteResponse } from '../../lib/services';
+import {
+  entidadesService,
+  reportesService,
+  type EntidadResponse,
+  type ReporteResponse,
+  type EntidadImportPreview,
+  type EntidadImportError,
+  type EntidadImportResponseDto,
+  type EntidadImportLogResponse,
+  type Page,
+} from '../../lib/services';
 import notifications from '../../lib/notifications';
 
 interface EntidadWithStats extends EntidadResponse {
@@ -12,6 +22,16 @@ export default function AdminEntidadesClient() {
   const [entidades, setEntidades] = useState<EntidadWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Import modal state
+  const [showImport, setShowImport] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<EntidadImportPreview[]>([]);
+  const [importErrors, setImportErrors] = useState<EntidadImportError[]>([]);
+  const [importStats, setImportStats] = useState<EntidadImportResponseDto | null>(null);
+  const [importHistory, setImportHistory] = useState<EntidadImportLogResponse[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +51,7 @@ export default function AdminEntidadesClient() {
 
   useEffect(() => {
     cargarEntidades();
+    cargarHistorialImport();
   }, []);
 
   const cargarEntidades = async () => {
@@ -156,6 +177,97 @@ export default function AdminEntidadesClient() {
     return nombre.split(' ').map(word => word.charAt(0)).join('').toUpperCase().substring(0, 4);
   };
 
+  const cargarHistorialImport = async () => {
+    try {
+      setHistoryLoading(true);
+      const data: Page<EntidadImportLogResponse> = await entidadesService.historialImportaciones(0, 5);
+      setImportHistory(data.content || []);
+    } catch (err) {
+      console.error('Error cargando historial de importaciones', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const resetImportState = () => {
+    setSelectedFile(null);
+    setImportPreview([]);
+    setImportErrors([]);
+    setImportStats(null);
+  };
+
+  const onFileSelected = async (file: File) => {
+    setSelectedFile(file);
+    setImportLoading(true);
+    setImportPreview([]);
+    setImportErrors([]);
+    setImportStats(null);
+
+    try {
+      const result = await entidadesService.importarArchivo(file, false);
+      setImportPreview(result.preview || []);
+      setImportErrors(result.errores || []);
+      setImportStats(result);
+
+      if (!result.valid) {
+        notifications.error('El archivo tiene observaciones. Corrige los errores para continuar.');
+      }
+    } catch (err: any) {
+      notifications.error(
+        err.response?.data?.message ||
+        err.response?.data?.mensaje ||
+        'No se pudo analizar el archivo'
+      );
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!selectedFile || !importStats?.valid) {
+      notifications.error('Carga un archivo válido antes de confirmar');
+      return;
+    }
+
+    setImportLoading(true);
+    try {
+      const result = await entidadesService.importarArchivo(selectedFile, true);
+      if (result.valid) {
+        notifications.success(`Importación completada: ${result.registrosValidos} entidades creadas.`);
+        setShowImport(false);
+        resetImportState();
+        await cargarEntidades();
+        await cargarHistorialImport();
+      } else {
+        setImportErrors(result.errores || []);
+        setImportStats(result);
+        notifications.error('La importación se detuvo por errores en el archivo.');
+      }
+    } catch (err: any) {
+      notifications.error(
+        err.response?.data?.message ||
+        err.response?.data?.mensaje ||
+        'No se pudo completar la importación'
+      );
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await entidadesService.descargarPlantilla();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'plantilla-entidades.xlsx';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      notifications.error('No se pudo descargar la plantilla');
+    }
+  };
+
   if (loading) {
     return (
       <div className="entidades-page">
@@ -188,14 +300,24 @@ export default function AdminEntidadesClient() {
           <h1 className="page-title">Gestión de Entidades</h1>
           <p className="page-description">Administra las entidades regulatorias del sistema</p>
         </div>
-        <button className="btn-primary" onClick={handleNuevaEntidad}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 22V8l9-5 9 5v14"/>
-            <line x1="12" y1="8" x2="12" y2="14"/>
-            <line x1="9" y1="11" x2="15" y2="11"/>
-          </svg>
-          Nueva Entidad
-        </button>
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={() => setShowImport(true)}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+              <polyline points="7 9 12 4 17 9"/>
+              <line x1="12" y1="4" x2="12" y2="16"/>
+            </svg>
+            Importar entidades
+          </button>
+          <button className="btn-primary" onClick={handleNuevaEntidad}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 22V8l9-5 9 5v14"/>
+              <line x1="12" y1="8" x2="12" y2="14"/>
+              <line x1="9" y1="11" x2="15" y2="11"/>
+            </svg>
+            Nueva Entidad
+          </button>
+        </div>
       </div>
 
       {/* Grid de entidades */}
@@ -262,6 +384,49 @@ export default function AdminEntidadesClient() {
           ))
         )}
       </div>
+
+      {/* Historial importaciones oculto por solicitud */}
+      {false && (
+        <div className="card import-card">
+          <div className="card-header-flex">
+            <div>
+              <h3 className="card-title">Historial de cargas masivas</h3>
+              <p className="card-subtitle">Últimas 5 importaciones</p>
+            </div>
+            <button className="btn-secondary" onClick={cargarHistorialImport} disabled={historyLoading}>
+              Refrescar
+            </button>
+          </div>
+          {importHistory.length === 0 ? (
+            <p className="muted">Aún no hay importaciones registradas.</p>
+          ) : (
+            <div className="import-history-table-wrapper">
+              <table className="import-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Archivo</th>
+                    <th>Válidos</th>
+                    <th>Inválidos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importHistory.map((log) => (
+                    <tr key={log.id}>
+                      <td>{new Date(log.fecha).toLocaleString()}</td>
+                      <td>{log.usuarioNombre || '-'}</td>
+                      <td>{log.archivoNombre || '-'}</td>
+                      <td className="text-success">{log.registrosValidos}</td>
+                      <td className="text-danger">{log.registrosInvalidos}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -417,6 +582,134 @@ export default function AdminEntidadesClient() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de importación */}
+      {showImport && (
+        <div className="modal-overlay" onClick={() => { setShowImport(false); resetImportState(); }}>
+          <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Importar entidades</h2>
+              <button className="modal-close" onClick={() => { setShowImport(false); resetImportState(); }} aria-label="Cerrar">
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="import-dropzone" onDragOver={(e) => e.preventDefault()} onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file) onFileSelected(file);
+              }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                  <polyline points="7 9 12 4 17 9"/>
+                  <line x1="12" y1="4" x2="12" y2="16"/>
+                </svg>
+                <p className="import-title">Arrastra o selecciona un archivo</p>
+                <p className="import-subtitle">Formatos permitidos: .xlsx, .csv</p>
+                <label className="btn-secondary" style={{ marginTop: '0.5rem', cursor: 'pointer' }}>
+                  Seleccionar archivo
+                  <input type="file" accept=".xlsx,.csv" hidden onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) onFileSelected(file);
+                  }} />
+                </label>
+                {selectedFile && (
+                  <p className="import-file">Archivo: <strong>{selectedFile.name}</strong></p>
+                )}
+              </div>
+
+              {importStats && (
+                <div className="import-stats" aria-label="Resumen de validación">
+                  <div>
+                    <span className="label">Filas detectadas</span>
+                    <strong>{importStats.totalRegistros}</strong>
+                  </div>
+                  <div>
+                    <span className="label">Registros válidos</span>
+                    <strong className="text-success">{importStats.registrosValidos}</strong>
+                  </div>
+                  <div>
+                    <span className="label">Registros inválidos</span>
+                    <strong className="text-danger">{importStats.registrosInvalidos}</strong>
+                  </div>
+                  <div>
+                    <span className="label">Filas ignoradas</span>
+                    <strong>{importStats.filasIgnoradas}</strong>
+                  </div>
+                </div>
+              )}
+
+              {importPreview.length > 0 && (
+                <div className="import-preview">
+                  <div className="preview-header">
+                    <h4>Vista previa (primeros 10 registros)</h4>
+                    <span className="badge-neutral">{importPreview.length} filas</span>
+                  </div>
+                  <div className="import-table-wrapper">
+                    <table className="import-table">
+                      <thead>
+                        <tr>
+                          <th>NIT</th>
+                          <th>Nombre</th>
+                          <th>Página</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreview.map((row, idx) => (
+                          <tr key={`${row.nit}-${idx}`}>
+                            <td>{row.nit}</td>
+                            <td>{row.nombre}</td>
+                            <td>{row.paginaWeb || '-'}</td>
+                            <td>{row.estado}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {importErrors.length > 0 && (
+                <div className="import-errors">
+                  <h4>Errores encontrados</h4>
+                  <ul>
+                    {importErrors.map((err) => (
+                      <li key={`${err.fila}-${err.mensaje}`}>
+                        <span className="badge badge-pendiente">Fila {err.fila}</span>
+                        <span>{err.mensaje}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button className="btn-secondary" onClick={handleDownloadTemplate}>Descargar plantilla</button>
+                <button className="btn-secondary" onClick={() => {
+                  setSelectedFile(null);
+                  setImportPreview([]);
+                  setImportErrors([]);
+                  setImportStats(null);
+                }}>Reiniciar</button>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn-secondary" onClick={() => { setShowImport(false); resetImportState(); }} disabled={importLoading}>Cerrar</button>
+                <button
+                  className="btn-primary"
+                  disabled={importLoading || !selectedFile || !!importErrors.length || !importStats?.valid}
+                  onClick={handleConfirmImport}
+                >
+                  {importLoading ? 'Procesando...' : 'Importar ahora'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

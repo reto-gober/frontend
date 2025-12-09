@@ -41,7 +41,7 @@ export const esEstadoCompletado = (estado: string): boolean => {
  */
 export const esEstadoPendiente = (estado: string): boolean => {
   const estadoNorm = normalizarEstado(estado);
-  return ["pendiente", "en_elaboracion", "requiere_correccion"].includes(
+  return ["pendiente", "en_elaboracion", "requiere_correccion", "corregir"].includes(
     estadoNorm
   );
 };
@@ -67,7 +67,7 @@ export const esEstadoEnviado = (estado: string): boolean => {
  */
 export const esEstadoRequiereCorreccion = (estado: string): boolean => {
   const estadoNorm = normalizarEstado(estado);
-  return estadoNorm === "requiere_correccion";
+  return estadoNorm === "requiere_correccion" || estadoNorm === "corregir";
 };
 
 /**

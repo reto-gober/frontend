@@ -3,8 +3,11 @@ import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 
 type VistaCalendario = "mes" | "semana" | "lista";
 
+type RolCalendario = "responsable" | "admin" | "supervisor" | "auditor";
+
 interface EventoCalendario {
   periodoId: string;
+  reporteId?: string;
   fecha: Date;
   titulo: string;
   entidad: string;
@@ -12,7 +15,37 @@ interface EventoCalendario {
   tipo: "pendiente" | "enviado" | "vencido" | "porVencer";
 }
 
-export default function CalendarioResponsableClient() {
+interface CalendarioRolProps {
+  rol?: RolCalendario;
+  fetchPeriodos?: () => Promise<ReportePeriodo[]>;
+  onNavigate?: (payload: {
+    rol: RolCalendario;
+    periodoId?: string;
+    reporteId?: string;
+    reporteNombre?: string;
+  }) => void;
+}
+
+const TITULOS_ROL: Record<RolCalendario, string> = {
+  responsable: "Mi Calendario",
+  supervisor: "Calendario de Reportes",
+  admin: "Calendario de Reportes",
+  auditor: "Calendario de Reportes",
+};
+
+const DESCRIPCIONES_ROL: Record<RolCalendario, string> = {
+  responsable: "Vista de tus reportes y actividades programadas",
+  supervisor: "Visualiza y controla los reportes supervisados",
+  admin: "Calendario unificado de reportes y periodos",
+  auditor: "Fechas clave de reportes y auditorías",
+};
+
+export default function CalendarioResponsableClient({
+  rol = "responsable",
+  fetchPeriodos,
+  onNavigate,
+}: CalendarioRolProps = {}) {
+  const mostrarSoloTitulo = rol !== "responsable";
   const [eventos, setEventos] = useState<EventoCalendario[]>([]);
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState<VistaCalendario>("mes");
@@ -26,31 +59,48 @@ export default function CalendarioResponsableClient() {
 
   useEffect(() => {
     loadEventos();
-  }, []);
+  }, [fetchPeriodos]);
 
   const loadEventos = async () => {
     try {
       setLoading(true);
-      const response = await flujoReportesService.misPeriodos(0, 1000);
-      const periodos = response.content;
 
+      const periodosRespuesta = fetchPeriodos
+        ? await fetchPeriodos()
+        : (await flujoReportesService.misPeriodos(0, 1000)).content;
+
+      const periodos = periodosRespuesta || [];
       const now = new Date();
       const tresDias = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
       const eventosGenerados: EventoCalendario[] = [];
       const entidadesSet = new Set<string>();
 
       periodos.forEach((periodo) => {
-        if (!periodo.fechaVencimientoCalculada) return;
+        const fechaBase =
+          (periodo as any).fechaVencimientoCalculada ||
+          (periodo as any).fechaVencimiento ||
+          (periodo as any).date ||
+          (periodo as any).endDate ||
+          (periodo as any).startDate;
 
-        const fechaVenc = new Date(periodo.fechaVencimientoCalculada);
+        if (!fechaBase) return;
+
+        const fechaVenc = new Date(fechaBase);
+        const estadoNormalizado =
+          (periodo as any).estado ||
+          (periodo as any).estadoEvento ||
+          (periodo as any).tipo ||
+          "pendiente";
+
         let tipo: "pendiente" | "enviado" | "vencido" | "porVencer" =
           "pendiente";
 
         // Determinar tipo de evento
         if (
-          periodo.estado === "enviado_a_tiempo" ||
-          periodo.estado === "enviado_tarde" ||
-          periodo.estado === "aprobado"
+          estadoNormalizado === "enviado_a_tiempo" ||
+          estadoNormalizado === "enviado_tarde" ||
+          estadoNormalizado === "aprobado" ||
+          estadoNormalizado === "enviado"
         ) {
           tipo = "enviado";
         } else if (fechaVenc < now) {
@@ -59,16 +109,32 @@ export default function CalendarioResponsableClient() {
           tipo = "porVencer";
         }
 
+        const periodoId =
+          (periodo as any).periodoId ||
+          (periodo as any).reporteId ||
+          (periodo as any).eventoId ||
+          `evt-${fechaVenc.getTime()}-${Math.random().toString(16).slice(2)}`;
+
         eventosGenerados.push({
-          periodoId: periodo.periodoId,
+          periodoId,
+          reporteId: (periodo as any).reporteId,
           fecha: fechaVenc,
-          titulo: periodo.reporteNombre,
-          entidad: periodo.entidadNombre,
-          estado: periodo.estado,
+          titulo:
+            (periodo as any).reporteNombre ||
+            (periodo as any).titulo ||
+            (periodo as any).nombre ||
+            "Reporte",
+          entidad:
+            (periodo as any).entidadNombre ||
+            (periodo as any).entidad ||
+            "Entidad",
+          estado: estadoNormalizado,
           tipo,
         });
 
-        entidadesSet.add(periodo.entidadNombre);
+        const entidadNombre =
+          (periodo as any).entidadNombre || (periodo as any).entidad;
+        if (entidadNombre) entidadesSet.add(entidadNombre);
       });
 
       setEventos(eventosGenerados);
@@ -255,10 +321,56 @@ export default function CalendarioResponsableClient() {
     return "Toca para ver más detalles";
   };
 
-  const irAMisReportes = (periodoId: string) => {
-    if (!periodoId) return;
-    const params = new URLSearchParams({ resaltarPeriodo: periodoId });
-    window.location.href = `/roles/responsable/mis-reportes?${params.toString()}`;
+  const handleNavigate = (
+    periodoId?: string,
+    reporteId?: string,
+    reporteNombre?: string
+  ) => {
+    const targetId = reporteId || periodoId;
+
+    const payload = { rol, periodoId, reporteId, reporteNombre };
+    if (onNavigate) {
+      onNavigate(payload);
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (reporteNombre) params.set("reporteNombre", reporteNombre);
+
+    switch (rol) {
+      case "admin": {
+        if (targetId) params.set("resaltarReporte", targetId);
+        window.location.href = `/roles/admin/reportes${
+          params.toString() ? `?${params.toString()}` : ""
+        }`;
+        return;
+      }
+      case "supervisor": {
+        if (targetId) params.set("resaltarReporte", targetId);
+        window.location.href = `/roles/supervisor/reportes${
+          params.toString() ? `?${params.toString()}` : ""
+        }`;
+        return;
+      }
+      case "auditor": {
+        if (targetId) params.set("resaltarReporte", targetId);
+        window.location.href = `/roles/auditor/reportes${
+          params.toString() ? `?${params.toString()}` : ""
+        }`;
+        return;
+      }
+      default: {
+        const responsableParams = new URLSearchParams();
+        if (periodoId) responsableParams.set("resaltarPeriodo", periodoId);
+        if (reporteId) responsableParams.set("reporteId", reporteId);
+        if (reporteNombre)
+          responsableParams.set("reporteNombre", reporteNombre);
+
+        window.location.href = `/roles/responsable/mis-tareas${
+          responsableParams.toString() ? `?${responsableParams.toString()}` : ""
+        }`;
+      }
+    }
   };
 
   const esHoy = (fecha: Date) => {
@@ -318,10 +430,8 @@ export default function CalendarioResponsableClient() {
       {/* Header */}
       <div className="page-header">
         <div className="header-info">
-          <h1 className="page-title">Mi Calendario</h1>
-          <p className="page-description">
-            Vista de tus reportes y actividades programadas
-          </p>
+          <h1 className="page-title">{TITULOS_ROL[rol]}</h1>
+          <p className="page-description">{DESCRIPCIONES_ROL[rol]}</p>
         </div>
         <div className="header-actions">
           <div className="view-toggle">
@@ -369,7 +479,13 @@ export default function CalendarioResponsableClient() {
                     <div
                       key={evento.periodoId}
                       className={`evento-item ${esUrgente ? (evento.tipo === "vencido" ? "urgent" : "warning") : ""}`}
-                      onClick={() => irAMisReportes(evento.periodoId)}
+                      onClick={() =>
+                        handleNavigate(
+                          evento.periodoId,
+                          evento.reporteId,
+                          evento.titulo
+                        )
+                      }
                       role="button"
                     >
                       <div className="evento-date">
@@ -638,7 +754,13 @@ export default function CalendarioResponsableClient() {
                       <div
                         key={evento.periodoId}
                         className={`list-event ${evento.tipo}`}
-                        onClick={() => irAMisReportes(evento.periodoId)}
+                        onClick={() =>
+                          handleNavigate(
+                            evento.periodoId,
+                            evento.reporteId,
+                            evento.titulo
+                          )
+                        }
                       >
                         <div className="list-event-date">
                           <span className="list-date-day">
@@ -655,18 +777,26 @@ export default function CalendarioResponsableClient() {
                         </div>
                         <div className="list-event-content">
                           <h4>{evento.titulo}</h4>
-                          <p>{evento.entidad}</p>
-                          <div className={`list-event-status ${evento.tipo}`}>
-                            {getAccionTexto(evento.tipo, evento.estado)}
+                          {!mostrarSoloTitulo && (
+                            <>
+                              <p>{evento.entidad}</p>
+                              <div
+                                className={`list-event-status ${evento.tipo}`}
+                              >
+                                {getAccionTexto(evento.tipo, evento.estado)}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {!mostrarSoloTitulo && (
+                          <div className="list-event-badge">
+                            {evento.tipo === "vencido"
+                              ? `Vencido hace ${Math.abs(getDiasRestantes(evento.fecha))} día${Math.abs(getDiasRestantes(evento.fecha)) !== 1 ? "s" : ""}`
+                              : evento.tipo === "enviado"
+                                ? "Enviado"
+                                : `En ${getDiasRestantes(evento.fecha)} día${getDiasRestantes(evento.fecha) !== 1 ? "s" : ""}`}
                           </div>
-                        </div>
-                        <div className="list-event-badge">
-                          {evento.tipo === "vencido"
-                            ? `Vencido hace ${Math.abs(getDiasRestantes(evento.fecha))} día${Math.abs(getDiasRestantes(evento.fecha)) !== 1 ? "s" : ""}`
-                            : evento.tipo === "enviado"
-                              ? "Enviado"
-                              : `En ${getDiasRestantes(evento.fecha)} día${getDiasRestantes(evento.fecha) !== 1 ? "s" : ""}`}
-                        </div>
+                        )}
                       </div>
                     ))
                 )}
@@ -713,7 +843,13 @@ export default function CalendarioResponsableClient() {
                       <div
                         key={evento.periodoId}
                         className={`list-event ${evento.tipo}`}
-                        onClick={() => irAMisReportes(evento.periodoId)}
+                        onClick={() =>
+                          handleNavigate(
+                            evento.periodoId,
+                            evento.reporteId,
+                            evento.titulo
+                          )
+                        }
                       >
                         <div className="list-event-date">
                           <span className="list-date-day">
@@ -730,18 +866,26 @@ export default function CalendarioResponsableClient() {
                         </div>
                         <div className="list-event-content">
                           <h4>{evento.titulo}</h4>
-                          <p>{evento.entidad}</p>
-                          <div className={`list-event-status ${evento.tipo}`}>
-                            {getAccionTexto(evento.tipo, evento.estado)}
+                          {!mostrarSoloTitulo && (
+                            <>
+                              <p>{evento.entidad}</p>
+                              <div
+                                className={`list-event-status ${evento.tipo}`}
+                              >
+                                {getAccionTexto(evento.tipo, evento.estado)}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {!mostrarSoloTitulo && (
+                          <div className="list-event-badge">
+                            {evento.tipo === "vencido"
+                              ? `Vencido hace ${Math.abs(getDiasRestantes(evento.fecha))} día${Math.abs(getDiasRestantes(evento.fecha)) !== 1 ? "s" : ""}`
+                              : evento.tipo === "enviado"
+                                ? "Enviado"
+                                : `En ${getDiasRestantes(evento.fecha)} día${getDiasRestantes(evento.fecha) !== 1 ? "s" : ""}`}
                           </div>
-                        </div>
-                        <div className="list-event-badge">
-                          {evento.tipo === "vencido"
-                            ? `Vencido hace ${Math.abs(getDiasRestantes(evento.fecha))} día${Math.abs(getDiasRestantes(evento.fecha)) !== 1 ? "s" : ""}`
-                            : evento.tipo === "enviado"
-                              ? "Enviado"
-                              : `En ${getDiasRestantes(evento.fecha)} día${getDiasRestantes(evento.fecha) !== 1 ? "s" : ""}`}
-                        </div>
+                        )}
                       </div>
                     ))
                 )}
