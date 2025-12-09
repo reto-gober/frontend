@@ -184,7 +184,9 @@ export default function ReporteDetalleClient({
       reemplazarArchivos &&
       archivosNuevos.length === 0
     ) {
-      showError("Debes adjuntar nuevos archivos para reemplazar los anteriores");
+      showError(
+        "Debes adjuntar nuevos archivos para reemplazar los anteriores"
+      );
       return;
     }
 
