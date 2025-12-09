@@ -79,8 +79,23 @@ export function AccessibilityPanel() {
         aria-label="Abrir panel de accesibilidad"
         onClick={() => setOpen((v) => !v)}
       >
-        <span aria-hidden="false" role="img" aria-label="Accesibilidad">♿</span>
-        Accesibilidad
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="5" r="2" />
+          <path d="M12 7v5" />
+          <path d="M8 10h8" />
+          <path d="M8 14l2.5 6" />
+          <path d="M16 14l-2.5 6" />
+        </svg>
       </button>
 
       {open && (

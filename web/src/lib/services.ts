@@ -1909,3 +1909,56 @@ export const auditoriaService = {
     return response.data;
   },
 };
+
+// ==================== ADMIN ACTIONS ====================
+
+export interface AdminActionSummary {
+  actionId: string;
+  actionType: string;
+  adminNombre: string;
+  responsableAfectado: string;
+  periodoDescripcion: string;
+  reporteNombre: string;
+  motivo: string;
+  createdAt: string;
+  filesCount: number;
+  additionalData?: Record<string, any>;
+}
+
+export const adminActionsService = {
+  /**
+   * Obtener acciones administrativas recientes
+   */
+  async obtenerAcciones(
+    page = 0,
+    size = 10,
+    adminId?: string,
+    actionType?: string,
+    periodoId?: string
+  ): Promise<Page<AdminActionSummary>> {
+    const params: Record<string, any> = { page, size };
+    if (adminId) params.adminId = adminId;
+    if (actionType) params.actionType = actionType;
+    if (periodoId) params.periodoId = periodoId;
+
+    const response = await api.get("/api/admin/actions", { params });
+    
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "data" in response.data
+    ) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+
+  /**
+   * Obtener acciones recientes (simplificado para dashboard)
+   */
+  async obtenerActividadReciente(limit = 10): Promise<AdminActionSummary[]> {
+    const result = await this.obtenerAcciones(0, limit);
+    return result.content || [];
+  },
+};
+

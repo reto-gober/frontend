@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { dashboardService, usuariosService, entidadesService } from '../../lib/services';
+import { dashboardService, usuariosService, entidadesService, adminActionsService } from '../../lib/services';
 
 interface DashboardStats {
   usuariosActivos: number;
@@ -92,25 +92,72 @@ export default function AdminDashboardClient() {
       const entidadesActivas = entidades.filter(e => e.estado === 'ACTIVA').length;
       const entidadesInactivas = entidades.length - entidadesActivas;
 
-      // Simular actividad reciente (esto debería venir de un endpoint de logs/auditoría)
-      const actividadSimulada: ActividadItem[] = usuarios.slice(0, 6).map((u, i) => {
-        const tiempos = ['Hace 15 minutos', 'Hace 1 hora', 'Hace 2 horas', 'Hace 3 horas', 'Ayer, 16:30', 'Ayer, 10:15'];
-        const acciones = [
-          'Envió invitación a nuevo usuario',
-          `Modificó rol de usuario a ${u.roles[0]}`,
-          'Fue creado en el sistema',
-          'Actualizó su perfil',
-          'Inició sesión',
-          'Cerró sesión'
-        ];
-        const tipos = ['invitacion', 'rol', 'estado', 'perfil', 'login', 'logout'];
-        
+      // Cargar actividad reciente desde admin_action_log
+      const accionesRecientes = await adminActionsService.obtenerActividadReciente(6).catch(() => []);
+      
+      const actividadReal: ActividadItem[] = accionesRecientes.map(accion => {
+        // Determinar el tipo de acción y descripción
+        let tipo = 'general';
+        let descripcion = accion.actionType;
+
+        switch (accion.actionType) {
+          case 'OVERRIDE_SUBMIT':
+            tipo = 'estado';
+            descripcion = `Forzó envío de reporte${accion.reporteNombre ? ` "${accion.reporteNombre}"` : ''}${accion.responsableAfectado ? ` para ${accion.responsableAfectado}` : ''}`;
+            break;
+          case 'CAMBIO_ROL':
+            tipo = 'rol';
+            descripcion = `Modificó rol de usuario${accion.responsableAfectado ? ` ${accion.responsableAfectado}` : ''}`;
+            break;
+          case 'INVITACION':
+            tipo = 'invitacion';
+            descripcion = `Envió invitación a${accion.responsableAfectado ? ` ${accion.responsableAfectado}` : ' nuevo usuario'}`;
+            break;
+          case 'DESACTIVAR_USUARIO':
+            tipo = 'estado';
+            descripcion = `Desactivó usuario${accion.responsableAfectado ? ` ${accion.responsableAfectado}` : ''}`;
+            break;
+          case 'ACTIVAR_USUARIO':
+            tipo = 'estado';
+            descripcion = `Activó usuario${accion.responsableAfectado ? ` ${accion.responsableAfectado}` : ''}`;
+            break;
+          default:
+            descripcion = `Realizó acción: ${accion.actionType}`;
+        }
+
+        // Calcular tiempo relativo
+        const fechaAccion = new Date(accion.createdAt);
+        const ahora = new Date();
+        const diffMs = ahora.getTime() - fechaAccion.getTime();
+        const diffMin = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        let tiempoTexto = 'Hace un momento';
+        if (diffMin < 60) {
+          tiempoTexto = `Hace ${diffMin} minuto${diffMin !== 1 ? 's' : ''}`;
+        } else if (diffHours < 24) {
+          tiempoTexto = `Hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`;
+        } else if (diffDays === 1) {
+          tiempoTexto = `Ayer, ${fechaAccion.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`;
+        } else if (diffDays < 7) {
+          tiempoTexto = `Hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
+        } else {
+          tiempoTexto = fechaAccion.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+        }
+
+        // Generar avatar con iniciales
+        const palabras = accion.adminNombre.split(' ');
+        const avatar = palabras.length >= 2 
+          ? `${palabras[0][0]}${palabras[1][0]}`
+          : accion.adminNombre.substring(0, 2).toUpperCase();
+
         return {
-          usuario: `${u.firstName} ${u.firstLastname}`,
-          accion: acciones[i] || 'Acción realizada',
-          tiempo: tiempos[i] || 'Hace un momento',
-          avatar: `${u.firstName[0]}${u.firstLastname[0]}`,
-          tipo: tipos[i] || 'general'
+          usuario: accion.adminNombre,
+          accion: descripcion,
+          tiempo: tiempoTexto,
+          avatar,
+          tipo
         };
       });
 
@@ -128,7 +175,7 @@ export default function AdminDashboardClient() {
         inactivas: entidadesInactivas,
         total: entidades.length
       });
-      setActividad(actividadSimulada);
+      setActividad(actividadReal);
 
     } catch (error) {
       console.error('Error al cargar datos del dashboard:', error);
@@ -140,7 +187,10 @@ export default function AdminDashboardClient() {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem' }}>
-        <div className="loading-spinner">Cargando dashboard...</div>
+        <div className="loading-spinner"></div>
+        <p style={{ marginTop: '1rem', color: 'var(--neutral-600)', fontSize: '0.875rem' }}>
+          Cargando dashboard...
+        </p>
       </div>
     );
   }
