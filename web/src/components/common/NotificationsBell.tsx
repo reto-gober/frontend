@@ -1,20 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { flujoReportesService } from '../../lib/services';
-import {
-  buildSupervisorAlerts,
-  relativeTimeFromNow,
-  type SupervisorAlert,
-} from '../../lib/supervisorAlerts';
-import { buildResponsableAlerts } from '../../lib/responsableAlerts';
+import notificacionesService, {
+  type NotificacionDTO,
+  type NotificacionTipo,
+} from '../../lib/notificacionesService';
+import { relativeTimeFromNow } from '../../lib/supervisorAlerts';
 
-type Role = 'supervisor' | 'responsable';
+type Role = 'supervisor' | 'responsable' | 'admin';
 
 interface NotificationsBellProps {
   role: Role;
 }
 
+type UiNotificacion = {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  tipo: 'critica' | 'advertencia' | 'exito' | 'info';
+  fecha: string;
+  leida: boolean;
+  entidad?: string;
+  responsable?: string;
+  link?: string | null;
+};
+
 export default function NotificationsBell({ role }: NotificationsBellProps) {
-  const [alertas, setAlertas] = useState<SupervisorAlert[]>([]);
+  const [alertas, setAlertas] = useState<UiNotificacion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,13 +50,9 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
       setLoading(true);
       setError(null);
 
-      if (role === 'supervisor') {
-        const data = await flujoReportesService.supervisionSupervisor(0, 200);
-        setAlertas(buildSupervisorAlerts(data.content || []));
-      } else {
-        const data = await flujoReportesService.misPeriodos(0, 400);
-        setAlertas(buildResponsableAlerts(data.content || []));
-      }
+      const page = await notificacionesService.listar(0, 50);
+      const mapped = (page?.content || []).map(mapNotificacionToUi(role));
+      setAlertas(mapped);
     } catch (err: any) {
       console.error('Error al cargar alertas:', err);
       setError(err?.response?.data?.message || 'No se pudieron cargar las alertas.');
@@ -68,15 +74,30 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
 
   const topAlertas = useMemo(() => alertas.slice(0, 6), [alertas]);
 
-  const marcarComoLeida = (id: string) => {
-    setAlertas((prev) => prev.map((a) => (a.id === id ? { ...a, leida: true } : a)));
+  const marcarComoLeida = async (id: string) => {
+    try {
+      setAlertas((prev) => prev.map((a) => (a.id === id ? { ...a, leida: true } : a)));
+      await notificacionesService.marcarLeida(id);
+    } catch (err) {
+      console.error('Error al marcar como leída', err);
+    }
   };
 
-  const marcarTodas = () => {
-    setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
+  const marcarTodas = async () => {
+    try {
+      setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
+      await notificacionesService.marcarTodas();
+    } catch (err) {
+      console.error('Error al marcar todas como leídas', err);
+    }
   };
 
-  const destinoAlertas = role === 'supervisor' ? '/roles/supervisor/alertas' : '/roles/responsable/alertas';
+  const destinoAlertas =
+    role === 'supervisor'
+      ? '/roles/supervisor/alertas'
+      : role === 'admin'
+        ? '/roles/admin/dashboard'
+        : '/roles/responsable/alertas';
 
   return (
     <div className="notifications-bell" ref={dropdownRef}>
@@ -120,7 +141,11 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
                   className={`dropdown-item ${alerta.tipo} ${alerta.leida ? 'read' : ''}`}
                   onClick={() => {
                     marcarComoLeida(alerta.id);
-                    window.location.href = destinoAlertas;
+                    if (alerta.link) {
+                      window.location.href = alerta.link;
+                    } else {
+                      window.location.href = destinoAlertas;
+                    }
                   }}
                 >
                   <div className="item-icon">
@@ -164,11 +189,13 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
               ))}
           </div>
 
-          <div className="dropdown-footer">
-            <a className="link" href={destinoAlertas}>
-              Ver todas las alertas
-            </a>
-          </div>
+          {role !== 'admin' && (
+            <div className="dropdown-footer">
+              <a className="link" href={destinoAlertas}>
+                Ver todas las alertas
+              </a>
+            </div>
+          )}
         </div>
       )}
 
@@ -398,4 +425,36 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
       `}</style>
     </div>
   );
+}
+
+function mapTipo(tipo?: NotificacionTipo): UiNotificacion['tipo'] {
+  if (tipo === 'critica') return 'critica';
+  if (tipo === 'advertencia') return 'advertencia';
+  if (tipo === 'informativa') return 'info';
+  if (tipo === 'exito') return 'exito';
+  return 'info';
+}
+
+function mapNotificacionToUi(role: Role) {
+  return (n: NotificacionDTO): UiNotificacion => {
+    const metadata = n.metadata || {};
+    const linkMeta = (metadata as any)?.link || (metadata as any)?.url;
+    const periodoId = n.periodoId || (metadata as any)?.periodoId;
+
+    const fallbackLink = periodoId
+      ? `/roles/${role}/reportes/${periodoId}`
+      : `/roles/${role}/dashboard`;
+
+    return {
+      id: n.notificacionId || crypto.randomUUID(),
+      titulo: n.titulo || 'Notificación',
+      descripcion: n.mensaje || 'Tienes una actualización pendiente.',
+      tipo: mapTipo(n.tipo),
+      fecha: n.fechaProgramada || n.fechaEnviado || new Date().toISOString(),
+      leida: Boolean(n.leido),
+      entidad: n.entidadNombre || (metadata as any)?.entidad,
+      responsable: (metadata as any)?.responsable,
+      link: (typeof linkMeta === 'string' && linkMeta) || fallbackLink,
+    };
+  };
 }

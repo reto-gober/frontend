@@ -2,6 +2,7 @@
 import BaseLayout from '../BaseLayout.astro';
 import SidebarAdmin from '../../components/sidebar/SidebarAdmin';
 import AccessibilityPanel from '../../components/common/AccessibilityPanel';
+import NotificationsBell from '../../components/common/NotificationsBell';
 import '../../styles/admin-module.css';
 
 export interface Props {
@@ -60,6 +61,7 @@ const { title } = Astro.props;
         </div>
         <div class="topbar-right">
           <AccessibilityPanel client:load />
+          <NotificationsBell client:load role="admin" />
           <div class="user-section">
             <span class="user-name-display" id="user-name-display">Administrador Principal</span>
             <button class="btn-logout" id="btn-logout">

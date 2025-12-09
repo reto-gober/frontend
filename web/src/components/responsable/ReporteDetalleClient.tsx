@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircle,
+  Trash,
 } from "lucide-react";
 import FilesList from "../reportes/FilesList";
 import FileViewer from "../reportes/FileViewer";
@@ -57,6 +58,7 @@ export default function ReporteDetalleClient({
     {}
   );
   const [reemplazarArchivos, setReemplazarArchivos] = useState(false);
+  const [deletingArchivoId, setDeletingArchivoId] = useState<string | null>(null);
   const {
     toasts,
     removeToast,
@@ -69,12 +71,28 @@ export default function ReporteDetalleClient({
     detalle &&
     (normalizarEstado(detalle.estado) === "pendiente" ||
       normalizarEstado(detalle.estado) === "requiere_correccion" ||
-      normalizarEstado(detalle.estado) === "rechazado");
+      normalizarEstado(detalle.estado) === "rechazado" ||
+      normalizarEstado(detalle.estado) === "corregir");
 
   const canSubmit = !readOnly && canSubmitBase;
 
   const comentarioSupervisor = useMemo(() => {
-    if (!detalle?.comentarios || detalle.comentarios.length === 0) return null;
+    if (!detalle?.comentarios || detalle.comentarios.length === 0) {
+      if (detalle?.comentariosTexto) {
+        return {
+          autor:
+            detalle.responsableSupervision?.nombreCompleto || "Supervisor",
+          cargo: detalle.responsableSupervision?.cargo || "",
+          fecha:
+            detalle.updatedAt ||
+            detalle.fechaEnvioReal ||
+            new Date().toISOString(),
+          accion: detalle.estadoDescripcion || "Comentario",
+          texto: detalle.comentariosTexto,
+        } as ComentarioInfo;
+      }
+      return null;
+    }
 
     for (let i = detalle.comentarios.length - 1; i >= 0; i -= 1) {
       const comentario = detalle.comentarios[i];
@@ -88,7 +106,14 @@ export default function ReporteDetalleClient({
       }
     }
     return null;
-  }, [detalle?.comentarios]);
+  }, [
+    detalle?.comentarios,
+    detalle?.comentariosTexto,
+    detalle?.estadoDescripcion,
+    detalle?.responsableSupervision,
+    detalle?.updatedAt,
+    detalle?.fechaEnvioReal,
+  ]);
 
   // Ajustar bandera de reemplazo cuando cambia el estado
   useEffect(() => {
@@ -96,6 +121,39 @@ export default function ReporteDetalleClient({
       setReemplazarArchivos(normalizarEstado(detalle.estado) === "rechazado");
     }
   }, [detalle?.estado]);
+
+  const syncComentarios = useCallback(async (periodo: string) => {
+    try {
+      const comentariosApi = await flujoReportesService.obtenerComentarios(
+        periodo
+      );
+
+      setDetalle((prev) => {
+        if (!prev) return prev;
+
+        const yaTieneComentarios =
+          prev.comentarios && prev.comentarios.length > 0;
+        const hayComentariosNuevos =
+          comentariosApi && comentariosApi.length > 0;
+
+        if (!hayComentariosNuevos && yaTieneComentarios) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          comentarios: hayComentariosNuevos
+            ? comentariosApi
+            : prev.comentarios || [],
+        };
+      });
+    } catch (err) {
+      console.warn(
+        "No se pudieron sincronizar los comentarios del supervisor",
+        err
+      );
+    }
+  }, []);
 
   useEffect(() => {
     loadDetalle();
@@ -110,11 +168,39 @@ export default function ReporteDetalleClient({
       console.log("📊 Detalle recibido:", data);
       console.log("📎 Archivos encontrados:", data.archivos?.length || 0);
       setDetalle(data);
+      syncComentarios(periodoId);
     } catch (err: any) {
       console.error("❌ Error cargando detalle:", err);
       setError(err.message || "Error al cargar el detalle");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteArchivo = async (archivo: ArchivoDTO) => {
+    if (!detalle) return;
+
+    try {
+      setDeletingArchivoId(archivo.archivoId);
+      await evidenciasService.eliminar(archivo.archivoId);
+
+      setDetalle((prev) => {
+        if (!prev) return prev;
+        const nuevosArchivos = (prev.archivos || []).filter(
+          (a) => a.archivoId !== archivo.archivoId
+        );
+        return { ...prev, archivos: nuevosArchivos } as ReportePeriodo;
+      });
+      showSuccess("Archivo eliminado");
+    } catch (err: any) {
+      console.error("[ReporteDetalle] Error eliminando archivo:", err);
+      showError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "No se pudo eliminar el archivo"
+      );
+    } finally {
+      setDeletingArchivoId(null);
     }
   };
 
@@ -152,6 +238,19 @@ export default function ReporteDetalleClient({
       minute: "2-digit",
     });
   };
+
+  const limpiarTextoComentario = useCallback((texto?: string | null) => {
+    if (!texto) return "Sin comentario registrado";
+
+    // El backend legacy envía el texto con prefijo entre corchetes, ejemplo:
+    // "[fecha - ACCION por Autor] detalle"
+    const cierre = texto.indexOf("]");
+    if (texto.startsWith("[") && cierre !== -1) {
+      return texto.slice(cierre + 1).trim() || texto;
+    }
+
+    return texto.trim();
+  }, []);
 
   const handleUploadFiles = useCallback(
     (files: File[]) => {
@@ -226,7 +325,7 @@ export default function ReporteDetalleClient({
       };
 
       const resultado =
-        estado === "requiere_correccion" || estado === "rechazado"
+        estado === "requiere_correccion" || estado === "rechazado" || estado === "corregir"
           ? await flujoReportesService.corregirReenviar(payload)
           : await flujoReportesService.enviar(payload);
 
@@ -482,7 +581,7 @@ export default function ReporteDetalleClient({
                 </div>
               </div>
               <p className="supervisor-text">
-                {comentarioSupervisor.texto || "Sin comentario registrado"}
+                {limpiarTextoComentario(comentarioSupervisor.texto)}
               </p>
             </div>
           ) : (
@@ -515,6 +614,14 @@ export default function ReporteDetalleClient({
                 periodoId={detalle.periodoId}
                 archivos={detalle.archivos}
                 onViewFile={setArchivoSeleccionado}
+                canDelete={
+                  !readOnly &&
+                  (normalizarEstado(detalle.estado) === "rechazado" ||
+                    normalizarEstado(detalle.estado) === "requiere_correccion" ||
+                    normalizarEstado(detalle.estado) === "corregir")
+                }
+                onDeleteFile={handleDeleteArchivo}
+                deletingId={deletingArchivoId}
                 compact={false}
               />
             ) : (
@@ -670,14 +777,15 @@ export default function ReporteDetalleClient({
         {!readOnly &&
           detalle.fechaEnvioReal &&
           (normalizarEstado(detalle.estado) === "requiere_correccion" ||
-            normalizarEstado(detalle.estado) === "rechazado") && (
+            normalizarEstado(detalle.estado) === "rechazado" ||
+            normalizarEstado(detalle.estado) === "corregir") && (
             <div className="info-card">
               <div className="archivos-header">
                 <h2 className="card-title">
                   <Send style={{ color: "#dc2626" }} />
                   {normalizarEstado(detalle.estado) === "rechazado"
                     ? "Reenviar entrega (reemplazar archivos)"
-                    : "Reenviar Entrega con Correcciones"}
+                    : "Reenviar entrega con correcciones"}
                 </h2>
               </div>
 
@@ -997,7 +1105,7 @@ export default function ReporteDetalleClient({
                               paddingLeft: "40px",
                             }}
                           >
-                            {comentario.texto}
+                            {limpiarTextoComentario(comentario.texto)}
                           </p>
                         </div>
                       )

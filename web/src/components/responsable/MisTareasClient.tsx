@@ -10,7 +10,9 @@ type FilterType =
   | "pendientes"
   | "enviados"
   | "vencidos"
-  | "porVencer";
+  | "porVencer"
+  | "rechazados"
+  | "correccion";
 
 const PAGE_SIZE = 10;
 
@@ -33,6 +35,8 @@ export default function MisTareasClient() {
     enviados: 0,
     vencidos: 0,
     porVencer: 0,
+    rechazados: 0,
+    correccion: 0,
   });
 
   useEffect(() => {
@@ -83,6 +87,13 @@ export default function MisTareasClient() {
           const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
           return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
         }).length,
+        rechazados: all.filter(
+          (p) => p.estado && p.estado.toLowerCase() === "rechazado"
+        ).length,
+        correccion: all.filter((p) => {
+          const st = (p.estado || "").toLowerCase();
+          return st === "requiere_correccion" || st === "corregir";
+        }).length,
       };
 
       setCounts(newCounts);
@@ -129,6 +140,16 @@ export default function MisTareasClient() {
       count: counts.porVencer,
     },
     { id: "enviados" as FilterType, label: "Enviados", count: counts.enviados },
+    {
+      id: "correccion" as FilterType,
+      label: "En Corrección",
+      count: counts.correccion,
+    },
+    {
+      id: "rechazados" as FilterType,
+      label: "Rechazados",
+      count: counts.rechazados,
+    },
   ];
 
   const periodosFiltrados = useMemo(() => {
@@ -155,6 +176,17 @@ export default function MisTareasClient() {
           const dias = calcularDiasRestantes(p.fechaVencimientoCalculada);
           return dias >= 0 && dias <= 3 && !esEstadoEnviado(p.estado);
         });
+        break;
+      case "correccion":
+        filtered = periodos.filter((p) => {
+          const st = (p.estado || "").toLowerCase();
+          return st === "requiere_correccion" || st === "corregir";
+        });
+        break;
+      case "rechazados":
+        filtered = periodos.filter(
+          (p) => p.estado && p.estado.toLowerCase() === "rechazado"
+        );
         break;
       case "todos":
       default:
