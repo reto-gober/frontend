@@ -25,7 +25,7 @@ export default function MisTareasClient() {
     size: PAGE_SIZE,
     number: 0,
   });
-  const { toasts, removeToast, success, error } = useToast();
+  const { toasts, removeToast, error } = useToast();
 
   const [counts, setCounts] = useState({
     todos: 0,
@@ -110,8 +110,7 @@ export default function MisTareasClient() {
     if (!periodo) return;
 
     if (accion === "ver") {
-      // Ver detalle del reporte (vista de solo lectura con información completa)
-      window.location.href = `/mis-reportes/${periodoId}`;
+      window.location.href = `/roles/responsable/reportes/${periodoId}`;
       return;
     }
   };
@@ -453,6 +452,7 @@ export default function MisTareasClient() {
         .page-number:not(.active):not(:disabled):hover {
           background: var(--neutral-50);
         }
+
       `}</style>
     </div>
   );

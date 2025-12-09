@@ -28,7 +28,8 @@ const titulos: Record<ModoVista, string> = {
 
 const descripciones: Record<ModoVista, string> = {
   responsable: "Reportes asignados a tu cargo",
-  supervisor: "Sube o gestiona los reportes que supervisas y adjunta evidencias",
+  supervisor:
+    "Sube o gestiona los reportes que supervisas y adjunta evidencias",
   admin: "Revisa y carga reportes de cualquier responsable y sus evidencias",
 };
 
@@ -201,8 +202,20 @@ const determinarEstadoGeneral = (items: ReportePeriodo[]): EstadoGeneral => {
       { code: "enviado", label: "Enviado", badgeClass: "success" },
     ],
     [
+      "pendiente_revision",
+      { code: "en_revision", label: "Pendiente de revisión", badgeClass: "info" },
+    ],
+    [
+      "enviado",
+      { code: "enviado", label: "Enviado", badgeClass: "success" },
+    ],
+    [
       "aprobado",
       { code: "aprobado", label: "Aprobado", badgeClass: "success" },
+    ],
+    [
+      "rechazado",
+      { code: "rechazado", label: "Rechazado", badgeClass: "danger" },
     ],
   ];
 
@@ -293,10 +306,14 @@ const agruparPorReporteVigencia = (items: ReportePeriodo[]) => {
   return Array.from(mapa.values());
 };
 
-export default function MisReportesClient({ modo = "responsable" }: MisReportesClientProps) {
+export default function MisReportesClient({
+  modo = "responsable",
+}: MisReportesClientProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>("todos");
   const [periodos, setPeriodos] = useState<ReportePeriodo[]>([]);
-  const [archivosMap, setArchivosMap] = useState<Map<string, ArchivoDTO[]>>(new Map());
+  const [archivosMap, setArchivosMap] = useState<Map<string, ArchivoDTO[]>>(
+    new Map()
+  );
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 6;
@@ -411,11 +428,12 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
         const periodosPorReporte = await Promise.all(
           reportes.map(async (reporte) => {
             try {
-              const periodosPage = await flujoReportesService.periodosPorReporte(
-                reporte.reporteId,
-                0,
-                200
-              );
+              const periodosPage =
+                await flujoReportesService.periodosPorReporte(
+                  reporte.reporteId,
+                  0,
+                  200
+                );
               return periodosPage.content || [];
             } catch (err) {
               console.warn(
@@ -469,7 +487,6 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
       }).length;
 
       const inactivos = gruposCompletos.length - activos;
- 
 
       // Calcular contadores
       const now = new Date();
@@ -514,7 +531,7 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
   };
 
   const loadArchivos = async (periodosToLoad: ReportePeriodo[]) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) return;
 
     const newArchivosMap = new Map<string, ArchivoDTO[]>();
@@ -527,9 +544,9 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
             `http://localhost:8080/api/periodos/${periodo.periodoId}/archivos`,
             {
               headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
             }
           );
 
@@ -537,11 +554,16 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
             const data = await response.json();
             newArchivosMap.set(periodo.periodoId, data.data.archivos || []);
           } else {
-            console.warn(`No se pudieron cargar archivos para periodo ${periodo.periodoId}`);
+            console.warn(
+              `No se pudieron cargar archivos para periodo ${periodo.periodoId}`
+            );
             newArchivosMap.set(periodo.periodoId, []);
           }
         } catch (err) {
-          console.error(`Error cargando archivos para periodo ${periodo.periodoId}:`, err);
+          console.error(
+            `Error cargando archivos para periodo ${periodo.periodoId}:`,
+            err
+          );
           newArchivosMap.set(periodo.periodoId, []);
         }
       })
@@ -559,7 +581,11 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
   };
 
   const handleVerEntregas = () => {
-    window.location.href = '/roles/responsable/mis-tareas';
+    window.location.href = "/roles/responsable/mis-tareas";
+  };
+
+  const handleVerDetalle = (periodoId: string) => {
+    window.location.href = `/roles/responsable/reportes/${periodoId}?from=mis-reportes`;
   };
 
   const handleEnvioExitoso = () => {
@@ -739,7 +765,10 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
                 marginBottom: "0.5rem",
               }}
             >
-              {activeFilter === "todos" && (modo === "responsable" ? "No tienes reportes asignados" : "No hay reportes disponibles")}
+              {activeFilter === "todos" &&
+                (modo === "responsable"
+                  ? "No tienes reportes asignados"
+                  : "No hay reportes disponibles")}
               {activeFilter === "activos" && "No hay reportes activos"}
               {activeFilter === "inactivos" && "No hay reportes inactivos"}
             </h3>
@@ -838,6 +867,31 @@ export default function MisReportesClient({ modo = "responsable" }: MisReportesC
                           <line x1="3" y1="18" x2="3.01" y2="18"></line>
                         </svg>
                         Ver entregas
+                      </button>
+                      <button
+                        className="btn btn-primary btn-with-icon"
+                        onClick={() =>
+                          grupo.periodoReferencia &&
+                          handleVerDetalle(grupo.periodoReferencia.periodoId)
+                        }
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                        }}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        Ver detalle
                       </button>
                     </div>
                   )}
