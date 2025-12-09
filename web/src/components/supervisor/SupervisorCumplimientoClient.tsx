@@ -61,12 +61,39 @@ export default function SupervisorCumplimientoClient() {
     cargarDatos();
   }, []);
 
+  const normalizarEstado = (estado?: string) => (estado || '').toLowerCase();
+  const isFinalizado = (estado?: string) => {
+    const e = normalizarEstado(estado);
+    return e === 'aprobado' || e === 'enviado' || e === 'enviado_a_tiempo';
+  };
+  const isPendiente = (estado?: string) => {
+    const e = normalizarEstado(estado);
+    return e === 'pendiente' || e === 'pendiente_validacion' || e === 'dentro_plazo' || e === 'en_elaboracion' || e === 'pendiente_elaboracion';
+  };
+  const isEnRevision = (estado?: string) => {
+    const e = normalizarEstado(estado);
+    return e === 'en_revision' || e === 'enviado_tarde' || e === 'enviado_a_tiempo';
+  };
+  const isAprobado = (estado?: string) => {
+    const e = normalizarEstado(estado);
+    return e === 'aprobado' || e === 'enviado' || e === 'enviado_a_tiempo';
+  };
+  const deduplicar = (lista: ReportePeriodo[]) => {
+    const mapa = new Map<string, ReportePeriodo>();
+    lista.forEach((p) => {
+      if (p.periodoId && !mapa.has(p.periodoId)) {
+        mapa.set(p.periodoId, p);
+      }
+    });
+    return Array.from(mapa.values());
+  };
+
   const cargarDatos = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Cargar todos los periodos supervisados (deduplicados en backend)
+      // Cargar todos los periodos supervisados (backend ya deduplica y retorna periodos correctos)
       const periodosData = await flujoReportesService.supervisionSupervisor(0, 300);
       const todosPeriodos = periodosData.content || [];
       setPeriodos(todosPeriodos);
@@ -85,16 +112,20 @@ export default function SupervisorCumplimientoClient() {
   const calcularEstadisticas = (periodos: ReportePeriodo[]) => {
     const ahora = new Date();
 
-    // Calcular resumen general
-    const enviados = periodos.filter(p => 
-      ['enviado', 'ENVIADO', 'aprobado', 'APROBADO'].includes(p.estado)
-    ).length;
-    const enProgreso = periodos.filter(p => 
-      ['en_revision', 'EN_REVISION', 'pendiente_validacion', 'PENDIENTE_VALIDACION'].includes(p.estado)
-    ).length;
+    // Calcular resumen general - matching backend exact logic
+    const enviados = periodos.filter(p => {
+      const e = normalizarEstado(p.estado);
+      return e === 'aprobado' || e === 'enviado' || e === 'enviado_a_tiempo' || e === 'enviado_tarde';
+    }).length;
+    const enProgreso = periodos.filter(p => {
+      const e = normalizarEstado(p.estado);
+      return e === 'en_revision' || e === 'pendiente_validacion' || e === 'pendiente_revision';
+    }).length;
     const vencidos = periodos.filter(p => {
       const vencimiento = new Date(p.fechaVencimientoCalculada);
-      return vencimiento < ahora && !['enviado', 'ENVIADO', 'aprobado', 'APROBADO'].includes(p.estado);
+      const e = normalizarEstado(p.estado);
+      const noFinalizado = e !== 'aprobado' && e !== 'enviado' && e !== 'enviado_a_tiempo';
+      return vencimiento < ahora && noFinalizado;
     }).length;
     
     const cumplimientoGeneral = periodos.length > 0 
@@ -138,16 +169,18 @@ export default function SupervisorCumplimientoClient() {
       const stats = miembrosMap.get(resp.usuarioId)!;
       stats.asignados++;
       
-      if (['enviado', 'ENVIADO', 'aprobado', 'APROBADO'].includes(p.estado)) {
+      const e = normalizarEstado(p.estado);
+      if (e === 'aprobado' || e === 'enviado' || e === 'enviado_a_tiempo' || e === 'enviado_tarde') {
         stats.enviados++;
-      } else if (['en_revision', 'EN_REVISION'].includes(p.estado)) {
+      } else if (e === 'en_revision' || e === 'pendiente_validacion' || e === 'pendiente_revision') {
         stats.enProgreso++;
       } else {
         stats.pendientes++;
       }
       
       const vencimiento = new Date(p.fechaVencimientoCalculada);
-      if (vencimiento < ahora && !['enviado', 'ENVIADO', 'aprobado', 'APROBADO'].includes(p.estado)) {
+      const noFinalizado = e !== 'aprobado' && e !== 'enviado' && e !== 'enviado_a_tiempo';
+      if (vencimiento < ahora && noFinalizado) {
         stats.vencidos++;
       }
     });
@@ -182,14 +215,16 @@ export default function SupervisorCumplimientoClient() {
       const stats = entidadesMap.get(entidadNombre)!;
       stats.total++;
       
-      if (['enviado', 'ENVIADO', 'aprobado', 'APROBADO'].includes(p.estado)) {
+      const e = normalizarEstado(p.estado);
+      if (e === 'aprobado' || e === 'enviado' || e === 'enviado_a_tiempo' || e === 'enviado_tarde') {
         stats.enviados++;
       } else {
         stats.pendientes++;
       }
       
       const vencimiento = new Date(p.fechaVencimientoCalculada);
-      if (vencimiento < ahora && !['enviado', 'ENVIADO', 'aprobado', 'APROBADO'].includes(p.estado)) {
+      const noFinalizado = e !== 'aprobado' && e !== 'enviado' && e !== 'enviado_a_tiempo';
+      if (vencimiento < ahora && noFinalizado) {
         stats.vencidos++;
       }
     });

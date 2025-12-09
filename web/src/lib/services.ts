@@ -288,6 +288,11 @@ export interface KpisSupervisor {
   totalVencidos: number;
   totalPendientes: number;
   diasRetrasoPromedio: number;
+  porcentajeCumplimientoAnterior?: number;
+  deltaPorcentajeCumplimiento?: number;
+  diasRetrasoPromedioAnterior?: number;
+  deltaDiasRetrasoPromedio?: number;
+  totalProximosVencer?: number;
 }
 
 export interface CargaResponsable {
@@ -931,8 +936,9 @@ export const dashboardService = {
     if (filters?.vistaTemporal) params.append('vistaTemporal', filters.vistaTemporal);
     if (filters?.limitePeriodos) params.append('limitePeriodos', filters.limitePeriodos.toString());
 
+    // Usamos el endpoint v2 del backend `/api/dashboard/supervisor/v2` (igual convención que otros roles)
     const query = params.toString();
-    const response = await api.get(`/api/supervisor/dashboard${query ? `?${query}` : ''}`);
+    const response = await api.get(`/api/dashboard/supervisor/v2${query ? `?${query}` : ''}`);
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       return response.data.data;
     }
@@ -1271,7 +1277,7 @@ export interface EnviarReporteRequest {
 
 export interface ValidarReporteRequest {
   periodoId: string;
-  accion: "aprobar" | "rechazar" | 'revisar';
+  accion: "aprobar" | "rechazar" | "revisar" | "corregir";
   comentarios?: string;
   motivoRechazo?: string; // Obligatorio para "rechazar" y "corregir"
 }

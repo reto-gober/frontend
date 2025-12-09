@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   dashboardService,
+  entidadesService,
+  usuariosService,
   type AccionPendienteSupervisor,
   type CargaResponsable,
   type DashboardSupervisorResponse,
   type DistribucionEntidad,
+  type EntidadResponse,
+  type UsuarioResponse,
 } from '../../lib/services';
 
 type SortKey = 'nombre' | 'cumplimiento' | 'vencidos' | 'retraso';
@@ -21,40 +25,30 @@ export default function SupervisorDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardSupervisorResponse | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState({
     entidadId: '',
-    responsableId: '',
     frecuencia: '',
-    estado: '',
-    tipoAlerta: '',
-    fechaInicio: '',
-    fechaFin: '',
-    vistaTemporal: 'mensual',
-    limitePeriodos: 6,
+    responsableId: '',
   });
+  const [entidades, setEntidades] = useState<EntidadResponse[]>([]);
+  const [responsables, setResponsables] = useState<UsuarioResponse[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('nombre');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const activeFiltersCount = useMemo(() => {
-    return Object.entries(filters).filter(([key, value]) => {
-      if (key === 'vistaTemporal') return false;
-      if (key === 'limitePeriodos') return value !== 6;
-      return Boolean(value);
-    }).length;
+    return Object.values(filters).filter(Boolean).length;
   }, [filters]);
+
+  useEffect(() => {
+    cargarOpcionesFiltros();
+  }, []);
 
   useEffect(() => {
     cargarDatos();
   }, [
     filters.entidadId,
-    filters.responsableId,
     filters.frecuencia,
-    filters.estado,
-    filters.tipoAlerta,
-    filters.fechaInicio,
-    filters.fechaFin,
-    filters.vistaTemporal,
-    filters.limitePeriodos,
+    filters.responsableId,
   ]);
 
   const cargarDatos = async () => {
@@ -64,7 +58,8 @@ export default function SupervisorDashboardClient() {
 
       const data = await dashboardService.dashboardSupervisor({
         ...filters,
-        limitePeriodos: filters.limitePeriodos,
+        vistaTemporal: 'mensual',
+        limitePeriodos: 6,
       });
       setDashboardData(data);
     } catch (err: any) {
@@ -72,6 +67,27 @@ export default function SupervisorDashboardClient() {
       setError(err.response?.data?.message || 'Error al cargar los datos del dashboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarOpcionesFiltros = async () => {
+    try {
+      setLoadingOptions(true);
+      const [entidadesResp, usuariosResp] = await Promise.all([
+        entidadesService.activas(0, 200).catch(() => ({ content: [] } as any)),
+        usuariosService.listar(0, 200).catch(() => ({ content: [] } as any)),
+      ]);
+
+      setEntidades(entidadesResp?.content || []);
+      // Filtrar usuarios que tengan rol de responsable o supervisor para opciones relevantes
+      const soloResponsables = (usuariosResp?.content || []).filter((u: UsuarioResponse) =>
+        (u.roles || []).some((r) => r.toLowerCase().includes('responsable') || r.toLowerCase().includes('supervisor'))
+      );
+      setResponsables(soloResponsables);
+    } catch (err) {
+      console.error('Error cargando opciones de filtros', err);
+    } finally {
+      setLoadingOptions(false);
     }
   };
 
@@ -124,11 +140,15 @@ export default function SupervisorDashboardClient() {
   }, [cargaResponsables, sortKey, sortDir]);
 
   const handleSegmentClick = (estado: string) => {
-    setFilters((prev) => ({ ...prev, estado }));
+    redirectGestion(estado);
   };
 
-  const handleFilterChange = (key: keyof typeof filters, value: string | number) => {
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters({ entidadId: '', frecuencia: '', responsableId: '' });
   };
 
   if (loading) {
@@ -158,119 +178,55 @@ export default function SupervisorDashboardClient() {
         <div className="filters-top-row">
           <div className="filters-group basic">
             <div className="period-filter">
-              <label className="filter-label">Vista</label>
+              <label className="filter-label">Entidad</label>
               <select
                 className="filter-select"
-                value={filters.vistaTemporal}
-                onChange={(e) => handleFilterChange('vistaTemporal', e.target.value)}
+                value={filters.entidadId}
+                onChange={(e) => handleFilterChange('entidadId', e.target.value)}
+                disabled={loadingOptions}
               >
+                <option value="">Todas</option>
+                {entidades.map((ent) => (
+                  <option key={ent.entidadId} value={ent.entidadId}>{ent.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div className="period-filter">
+              <label className="filter-label">Frecuencia</label>
+              <select
+                className="filter-select"
+                value={filters.frecuencia}
+                onChange={(e) => handleFilterChange('frecuencia', e.target.value)}
+              >
+                <option value="">Todas</option>
                 <option value="mensual">Mensual</option>
                 <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
                 <option value="anual">Anual</option>
               </select>
             </div>
             <div className="period-filter">
-              <label className="filter-label">Periodos</label>
+              <label className="filter-label">Responsable</label>
               <select
                 className="filter-select"
-                value={filters.limitePeriodos}
-                onChange={(e) => handleFilterChange('limitePeriodos', Number(e.target.value))}
+                value={filters.responsableId}
+                onChange={(e) => handleFilterChange('responsableId', e.target.value)}
+                disabled={loadingOptions}
               >
-                <option value={6}>6</option>
-                <option value={12}>12</option>
+                <option value="">Todos</option>
+                {responsables.map((resp) => (
+                  <option key={resp.usuarioId} value={resp.usuarioId}>
+                    {[resp.firstName, resp.secondName, resp.firstLastname, resp.secondLastname].filter(Boolean).join(' ') || resp.email}
+                  </option>
+                ))}
               </select>
-            </div>
-            <div className="period-filter">
-              <label className="filter-label">Entidad</label>
-              <input
-                className="filter-select"
-                placeholder="Entidad"
-                value={filters.entidadId}
-                onChange={(e) => handleFilterChange('entidadId', e.target.value)}
-              />
             </div>
           </div>
           <div className="filters-actions">
-            <button className="link-toggle" onClick={() => setShowAdvanced(!showAdvanced)}>
-              {showAdvanced ? 'Ocultar filtros avanzados' : 'Mostrar filtros avanzados'}
-            </button>
             <span className="badge subtle">Filtros activos: {activeFiltersCount}</span>
+            <button className="btn-secondary" onClick={resetFilters}>Limpiar</button>
           </div>
         </div>
-
-        {showAdvanced && (
-          <div className="filters-advanced">
-            <div className="filters-group">
-              <div className="period-filter">
-                <label className="filter-label">Estado</label>
-                <select
-                  className="filter-select small"
-                  value={filters.estado}
-                  onChange={(e) => handleFilterChange('estado', e.target.value)}
-                >
-                  <option value="">Todos</option>
-                  <option value="pendiente_validacion">Pendiente validacion</option>
-                  <option value="en_revision">En revision</option>
-                  <option value="enviado_a_tiempo">Enviado a tiempo</option>
-                  <option value="enviado_tarde">Enviado tarde</option>
-                  <option value="requiere_correccion">Requiere correccion</option>
-                  <option value="vencido">Vencido</option>
-                </select>
-              </div>
-              <div className="period-filter">
-                <label className="filter-label">Frecuencia</label>
-                <input
-                  className="filter-select small"
-                  placeholder="Mensual, trimestral..."
-                  value={filters.frecuencia}
-                  onChange={(e) => handleFilterChange('frecuencia', e.target.value)}
-                />
-              </div>
-              <div className="period-filter">
-                <label className="filter-label">Tipo de alerta</label>
-                <select
-                  className="filter-select small"
-                  value={filters.tipoAlerta}
-                  onChange={(e) => handleFilterChange('tipoAlerta', e.target.value)}
-                >
-                  <option value="">Todas</option>
-                  <option value="vencido">Vencidos</option>
-                  <option value="proximo">Proximos</option>
-                  <option value="devoluciones">Devoluciones</option>
-                </select>
-              </div>
-            </div>
-            <div className="filters-group">
-              <div className="period-filter">
-                <label className="filter-label">Responsable</label>
-                <input
-                  className="filter-select small"
-                  placeholder="Responsable"
-                  value={filters.responsableId}
-                  onChange={(e) => handleFilterChange('responsableId', e.target.value)}
-                />
-              </div>
-              <div className="period-filter">
-                <label className="filter-label">Fecha inicio</label>
-                <input
-                  type="date"
-                  className="filter-select small"
-                  value={filters.fechaInicio}
-                  onChange={(e) => handleFilterChange('fechaInicio', e.target.value)}
-                />
-              </div>
-              <div className="period-filter">
-                <label className="filter-label">Fecha fin</label>
-                <input
-                  type="date"
-                  className="filter-select small"
-                  value={filters.fechaFin}
-                  onChange={(e) => handleFilterChange('fechaFin', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="filters-footer">
           <a href="/roles/supervisor/reportes" className="btn-review primary">
@@ -475,19 +431,26 @@ export default function SupervisorDashboardClient() {
                         <td><span className="badge info">{resp.enRevision}</span></td>
                         <td><span className="badge success">{resp.aprobados}</span></td>
                         <td><span className="badge danger">{resp.vencidos || resp.atrasados}</span></td>
-                        <td>{resp.retrasoPromedio?.toFixed(1) ?? '-'}</td>
+                        <td>{resp.retrasoPromedio !== undefined ? resp.retrasoPromedio.toFixed(1) : '-'}</td>
                         <td>
-                          <div className="progress-bar-small">
-                            <div
-                              className="progress-fill-small"
-                              style={{
-                                width: `${resp.porcentajeCumplimiento}%`,
-                                background: resp.porcentajeCumplimiento >= 80 ? '#10b981' :
-                                  resp.porcentajeCumplimiento >= 50 ? '#f59e0b' : '#ef4444'
-                              }}
-                            ></div>
-                          </div>
-                          <span className="progress-label-small">{resp.porcentajeCumplimiento.toFixed(0)}%</span>
+                          {(() => {
+                            const cumplimiento = resp.porcentajeCumplimiento ?? 0;
+                            const width = Math.max(0, Math.min(100, cumplimiento));
+                            return (
+                              <>
+                                <div className="progress-bar-small">
+                                  <div
+                                    className="progress-fill-small"
+                                    style={{
+                                      width: `${width}%`,
+                                      background: width >= 80 ? '#10b981' : width >= 50 ? '#f59e0b' : '#ef4444'
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="progress-label-small">{width.toFixed(0)}%</span>
+                              </>
+                            );
+                          })()}
                         </td>
                         <td>
                           <button
@@ -514,9 +477,9 @@ export default function SupervisorDashboardClient() {
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {distribucionEntidades.length === 0 && <p style={{ color: 'var(--neutral-500)' }}>Sin datos de entidad</p>}
             {distribucionEntidades.map((entidad: DistribucionEntidad) => {
-              const barWidth = Math.min(100, entidad.porcentajeCumplimiento);
-              const color = entidad.porcentajeCumplimiento >= 80 ? '#10b981' :
-                entidad.porcentajeCumplimiento >= 50 ? '#f59e0b' : '#ef4444';
+              const cumplimiento = entidad.porcentajeCumplimiento ?? 0;
+              const barWidth = Math.max(0, Math.min(100, cumplimiento));
+              const color = barWidth >= 80 ? '#10b981' : barWidth >= 50 ? '#f59e0b' : '#ef4444';
               return (
                 <div key={entidad.entidadId} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--neutral-600)' }}>
@@ -528,9 +491,9 @@ export default function SupervisorDashboardClient() {
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--neutral-500)' }}>
                     <span>A tiempo: {entidad.enviadosATiempo ?? 0}</span>
-                    <span>Vencidos: {entidad.atrasados}</span>
-                    <span>Pendientes: {entidad.pendientes}</span>
-                    <strong style={{ color }}>{entidad.porcentajeCumplimiento.toFixed(0)}%</strong>
+                    <span>Vencidos: {entidad.atrasados ?? 0}</span>
+                    <span>Pendientes: {entidad.pendientes ?? 0}</span>
+                    <strong style={{ color }}>{barWidth.toFixed(0)}%</strong>
                   </div>
                 </div>
               );
