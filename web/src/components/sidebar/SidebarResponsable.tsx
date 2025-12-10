@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { flujoReportesService } from "../../lib/services";
 import { esEstadoEnviado } from "../../lib/utils/estados";
+import { useResponsableManual } from "../../lib/manual/responsableManual";
+import ManualIndexPanel, { type GuideItem } from "../common/ManualIndexPanel";
 
 const menuItems = [
   {
@@ -100,6 +102,57 @@ export default function SidebarResponsable() {
   const [collapsed, setCollapsed] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
   const [badges, setBadges] = useState<{ alertas: number }>({ alertas: 0 });
+  const [manualIndexOpen, setManualIndexOpen] = useState(false);
+  const manual = useResponsableManual();
+
+  // Configuración de guías disponibles
+  const availableGuides: GuideItem[] = [
+    {
+      id: "tour-sidebar",
+      name: "Guía del menú lateral",
+      description: "Conoce las opciones de navegación y el badge de alertas.",
+      onStart: () => manual.startTour({ tourId: "tour-sidebar" }),
+    },
+    {
+      id: "tour-topbar",
+      name: "Guía de la barra superior",
+      description:
+        "Descubre las funciones del panel de accesibilidad, notificaciones y más.",
+      onStart: () => manual.startTour({ tourId: "tour-topbar" }),
+    },
+    {
+      id: "tour-dashboard",
+      name: "Guía del dashboard",
+      description:
+        "Descubre los indicadores, gráficos y reportes de tu panel principal.",
+      onStart: () =>
+        manual.startTour({
+          tourId: "tour-dashboard",
+          navigateTo: "/roles/responsable/dashboard",
+        }),
+    },
+    {
+      id: "tour-mis-reportes",
+      name: "Guía de mis reportes",
+      description:
+        "Aprende a filtrar, revisar y gestionar tus reportes agrupados por vigencia.",
+      onStart: () =>
+        manual.startTour({
+          tourId: "tour-mis-reportes",
+          navigateTo: "/roles/responsable/mis-reportes",
+        }),
+    },
+    {
+      id: "tour-mis-tareas",
+      name: "Guía de mis tareas",
+      description: "Aprende a gestionar tus tareas y entregas pendientes.",
+      onStart: () =>
+        manual.startTour({
+          tourId: "tour-mis-tareas",
+          navigateTo: "/roles/responsable/mis-tareas",
+        }),
+    },
+  ];
 
   useEffect(() => {
     // Establecer el path actual solo en el cliente
@@ -203,13 +256,27 @@ export default function SidebarResponsable() {
             <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
           </svg>
         </button>
+        <button
+          className="collapse-btn"
+          aria-label="Abrir índice de guías"
+          title="Ayuda"
+          onClick={() => setManualIndexOpen(true)}
+        >
+          <span style={{ fontWeight: 800, fontSize: "14px" }}>?</span>
+        </button>
       </div>
+
+      <ManualIndexPanel
+        isOpen={manualIndexOpen}
+        onClose={() => setManualIndexOpen(false)}
+        guides={availableGuides}
+      />
 
       <nav className="sidebar-nav">
         {menuItems.map((item, index) => {
           const isAlertasItem = item.href === "/roles/responsable/alertas";
           const hasBadge = isAlertasItem && badges.alertas > 0;
-          
+
           return (
             <a
               key={item.href}

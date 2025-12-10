@@ -5,7 +5,9 @@ import {
   reportesService,
   type ReportePeriodo,
 } from "../../lib/services";
+import { useResponsableManual } from "../../lib/manual/responsableManual";
 import { useToast, ToastContainer } from "../Toast";
+import { usePendingTour } from "../../hooks/usePendingTour";
 
 type ModoVista = "responsable" | "supervisor" | "admin";
 
@@ -333,6 +335,10 @@ export default function MisReportesClient({
     esCorreccion: boolean;
   }>({ isOpen: false, periodoId: "", reporteNombre: "", esCorreccion: false });
   const { toasts, removeToast, success, error } = useToast();
+  const manual = useResponsableManual();
+
+  // Verificar tours pendientes después de navegación
+  usePendingTour();
 
   // Contadores por estado
   const [counts, setCounts] = useState({
@@ -340,6 +346,19 @@ export default function MisReportesClient({
     activos: 0,
     inactivos: 0,
   });
+
+  useEffect(() => {
+    manual.registerTour({
+      tourId: "responsable-mis-reportes",
+      options: { stagePadding: 12 },
+      sections: [
+        { id: "encabezado", label: "Encabezado y contexto", steps: [] },
+        { id: "filtros", label: "Filtros y estado", steps: [] },
+        { id: "listado", label: "Listado y tarjetas", steps: [] },
+        { id: "acciones", label: "Acciones rápidas", steps: [] },
+      ],
+    });
+  }, [manual]);
 
   useEffect(() => {
     // Leer filtro de URL al cargar
@@ -874,35 +893,34 @@ export default function MisReportesClient({
                 </div>
               ))}
             </div>
-            {totalPages > 1 && (
-              <div className="pagination">
+            {/* Paginación - siempre visible */}
+            <div className="pagination">
+              <button
+                className="page-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 0}
+                aria-label="Página anterior"
+              >
+                «
+              </button>
+              {Array.from({ length: totalPages }, (_, idx) => (
                 <button
-                  className="page-btn"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0}
-                  aria-label="Página anterior"
+                  key={idx}
+                  className={`page-number ${idx === currentPage ? "active" : ""}`}
+                  onClick={() => handlePageChange(idx)}
                 >
-                  «
+                  {idx + 1}
                 </button>
-                {Array.from({ length: totalPages }, (_, idx) => (
-                  <button
-                    key={idx}
-                    className={`page-number ${idx === currentPage ? "active" : ""}`}
-                    onClick={() => handlePageChange(idx)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <button
-                  className="page-btn"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages - 1}
-                  aria-label="Página siguiente"
-                >
-                  »
-                </button>
-              </div>
-            )}
+              ))}
+              <button
+                className="page-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages - 1}
+                aria-label="Página siguiente"
+              >
+                »
+              </button>
+            </div>
           </>
         )}
       </div>

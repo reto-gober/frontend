@@ -1,0 +1,160 @@
+DESGLOSE COMPLETO DE LA VISTA DEL ROL RESPONSABLE (FRONTEND WEB)
+
+Estructura general y navegación
+- Layout base: `ResponsableLayout.astro` envuelve todas las páginas del rol. Añade topbar con título de página, panel de accesibilidad (`AccessibilityPanel`), campana de notificaciones (`NotificationsBell`), nombre de usuario (tomado de `authService.getUser()`) y botón “Cerrar sesión” (confirma vía `notifications.confirm` y luego `authService.logout`).
+- Guardia de ruta: script en el layout usa `routeGuard/getPrimaryRole`; si el rol no coincide con la ruta redirige y muestra alerta. 
+- Sidebar: `SidebarResponsable.tsx` siempre visible. Secciones: Dashboard Personal `/roles/responsable/dashboard`, Mis Reportes `/roles/responsable/mis-reportes`, Mis Tareas Pendientes `/roles/responsable/mis-tareas`, Alertas `/roles/responsable/alertas`, Calendario `/roles/responsable/calendario`. 
+  - Badge de alertas: número calculado con `flujoReportesService.misPeriodos` (vencidos, por vencer <=3 días o estado `requiere_correccion`).
+  - Botón collapse/expand cambia clases `sidebar-collapsed/expanded` en `.role-container`.
+- Colores/acento: clase `role-responsable` en layout aplica color dorado (#F4C453) a badges, iconos, etc (ver `styles/global.css`).
+
+Secciones principales
+1) Dashboard Personal (`/roles/responsable/dashboard`, componente `ResponsableDashboardClient`)
+- Datos cargados: `flujoReportesService.misPeriodos(0,1000)` usando token de `localStorage`. 
+- KPI cards clicables (redirigen a Mis Reportes con filtro): Pendientes (`filtro=pendientes`), Enviados (`filtro=enviados`), Vencidos (`filtro=vencidos`), Por vencer 3 días (`filtro=porVencer`). Valores calculados con utilidades `esEstadoPendiente`, `esEstadoEnviado`, `esFechaVencida`, `calcularDiasRestantes`.
+- Estado de reportes (donut): totales, pendientes, en proceso (`en_elaboracion` o `en_revision`), enviados. 
+- Próximos vencimientos: primeros 5 periodos con fecha de vencimiento y sin envío. Muestra código `PER-<id8>`, nombre, entidad, fecha formateada, badge de días restantes (rojo si <=3). Link “Ver todos →” abre Mis Reportes.
+- Filtro de periodo (select mensual/trimestral/anual) solo cambia estado local.
+- Vacíos: si no hay periodos, muestra mensaje y CTA de contactar supervisor.
+
+2) Mis Reportes (`/roles/responsable/mis-reportes`, componente `MisReportesClient`)
+- Carga de datos: 
+  - Responsable/Supervisor: `flujoReportesService.misPeriodos(0,1000)`.
+  - Admin: `reportesService.listar` y luego `flujoReportesService.periodosPorReporte` por cada reporte.
+- Agrupación: por reporte+vigencia (`reporteId::vigencia`). Cada grupo muestra: nombre, entidad, estado ACTIVO/INACTIVO (según vigencia actual), vigencia (rango fecha inicio/fin), periodicidad, cantidad de periodos y resumen (pendientes, vencidos, por vencer<=3, enviados). 
+- Filtros por estado de grupo (tabs con contador): Todos, Activos, Inactivos. Estado persiste en query `?filtro=`. 
+- Paginación: 6 grupos por página con controles « ».
+- Acciones por grupo: 
+  - “Ver entregas” → `/roles/responsable/mis-tareas`.
+  - “Ver detalle” abre detalle del periodo de referencia (pendiente más cercano o más antiguo) `/roles/responsable/reportes/{periodoId}?from=mis-reportes`.
+- Highlight: query `resaltarPeriodo` hace scroll y resalta tarjeta. Se limpia el query.
+- Deep-link de entrega: query `abrirEntrega` (con periodoId/reporteId/nombre) redirige a `/roles/responsable/entrega` con params.
+- Modal enviar: `ModalEnviarReporte` está montado pero no se dispara en esta versión (estado `modalEnviar` sólo se cierra). 
+- Archivos: `loadArchivos` hace fetch autenticado a `http://localhost:8080/api/periodos/{periodoId}/archivos` para los periodos de la página y los guarda en mapa.
+- Estados visibles: se normalizan con `normalizarEstado`; chips de estado general por grupo (badge classes success/info/warning/danger). 
+- Vacíos y loading: spinner circular y estado vacío contextual por filtro/modo.
+
+3) Mis Tareas (`/roles/responsable/mis-tareas`, componente `MisTareasClient` + `TarjetaPeriodo`)
+- Datos: `flujoReportesService.misPeriodos(0,1000)`.
+- Filtros (tabs, persisten en `?filtro=`): Todos, Pendientes, Vencidos, Por vencer (<=3 días), Enviados. Contadores calculados por estado y vencimiento. 
+- Lista: se renderiza `TarjetaPeriodo` por periodo. Orden: fecha de vencimiento ascendente.
+- Paginación: 10 items por página. 
+- `TarjetaPeriodo` muestra: nombre, entidad, rango de periodo, estado badge (`EstadoBadge`), fecha vencimiento con `DiasHastaVencimiento`, fecha de envío real + desviación (adelanto/retraso), cantidad de archivos, comentarios recientes, responsables (si `mostrarResponsables`), archivos adjuntos (si vienen), acciones: Ver Detalle (siempre), Enviar Reporte (si `puedeEnviar` o admin), Corregir y Reenviar (si `puedeCorregir` o admin). Supervisor-only actions están ocultas aquí. 
+- Acción “ver” en `MisTareasClient` navega a `/roles/responsable/reportes/{periodoId}`.
+- Estados dinámicos: `esEstadoPendiente/esEstadoEnviado/esFechaVencida/calcularDiasRestantes` determinan contadores y badges.
+
+4) Detalle de Reporte (`/roles/responsable/reportes/[periodoId].astro`, componente `ReporteDetalleClient`)
+- Montaje React en contenedor con `data-periodo-id`. Lee query `from` para botón volver: Mis Reportes o Mis Tareas.
+- Datos: `flujoReportesService.obtenerPeriodo(periodoId)`.
+- Cabecera: título (reporte), entidad, badge de estado (`estadoDescripcion`, clase derivada).
+- Secciones:
+  - Fechas: periodo inicio/fin, fecha de vencimiento, fecha de envío real (si existe) con badge de desviación (retraso/anticipación/justo a tiempo).
+  - Responsables: tarjetas para elaboración y supervisión si existen; mensaje si faltan.
+  - Comentario del supervisor: toma el último comentario cuya acción contenga aprobar/rechazar/validar; muestra autor, cargo, fecha y texto. Si no hay, estado vacío.
+  - Archivos adjuntos: solo si hay `fechaEnvioReal`; usa `FilesList` para ver/descargar/ver archivo (abre `FileViewer`).
+  - Enviar Entrega (solo cuando puede enviar/corregir y sin envío previo): 
+    - `FileUploadZone` para adjuntar; aviso si vacío. 
+    - Textarea comentarios (opcional, máx 2000). 
+    - Botón “Enviar Entrega” deshabilitado sin archivos; llama `flujoReportesService.enviar` o `corregirReenviar` según estado (`pendiente/req_correccion/rechazado`). Si estado es rechazado y se marca “Reemplazar archivos”, elimina evidencias existentes vía `evidenciasService.eliminar` antes de reenviar. 
+  - Corrección/Reenvío (si ya hubo envío y estado `requiere_correccion` o `rechazado`): permite subir archivos (opción reemplazar en rechazado), comentarios y reenviar.
+- Estados habilitantes: `normalizarEstado` determina permisos: puede enviar si pendiente/req_correccion/rechazado y no `readOnly`.
+- Navegación botón back: en modal cierra `onClose`; si `backHref` redirige, de lo contrario `history.back()`.
+
+5) Envío de Entrega directa (`/roles/responsable/entrega`, componente `EntregaReporteClient`)
+- Obtiene `periodoId` de props o query, y usuario de `localStorage.usuario` si no se pasa `currentUser`.
+- Datos: `flujoReportesService.obtenerPeriodo(periodoId)` y archivos de `/api/periodos/{periodoId}/archivos` (credenciales include).
+- Permisos: según rol (responsable/supervisor/admin) y `normalizarEstado`. Responsable puede adjuntar/enviar si pendiente o requiere_correccion; supervisor/admin pueden validar/rechazar, pero UI aquí se centra en envío.
+- Adjuntos: muestra lista existente (`FilesList` con delete si puede subir) y dropzone (`FileUploadZone`) para nuevos. Validación: debe haber al menos un archivo (nuevo o existente) para enviar.
+- Envío: sube archivos vía `evidenciasService.subirPorPeriodo`, luego `flujoReportesService.enviar` o `corregirReenviar` según estado. Redirige a Mis Tareas tras 1s. 
+- Comentarios: textarea máx 2000 chars. 
+- Botón Volver: `history.back()`.
+
+6) Alertas (`/roles/responsable/alertas`, componente `AlertasClient`)
+- Fuente: `flujoReportesService.misPeriodos`. Genera alertas en cliente:
+  - Crítica: vencido y no enviado (usa `esFechaVencida`, `calcularDiasRestantes`).
+  - Advertencia: vence en <=3 días y no enviado (`venceDentroDeNDias`).
+  - Advertencia: estado `requiere_correccion`.
+  - Éxito: aprobados recientes (<=7 días) `esEstadoAprobado`.
+- UI: resumen de contadores (Críticas, Advertencias, Informativas, Éxito), filtros (Todas/No leídas/Leídas + select por tipo), grupos por fecha (Hoy, Ayer, fecha). Cada tarjeta muestra título, tiempo relativo, mensaje, indicador leído/no leído.
+- Acciones: 
+  - “Marcar todas como leídas” (solo actualiza local state, sin backend). Deshabilitado si no hay pendientes. 
+  - Click en alerta marca como leída localmente; si tiene `periodoId` botón “Ver reporte” → `/roles/responsable/mis-reportes` (no lleva anchor específico).
+- Toast local implementado sin backend.
+
+7) Calendario (`/roles/responsable/calendario`, componente `CalendarioResponsableClient`)
+- Datos: `flujoReportesService.misPeriodos(0,1000)` por defecto, o `fetchPeriodos` prop. Genera eventos con fecha de vencimiento y estado normalizado. Tipos: pendiente, enviado, vencido, porVencer (<=3 días).
+- Vistas: Mes, Semana, Lista (switch en header). 
+  - Mes: grilla 6x7, muestra dots por eventos (prioriza vencido/por vencer). Click día selecciona y resalta.
+  - Semana: 7 columnas con dots; click día selecciona.
+  - Lista: lista ordenada por fecha con badge (vencido/por vencer/enviado) y texto de acción (por ejemplo “Completar urgente”, “En revisión”).
+- Sidebar: Próximos Vencimientos (top 5 no enviados dentro de 90 días, badge urgente para vencido/por vencer) y Leyenda (colores por estado). 
+- Navegación: botones prev/next mes o semana, botón “Hoy”. 
+- Click en evento/día: `handleNavigate` según rol (aquí rol responsable) → `/roles/responsable/mis-tareas?resaltarPeriodo=<id>&reporteId=<id>&reporteNombre=`.
+- Datos mostrados: título (reporteNombre), entidad, estado, días restantes calculados.
+
+8) Calendario (versión simple de lista/mes) – `CalendarioClient.tsx` (no montado en página del rol actualmente)
+- Genera eventos por periodo: si aprobado → tipo “aprobado”; si enviado/revisión → “enviado”; si pendiente → “vencimiento”. Filtros: Todos/Pendientes/Completados. Vista lista/mes con navegación de mes. Click en evento → Mis Reportes (resalta periodo).
+
+9) Calendario mediante backend específico – `ResponsableCalendarioClient` (usado en `/roles/responsable/calendario` si se cambiara import)
+- Usa `calendarioService.responsable({fechaInicio,fechaFin})` con rango del mes visible. Muestra grilla del mes, sidebar de próximos eventos (periodos o vencimientos), leyenda y detalle del día seleccionado. Eventos pueden ser tipo periodo o vencimiento, con colores del backend. Click en evento abre Mis Reportes resaltando el periodo.
+
+10) Crear Reporte (`/roles/responsable/crear-reporte.astro`)
+- Página estática (sin lógica) con wizard de 4 pasos, formularios y placeholders. No envía datos; sirve como maqueta para futuro manual: breadcrumb, pasos, formularios (entidad, tipo, nombre, periodo, vencimiento, descripción), secciones de datos, adjuntos, revisión. Sin llamadas a backend.
+
+11) Vista supervisor reutilizando componente responsable
+- `pages/roles/supervisor/operaciones-responsable.astro` monta `ResponsableDashboardClient` en modo supervisor (permite operar como responsable) pero en rol supervisor. 
+- Detalle de reportes de supervisor usa `ReporteDetalleClient` compartido.
+
+Flujos de navegación principales (Responsable)
+- Desde sidebar elegir sección; layout mantiene topbar.
+- Dashboard → clic KPI abre Mis Reportes filtrado.
+- Mis Reportes → “Ver entregas” abre Mis Tareas; “Ver detalle” abre detalle de periodo. Query `abrirEntrega` puede venir de otras vistas y redirige a `/roles/responsable/entrega` con datos.
+- Mis Tareas → tarjeta “Ver Detalle” abre detalle periodo; botones “Enviar Reporte”/“Corregir y Reenviar” se defieren al handler (no implementado en cliente, debe navegar a envío).
+- Detalle Reporte → botón back vuelve a origen; envío/corrección dentro de la página; ver archivos abre `FileViewer` modal.
+- Enviar Entrega → tras enviar redirige a Mis Tareas.
+- Alertas → ver reporte envía a Mis Reportes (sin ancla); marcar leídas es local.
+- Calendario → clic evento abre Mis Tareas con resaltado; botones de vista cambian mes/semana/lista.
+
+Estados, badges y condiciones de visibilidad
+- Estados lógicos normalizados: pendiente, en_elaboracion, en_revision, enviado_a_tiempo, enviado_tarde, enviado, aprobado, rechazado, requiere_correccion. 
+- Visibilidad de botones de envío/corrección: sólo cuando estado pendiente/req_correccion/rechazado y usuario responsable (o admin para tarjetas). 
+- Badges: 
+  - Mis Reportes: estado ACTIVO/INACTIVO por vigencia; chips de resumen (pendientes/vencidos/porVencer/enviados); resaltado por query.
+  - TarjetaPeriodo: `EstadoBadge` colorea según estado; `DiasHastaVencimiento` muestra “Hoy”, “Mañana”, “En X días”, “Vencido”.
+  - Alertas: tipos criticas/advertencia/info/exito; indicador unread/read.
+  - Calendario: colores por tipo (vencido rojo, porVencer amarillo, pendiente accent, enviado verde).
+  - Dashboard: KPI colors (neutral/success/danger/warning) y badges días en vencimientos.
+
+Datos y endpoints involucrados
+- `flujoReportesService.misPeriodos(page,size)` → lista periodos asignados (usado en dashboard, mis reportes, mis tareas, alertas, calendarios, sidebar badges).
+- `flujoReportesService.obtenerPeriodo(periodoId)` → detalle de periodo (detalle, entrega). 
+- `flujoReportesService.enviar(payload)` y `corregirReenviar(payload)` → envío/corrección (detalle y entrega).
+- `evidenciasService.subirPorPeriodo(periodoId, file)` → subir archivos; `evidenciasService.eliminar(archivoId)` al reemplazar.
+- `reportesService.listar` y `flujoReportesService.periodosPorReporte` → sólo modo admin en Mis Reportes.
+- `calendarioService.responsable({fechaInicio,fechaFin})` → usado en `ResponsableCalendarioClient` (si se emplea).
+- Fetch directo de archivos: `GET http://localhost:8080/api/periodos/{periodoId}/archivos` en Mis Reportes; `/api/periodos/{periodoId}/archivos` (relative, include credentials) en Entrega.
+
+Elementos contextuales adicionales
+- Toasts: `useToast` en Mis Reportes/Mis Tareas/ReporteDetalle/Entrega para feedback de éxito/error.
+- Loaders: spinners en listas/calendario/detalle/entrega con min-height para estados de carga.
+- Highlight temporal: clase `periodo-resaltado` en Mis Reportes cuando se pasa `resaltarPeriodo`.
+- Tooltips implícitos: select titles, hover states en botones de calendario/alertas, badges.
+- Modales: `ModalEnviarReporte` importado en Mis Reportes (no disparado), FileViewer para ver archivos en TarjetaPeriodo y ReporteDetalle.
+- Accesibilidad: botón collapse sidebar y sticky topbar; no hay shortcuts definidos.
+
+Resumen de visibilidad por rol/estado
+- Responsable: acceso completo a Dashboard, Mis Reportes/Tareas, Alertas, Calendario, Envío y Corrección según estado pendiente/req_correccion/rechazado. 
+- Supervisor/Admin: si usan componentes, Mis Reportes soporta `modo` prop (supervisor/admin) cambiando textos y fuentes de datos (admin ve todos). `TarjetaPeriodo` permite acciones de aprobar/rechazar sólo cuando `mostrarResponsables` y flags `puedeAprobar/puedeRechazar` vienen en periodo.
+
+Puntos clave para manual interactivo (driver.js)
+- Secciones anclables: 
+  - Sidebar items (Dashboard/Mis Reportes/Mis Tareas/Alertas/Calendario) y badge de alertas.
+  - Topbar: accesibilidad, notificaciones, usuario, logout.
+  - Dashboard: filtro de periodo, KPI cards, donut estado, lista próximos vencimientos.
+  - Mis Reportes: tabs de filtro, tarjetas agrupadas (cabecera, vigencia, resumen, acciones), paginación.
+  - Mis Tareas: tabs filtro, tarjetas de periodo con datos/acciones, paginación.
+  - Detalle: back button, header con estado, info grid (fechas/responsables), comentario supervisor, archivos, secciones de envío/corrección, botones de enviar/reenviar.
+  - Envío: hero con estado y vencimiento, lista de archivos previos, dropzone, comentarios, botones enviar/volver.
+  - Alertas: resumen cards, filtros, lista agrupada, botón marcar todas.
+  - Calendario: switch vista, nav mes/semana/lista, tarjeta de evento y sidebar de próximos, leyenda.
+  - Crear reporte: breadcrumb, pasos del wizard, formularios y bloques de evidencia/revisión (maqueta).

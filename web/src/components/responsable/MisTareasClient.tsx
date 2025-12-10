@@ -4,6 +4,7 @@ import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import { useToast, ToastContainer } from "../Toast";
 import { calcularDiasRestantes, esFechaVencida } from "../../lib/utils/fechas";
 import { esEstadoEnviado, esEstadoPendiente } from "../../lib/utils/estados";
+import { usePendingTour } from "../../hooks/usePendingTour";
 
 type FilterType =
   | "todos"
@@ -28,6 +29,9 @@ export default function MisTareasClient() {
     number: 0,
   });
   const { toasts, removeToast, error } = useToast();
+
+  // Hook para tours pendientes
+  usePendingTour();
 
   const [counts, setCounts] = useState({
     todos: 0,
@@ -298,7 +302,8 @@ export default function MisTareasClient() {
         </div>
       )}
 
-      {!loading && periodosFiltrados.length > 0 && totalPagesUi > 1 && (
+      {/* Paginación - siempre visible */}
+      {!loading && periodosFiltrados.length > 0 && (
         <div className="pagination">
           <button
             className="page-btn"

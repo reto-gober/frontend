@@ -83,6 +83,7 @@ export function EstadoBadge({ estado, estadoDescripcion }: EstadoBadgeProps) {
 
   return (
     <span
+      className="estado-badge"
       style={{
         display: "inline-flex",
         alignItems: "center",
