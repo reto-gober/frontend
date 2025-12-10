@@ -16,13 +16,19 @@ interface FilesListProps {
   archivos: ArchivoDTO[];
   onViewFile?: (archivo: ArchivoDTO) => void;
   compact?: boolean;
+  canDelete?: boolean;
+  onDeleteFile?: (archivo: ArchivoDTO) => Promise<void> | void;
+  deletingId?: string | null;
 }
 
 const FilesList: React.FC<FilesListProps> = ({ 
   periodoId, 
   archivos, 
   onViewFile,
-  compact = false 
+  compact = false,
+  canDelete = false,
+  onDeleteFile,
+  deletingId = null,
 }) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +38,21 @@ const FilesList: React.FC<FilesListProps> = ({
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleDelete = async (archivo: ArchivoDTO) => {
+    if (!onDeleteFile) return;
+    try {
+      setError(null);
+      await onDeleteFile(archivo);
+    } catch (err) {
+      console.error("[FilesList] Error eliminando archivo:", err);
+      setError(
+        (err as any)?.response?.data?.message ||
+          (err as Error)?.message ||
+          "Error al eliminar el archivo"
+      );
+    }
   };
 
   // Obtener icono según tipo MIME
@@ -174,6 +195,38 @@ const FilesList: React.FC<FilesListProps> = ({
             >
               <Download style={downloadingId === archivo.archivoId ? { animation: 'pulse 2s infinite' } : {}} />
             </button>
+
+            {canDelete && onDeleteFile && (
+              <button
+                onClick={() => handleDelete(archivo)}
+                disabled={deletingId === archivo.archivoId}
+                className="file-action-btn file-action-btn-delete"
+                title="Eliminar archivo"
+                style={
+                  deletingId === archivo.archivoId
+                    ? { opacity: 0.5, cursor: 'wait' }
+                    : {}
+                }
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       ))}

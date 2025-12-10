@@ -1,0 +1,753 @@
+/* ==========================================
+   RESPONSIVE DESIGN - MOBILE FIRST
+   ========================================== */
+
+/* Breakpoints estándar */
+/* 
+  xs: 0-639px (móviles)
+  sm: 640px-767px (móviles grandes)
+  md: 768px-1023px (tablets)
+  lg: 1024px-1279px (desktop pequeño)
+  xl: 1280px+ (desktop grande)
+*/
+
+/* ==========================================
+   BASE MOBILE STYLES (0-767px)
+   ========================================== */
+
+/* Ajustes globales para móvil */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px; /* Reducir tamaño de fuente base */
+  }
+
+  body {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Container mobile */
+  .container {
+    padding: 0 0.75rem;
+    max-width: 100%;
+  }
+
+  /* Cards más compactas */
+  .card {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Botones mobile-friendly */
+  .btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px; /* Touch target mínimo */
+    width: 100%; /* Botones full-width en móvil */
+    justify-content: center;
+  }
+
+  .btn-sm {
+    min-height: 38px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Inputs touch-friendly */
+  input, select, textarea {
+    font-size: 16px; /* Previene zoom en iOS */
+    padding: 0.75rem;
+    min-height: 44px;
+  }
+
+  /* Tables responsive */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -0.75rem;
+    padding: 0 0.75rem;
+  }
+
+  table {
+    font-size: 0.875rem;
+  }
+
+  th, td {
+    padding: 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Formularios en móvil */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-row > * {
+    width: 100% !important;
+  }
+
+  /* Grid layouts mobile */
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Espaciado reducido */
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Padding general reducido */
+  section {
+    padding: 1rem 0;
+  }
+}
+
+/* ==========================================
+   SIDEBAR & NAVIGATION MOBILE
+   ========================================== */
+
+@media (max-width: 1023px) {
+  /* Sidebar oculto por defecto en móvil/tablet */
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    background: white;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  /* Overlay para cerrar sidebar */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+
+  /* Botón hamburguesa */
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    border-radius: 0.375rem;
+  }
+
+  .mobile-menu-btn:hover {
+    background: var(--neutral-100);
+  }
+
+  .mobile-menu-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Content sin margin cuando sidebar está oculto */
+  .role-content {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  /* Topbar mobile */
+  .role-topbar {
+    padding: 0.75rem 1rem !important;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .topbar-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* User section compacto */
+  .user-section {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+
+  .user-name-display {
+    font-size: 0.875rem;
+    display: none; /* Ocultar nombre en móvil pequeño */
+  }
+
+  .btn-logout {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* En tablets mostrar nombre de usuario */
+  .user-name-display {
+    display: block !important;
+  }
+}
+
+/* ==========================================
+   MODALS RESPONSIVE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .modal-content,
+  .modal-overlay > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    border-bottom: 1px solid var(--neutral-200);
+  }
+
+  .modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 1rem;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid var(--neutral-200);
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+
+  .modal-footer button {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   DASHBOARD & STATS CARDS
+   ========================================== */
+
+@media (max-width: 767px) {
+  .stats-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-card h3 {
+    font-size: 0.875rem;
+  }
+
+  .stat-card .value {
+    font-size: 1.75rem;
+  }
+}
+
+/* ==========================================
+   TABLES RESPONSIVE
+   ========================================== */
+
+@media (max-width: 767px) {
+  /* Convertir tablas a cards en móvil */
+  .table-mobile-cards {
+    display: block;
+  }
+
+  .table-mobile-cards thead {
+    display: none;
+  }
+
+  .table-mobile-cards tbody {
+    display: block;
+  }
+
+  .table-mobile-cards tr {
+    display: block;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--neutral-200);
+  }
+
+  .table-mobile-cards td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border: none;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  .table-mobile-cards td:last-child {
+    border-bottom: none;
+  }
+
+  .table-mobile-cards td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-right: 1rem;
+  }
+
+  /* Acciones de tabla en móvil */
+  .table-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .table-actions button {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   FORMS RESPONSIVE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  /* Date pickers y selects */
+  input[type="date"],
+  input[type="datetime-local"],
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 2.5rem;
+  }
+}
+
+/* ==========================================
+   CHARTS & VISUALIZATIONS
+   ========================================== */
+
+@media (max-width: 767px) {
+  .chart-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  canvas {
+    max-width: 100%;
+    height: auto !important;
+  }
+}
+
+/* ==========================================
+   CALENDAR RESPONSIVE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .calendar {
+    font-size: 0.875rem;
+  }
+
+  .calendar-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .calendar-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+  }
+
+  .calendar-day {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+    min-height: 60px;
+  }
+
+  .calendar-event {
+    font-size: 0.7rem;
+    padding: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* ==========================================
+   FILE VIEWER RESPONSIVE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .file-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .file-viewer-header {
+    padding: 1rem;
+  }
+
+  .file-viewer-content {
+    padding: 0.5rem;
+  }
+
+  .file-viewer-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .file-viewer-actions button {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* ==========================================
+   NOTIFICATIONS RESPONSIVE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .notification-dropdown {
+    position: fixed !important;
+    top: 60px !important;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-height: calc(100vh - 60px) !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  .notification-item {
+    padding: 1rem;
+  }
+}
+
+/* ==========================================
+   ACCESSIBILITY PANEL MOBILE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .accessibility-panel {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    border-radius: 1rem 1rem 0 0 !important;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
+
+/* ==========================================
+   FILTERS & SEARCH MOBILE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .filters-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filters-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filters-row > * {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   BREADCRUMBS MOBILE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .breadcrumb {
+    font-size: 0.875rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-item {
+    display: inline-block;
+  }
+}
+
+/* ==========================================
+   PAGINATION MOBILE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .pagination button {
+    min-width: 38px;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Ocultar números intermedios en móvil */
+  .pagination .page-number:not(.active):not(:first-child):not(:last-child) {
+    display: none;
+  }
+}
+
+/* ==========================================
+   TABS MOBILE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .tab-button {
+    white-space: nowrap;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ==========================================
+   TOOLTIPS & POPOVERS MOBILE
+   ========================================== */
+
+@media (max-width: 767px) {
+  .tooltip,
+  .popover {
+    position: fixed !important;
+    bottom: 1rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+/* ==========================================
+   LANDSCAPE MOBILE (MÓVIL HORIZONTAL)
+   ========================================== */
+
+@media (max-width: 767px) and (orientation: landscape) {
+  .role-topbar {
+    padding: 0.5rem 1rem !important;
+  }
+
+  .page-title {
+    font-size: 1.1rem !important;
+  }
+
+  .modal-content {
+    height: 100vh !important;
+    overflow-y: auto;
+  }
+}
+
+/* ==========================================
+   TABLET (768px - 1023px)
+   ========================================== */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-3, .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .role-content {
+    margin-left: 0 !important;
+  }
+
+  /* Sidebar toggle en tablet */
+  .sidebar {
+    position: fixed;
+    z-index: 1000;
+  }
+}
+
+/* ==========================================
+   DESKTOP SMALL (1024px - 1279px)
+   ========================================== */
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .container {
+    padding: 0 2rem;
+  }
+
+  .grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ==========================================
+   UTILITIES RESPONSIVE
+   ========================================== */
+
+/* Hide/Show utilities */
+.hide-mobile {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: block !important;
+  }
+  
+  .show-mobile {
+    display: none !important;
+  }
+}
+
+.show-mobile {
+  display: block !important;
+}
+
+@media (min-width: 768px) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* Text alignment responsive */
+@media (max-width: 767px) {
+  .text-center-mobile {
+    text-align: center !important;
+  }
+  
+  .text-left-mobile {
+    text-align: left !important;
+  }
+}
+
+/* Safe area insets para notch en iOS */
+@supports (padding: max(0px)) {
+  .role-topbar {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  
+  .sidebar {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+}
