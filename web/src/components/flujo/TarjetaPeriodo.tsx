@@ -1,10 +1,10 @@
 import type { ReportePeriodo, ArchivoDTO } from "../../lib/services";
 import { EstadoBadge } from "./EstadoBadge";
 import { DiasHastaVencimiento } from "./DiasHastaVencimiento";
-import FilesList from '../reportes/FilesList';
-import FileViewer from '../reportes/FileViewer';
-import { useState } from 'react';
-import { useAuth } from '../../lib/contexts/AuthContext';
+import FilesList from "../reportes/FilesList";
+import FileViewer from "../reportes/FileViewer";
+import { useState } from "react";
+import { useAuth } from "../../lib/contexts/AuthContext";
 
 interface TarjetaPeriodoProps {
   periodo: ReportePeriodo;
@@ -17,17 +17,19 @@ interface TarjetaPeriodoProps {
 export function TarjetaPeriodo({
   periodo,
   onAccion,
-  mostrarResponsables = false, archivos = [],
+  mostrarResponsables = false,
+  archivos = [],
   resaltar = false,
 }: TarjetaPeriodoProps) {
   const { hasRole } = useAuth();
-  const [archivoSeleccionado, setArchivoSeleccionado] = useState<ArchivoDTO | null>(null);
-  
+  const [archivoSeleccionado, setArchivoSeleccionado] =
+    useState<ArchivoDTO | null>(null);
+
   // Admin puede enviar/corregir cualquier reporte
-  const esAdmin = hasRole('admin');
+  const esAdmin = hasRole("admin");
   const puedeEnviar = periodo.puedeEnviar || esAdmin;
   const puedeCorregir = periodo.puedeCorregir || esAdmin;
-  
+
   const formatearFecha = (fecha: string) => {
     return new Date(fecha + "T00:00:00").toLocaleDateString("es-CO", {
       day: "numeric",
@@ -38,17 +40,17 @@ export function TarjetaPeriodo({
 
   const formatearFechaHora = (fechaHora: string) => {
     // Si la fecha ya incluye timestamp, usarla directamente
-    const date = fechaHora.includes('T') ? new Date(fechaHora) : new Date(fechaHora + 'T00:00:00');
-    return date.toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    const date = fechaHora.includes("T")
+      ? new Date(fechaHora)
+      : new Date(fechaHora + "T00:00:00");
+    return date.toLocaleDateString("es-CO", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
-
-
 
   const formatearPeriodo = () => {
     const inicio = formatearFecha(periodo.periodoInicio);
@@ -223,24 +225,30 @@ export function TarjetaPeriodo({
               {formatearFechaHora(periodo.fechaEnvioReal)}
             </div>
             {periodo.diasDesviacion !== null && (
-              <div style={{
-                fontSize: '0.75rem',
-                color: periodo.diasDesviacion > 0 ? 'var(--color-danger)' : 'var(--color-success)',
-                marginTop: '0.25rem'
-              }}>
-                {periodo.diasDesviacion > 0 
-                  ? `${periodo.diasDesviacion} día${periodo.diasDesviacion !== 1 ? 's' : ''} de retraso`
-                  : `${Math.abs(periodo.diasDesviacion)} día${Math.abs(periodo.diasDesviacion) !== 1 ? 's' : ''} de anticipación`
-                }
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color:
+                    periodo.diasDesviacion > 0
+                      ? "var(--color-danger)"
+                      : "var(--color-success)",
+                  marginTop: "0.25rem",
+                }}
+              >
+                {periodo.diasDesviacion > 0
+                  ? `${periodo.diasDesviacion} día${periodo.diasDesviacion !== 1 ? "s" : ""} de retraso`
+                  : `${Math.abs(periodo.diasDesviacion)} día${Math.abs(periodo.diasDesviacion) !== 1 ? "s" : ""} de anticipación`}
               </div>
             )}
             {periodo.diasDesviacion === 0 && (
-              <div style={{
-                fontSize: '0.75rem',
-                color: 'var(--color-success)',
-                marginTop: '0.25rem',
-                fontWeight: 500
-              }}>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--color-success)",
+                  marginTop: "0.25rem",
+                  fontWeight: 500,
+                }}
+              >
                 ✓ Enviado justo a tiempo
               </div>
             )}
@@ -342,13 +350,60 @@ export function TarjetaPeriodo({
       )}
 
       {/* Último Comentario */}
-      {periodo.comentarios && Array.isArray(periodo.comentarios) && periodo.comentarios.length > 0 && (
+      {periodo.comentarios &&
+        Array.isArray(periodo.comentarios) &&
+        periodo.comentarios.length > 0 && (
+          <div
+            style={{
+              padding: "0.75rem",
+              backgroundColor: "var(--color-gray-50)",
+              borderRadius: "6px",
+              marginBottom: "1rem",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--color-text-light)",
+                fontWeight: 500,
+                marginBottom: "0.375rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>Último Comentario</span>
+              {periodo.comentarios.length > 1 && (
+                <span style={{ fontSize: "0.7rem" }}>
+                  +{periodo.comentarios.length - 1} más
+                </span>
+              )}
+            </div>
+            <div
+              style={{
+                fontSize: "0.875rem",
+                color: "var(--color-text)",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {(() => {
+                const ultimoComentario =
+                  periodo.comentarios[periodo.comentarios.length - 1];
+                return typeof ultimoComentario === "string"
+                  ? ultimoComentario
+                  : ultimoComentario.texto || "";
+              })()}
+            </div>
+          </div>
+        )}
+
+      {/* Archivos Adjuntos */}
+      {archivos && archivos.length > 0 && (
         <div
           style={{
-            padding: "0.75rem",
-            backgroundColor: "var(--color-gray-50)",
-            borderRadius: "6px",
             marginBottom: "1rem",
+            paddingTop: "1rem",
+            borderTop: "1px solid var(--color-border)",
           }}
         >
           <div
@@ -356,54 +411,14 @@ export function TarjetaPeriodo({
               fontSize: "0.75rem",
               color: "var(--color-text-light)",
               fontWeight: 500,
-              marginBottom: "0.375rem",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              marginBottom: "0.5rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
             }}
           >
-            <span>Último Comentario</span>
-            {periodo.comentarios.length > 1 && (
-              <span style={{ fontSize: "0.7rem" }}>
-                +{periodo.comentarios.length - 1} más
-              </span>
-            )}
-          </div>
-          <div
-            style={{
-              fontSize: "0.875rem",
-              color: "var(--color-text)",
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {(() => {
-              const ultimoComentario = periodo.comentarios[periodo.comentarios.length - 1];
-              return typeof ultimoComentario === 'string' 
-                ? ultimoComentario 
-                : ultimoComentario.texto || '';
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Archivos Adjuntos */}
-      {archivos && archivos.length > 0 && (
-        <div style={{
-          marginBottom: '1rem',
-          paddingTop: '1rem',
-          borderTop: '1px solid var(--color-border)'
-        }}>
-          <div style={{
-            fontSize: '0.75rem',
-            color: 'var(--color-text-light)',
-            fontWeight: 500,
-            marginBottom: '0.5rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
             Archivos Adjuntos ({archivos.length})
           </div>
-          <FilesList 
+          <FilesList
             periodoId={periodo.periodoId}
             archivos={archivos}
             onViewFile={setArchivoSeleccionado}
@@ -424,9 +439,16 @@ export function TarjetaPeriodo({
           {/* Botón Ver Detalle - Siempre disponible */}
           <button
             className="btn btn-secondary btn-with-icon"
-            onClick={() => onAccion('ver', periodo.periodoId)}
+            onClick={() => onAccion("ver", periodo.periodoId)}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
@@ -434,25 +456,6 @@ export function TarjetaPeriodo({
           </button>
 
           {/* Acciones del Responsable */}
-          {puedeEnviar && (
-            <button
-              className="btn btn-primary btn-with-icon"
-              onClick={() => onAccion("enviar", periodo.periodoId)}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-              Enviar Reporte
-            </button>
-          )}
           {puedeCorregir && (
             <button
               className="btn btn-warning btn-with-icon"
@@ -524,4 +527,4 @@ export function TarjetaPeriodo({
       )}
     </div>
   );
-}  
+}

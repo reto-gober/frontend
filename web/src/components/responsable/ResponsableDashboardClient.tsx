@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { flujoReportesService, type ReportePeriodo} from "../../lib/services";
+import { flujoReportesService, type ReportePeriodo } from "../../lib/services";
 import {
   calcularDiasRestantes,
   esFechaVencida,
@@ -10,11 +10,15 @@ import {
   esEstadoEnviado,
   normalizarEstado,
 } from "../../lib/utils/estados";
+import { usePendingTour } from "../../hooks/usePendingTour";
 
 export default function ResponsableDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState("mensual");
+
+  // Verificar tours pendientes después de navegación
+  usePendingTour();
 
   const [kpis, setKpis] = useState({
     pendientes: 0,

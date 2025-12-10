@@ -73,6 +73,7 @@ export function DiasHastaVencimiento({
 
   return (
     <div
+      className="dias-vencimiento"
       style={{
         display: "inline-flex",
         alignItems: "center",
