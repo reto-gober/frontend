@@ -1,0 +1,248 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/_astro/(.*)$",
+			"headers": {
+				"cache-control": "public, max-age=31536000, immutable"
+			},
+			"continue": true
+		},
+		{
+			"src": "^/_server-islands/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/_image/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/404/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/calendario/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/entidades/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/error/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/login/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/misReportes/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/misReportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/panel/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/registro/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/registro-invitado/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/reportes/nuevo/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/reportes/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/auditoria/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/auditoria-integrada/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/calendario/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/configuracion/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/cumplimiento/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/dashboard/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/entidades/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/evidencias/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/mis-reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/operaciones-responsable/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/reportes/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/supervision-integrada/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/admin/usuarios/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/auditor/calendario/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/auditor/cumplimiento/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/auditor/dashboard/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/auditor/entidades/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/auditor/historico/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/auditor/reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/alertas/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/calendario/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/crear-reporte/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/dashboard/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/entrega/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/mis-reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/mis-tareas/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/responsable/reportes/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/alertas/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/calendario/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/cumplimiento/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/dashboard/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/evidencias/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/gestion-reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/mis-reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/operaciones-responsable/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/reportes/reporte/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/reportes/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/reportes/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/roles/supervisor/reportes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/validacion/pendientes/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/.*$",
+			"dest": "_render",
+			"status": 404
+		}
+	]
+}
