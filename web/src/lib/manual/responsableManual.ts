@@ -1,12 +1,13 @@
 import { driver, type DriveStep, type Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
-type DriverOptions = Parameters<typeof driver>[0];
+type DriverOptions = NonNullable<Parameters<typeof driver>[0]>;
+export type ManualDriveStep = DriveStep & { skipIfMissingSelector?: string };
 
 export type ManualSection = {
   id: string;
   label?: string;
-  steps: DriveStep[];
+  steps: ManualDriveStep[];
 };
 
 export type ManualTourConfig = {
@@ -142,11 +143,10 @@ const injectResponsableStyles = () => {
 
   document.head.appendChild(style);
 };
-
 const buildSequentialSteps = (
   sections: ManualSection[],
   startSectionId?: string
-): DriveStep[] => {
+): ManualDriveStep[] => {
   if (!sections.length) return [];
 
   const sectionOrder = sections.map((section) => section.id);
@@ -511,11 +511,9 @@ export const createResponsableManual = () => {
           }
         }
       };
-
       const stepsForRun = steps
         .filter((step) => {
-          const skipSelector = (step as { skipIfMissingSelector?: string })
-            .skipIfMissingSelector;
+          const skipSelector = step.skipIfMissingSelector;
           if (!skipSelector || typeof document === "undefined") return true;
           return Boolean(document.querySelector(skipSelector));
         })
@@ -523,7 +521,6 @@ export const createResponsableManual = () => {
           ...step,
           popover: step.popover ? { ...step.popover } : undefined,
         }));
-
       if (stepsForRun.length) {
         const last = stepsForRun[stepsForRun.length - 1];
         last.popover = { ...last.popover, doneBtnText: "Hecho" };
@@ -798,6 +795,7 @@ const registerAlertasTour = () => {
                 "Vencimientos o errores urgentes. Observa el contador total de críticas.",
               side: "bottom",
             },
+            skipIfMissingSelector: ".alertas-list .alerta-card",
             onHighlightStarted: () =>
               waitForElement(".alertas-summary .summary-card.critical"),
           },
@@ -809,6 +807,7 @@ const registerAlertasTour = () => {
                 "Pendientes próximos a vencer o correcciones requeridas.",
               side: "bottom",
             },
+            skipIfMissingSelector: ".alertas-list .alerta-card",
             onHighlightStarted: () =>
               waitForElement(".alertas-summary .summary-card.warning"),
           },
@@ -819,6 +818,7 @@ const registerAlertasTour = () => {
               description: "Avisos generales o recordatorios sin urgencia.",
               side: "bottom",
             },
+            skipIfMissingSelector: ".alertas-list .alerta-card",
             onHighlightStarted: () =>
               waitForElement(".alertas-summary .summary-card.info"),
           },
@@ -830,6 +830,7 @@ const registerAlertasTour = () => {
                 "Confirmaciones de aprobaciones recientes en tus reportes.",
               side: "bottom",
             },
+            skipIfMissingSelector: ".alertas-list .alerta-card",
             onHighlightStarted: () =>
               waitForElement(".alertas-summary .summary-card.success"),
           },
@@ -844,17 +845,6 @@ const registerAlertasTour = () => {
             onHighlightStarted: () => waitForElement(".filters-bar"),
           },
           {
-            element: ".alertas-container .alertas-group:first-of-type",
-            popover: {
-              title: "Lista agrupada por fecha",
-              description:
-                "Las alertas se agrupan en Hoy, Ayer y fechas anteriores para que ubiques rápidamente lo reciente.",
-              side: "top",
-            },
-            onHighlightStarted: () =>
-              waitForElement(".alertas-container .alertas-group"),
-          },
-          {
             element: ".btn-mark-all",
             popover: {
               title: "Marcar todas como leídas",
@@ -862,6 +852,7 @@ const registerAlertasTour = () => {
                 "Marca en un clic todas las alertas pendientes y limpia el contador.",
               side: "left",
             },
+            skipIfMissingSelector: ".alertas-list .alerta-card",
             onHighlightStarted: () => waitForElement(".btn-mark-all"),
           },
           {
