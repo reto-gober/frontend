@@ -108,7 +108,7 @@ export default function FileUploadZone({
           </svg>
           <div className="upload-text">
             <p className="upload-main-text">
-              <strong>Arrastra archivos aqu\u00ed</strong> o haz clic para seleccionar
+              <strong>Arrastra archivos aquí</strong> o haz clic para seleccionar
             </p>
             <p className="upload-sub-text">
               Archivos permitidos: PDF, ZIP, DOC, DOCX, XLS, XLSX (M\u00e1x. {maxFiles})
