@@ -386,7 +386,7 @@ export default function AdminDashboardClient() {
       <div className="dashboard-card activity-card">
         <div className="card-header">
           <h3 className="card-title">Actividad Administrativa Reciente</h3>
-          <a href="#" className="link-view-all">Ver todo →</a>
+          <a href="/roles/admin/auditoria" className="link-view-all">Ver todo →</a>
         </div>
         <div className="card-body">
           <div className="activity-list">
