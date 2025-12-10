@@ -123,8 +123,7 @@ export default function FileUploadZone({
           </svg>
           <div className="upload-text">
             <p className="upload-main-text">
-              <strong>{label ?? "Arrastra archivos aqui"}</strong> o haz clic
-              para seleccionar
+              <strong>Arrastra archivos aquí</strong> o haz clic para seleccionar
             </p>
             <p className="upload-sub-text">
               {helperText ??
