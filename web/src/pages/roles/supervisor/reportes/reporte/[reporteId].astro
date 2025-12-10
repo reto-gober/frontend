@@ -1,0 +1,10 @@
+---
+import SupervisorLayout from '../../../../../layouts/roles/SupervisorLayout.astro';
+import SupervisorReporteDetalleClient from '../../../../../components/supervisor/SupervisorReporteDetalleClient';
+
+const { reporteId } = Astro.params;
+---
+
+<SupervisorLayout title="Entregas del Reporte">
+  <SupervisorReporteDetalleClient client:load reporteId={reporteId} />
+</SupervisorLayout>

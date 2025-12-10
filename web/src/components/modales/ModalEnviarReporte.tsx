@@ -4,6 +4,7 @@ import {
   evidenciasService,
   type EnviarReporteRequest,
 } from "../../lib/services";
+import { ModalPortal } from "../common/ModalPortal";
 
 interface ModalEnviarReporteProps {
   periodoId: string;
@@ -172,8 +173,9 @@ export function ModalEnviarReporte({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Modal de éxito */}
         {mostrarExito && (
           <div style={{
@@ -454,5 +456,6 @@ export function ModalEnviarReporte({
         `}</style>
       </div>
     </div>
+    </ModalPortal>
   );
 }

@@ -854,7 +854,7 @@ textarea.form-control {
 
 .user-name {
   font-weight: 600;
-  color: var(--neutral-900);
+  color: white;
 }
 
 .user-email {

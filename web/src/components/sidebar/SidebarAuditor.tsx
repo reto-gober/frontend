@@ -101,7 +101,7 @@ export default function SidebarAuditor() {
     <aside className={`role-sidebar auditor-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <div className="brand-icon auditor">
+          <div className="brand-icon auditor" title="Auditor">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <path d="M14 2v6h6"/>
@@ -116,6 +116,7 @@ export default function SidebarAuditor() {
           className="collapse-btn"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expandir' : 'Contraer'}
+          title={collapsed ? 'Expandir' : 'Contraer'}
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
             <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}/>
@@ -130,7 +131,7 @@ export default function SidebarAuditor() {
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
-            <span>Modo Solo Lectura</span>
+            <span>Solo Lectura</span>
           </div>
         )}
       </div>
@@ -146,7 +147,7 @@ export default function SidebarAuditor() {
             <span className="nav-icon">{item.icon}</span>
             {!collapsed && <span className="nav-label">{item.label}</span>}
             {!collapsed && item.readonly && (
-              <span className="readonly-indicator">
+              <span className="readonly-indicator" title="Solo lectura">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -160,10 +161,10 @@ export default function SidebarAuditor() {
       <div className="sidebar-footer">
         {!collapsed && (
           <div className="user-info">
-            <div className="user-avatar auditor">AU</div>
+            <div className="user-avatar auditor" title="AU">AU</div>
             <div className="user-details">
-              <span className="user-name">Usuario Auditor</span>
-              <span className="user-role">Auditor</span>
+              <span className="user-name">Auditor</span>
+              <span className="user-role">Sistema</span>
             </div>
           </div>
         )}

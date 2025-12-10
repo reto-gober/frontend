@@ -1,0 +1,29 @@
+---
+import SupervisorLayout from '../../../../layouts/roles/SupervisorLayout.astro';
+
+const { reporteId } = Astro.params;
+---
+
+<SupervisorLayout title="Detalle de Reporte">
+  <div id="detalle-reporte-root" data-periodo-id={reporteId}></div>
+</SupervisorLayout>
+
+<script>
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
+  import ReporteDetalleClient from '../../../../components/responsable/ReporteDetalleClient.tsx';
+
+  const container = document.getElementById('detalle-reporte-root');
+  if (container) {
+    const periodoId = container.dataset.periodoId;
+    const root = createRoot(container);
+    root.render(
+      React.createElement(ReporteDetalleClient, {
+        periodoId: periodoId || '',
+        backHref: '/roles/supervisor/gestion-reportes',
+        backLabel: '← Volver a Gestión de Reportes'
+      })
+    );
+  }
+</script>
+

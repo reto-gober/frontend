@@ -235,7 +235,7 @@ export default function SidebarResponsable() {
     >
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <div className="brand-icon responsable">
+          <div className="brand-icon responsable" title="Responsable">
             <svg
               viewBox="0 0 24 24"
               width="24"
@@ -250,30 +250,33 @@ export default function SidebarResponsable() {
           </div>
           {!collapsed && <span className="brand-text">Responsable</span>}
         </div>
-        <button
-          className="collapse-btn"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? "Expandir" : "Contraer"}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        <div style={{ display: "flex", gap: "0.25rem" }}>
+          <button
+            className="collapse-btn"
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Expandir" : "Contraer"}
+            title={collapsed ? "Expandir" : "Contraer"}
           >
-            <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
-          </svg>
-        </button>
-        <button
-          className="collapse-btn"
-          aria-label="Abrir índice de guías"
-          title="Ayuda"
-          onClick={() => setManualIndexOpen(true)}
-        >
-          <span style={{ fontWeight: 800, fontSize: "14px" }}>?</span>
-        </button>
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+            </svg>
+          </button>
+          <button
+            className="collapse-btn"
+            aria-label="Abrir índice de guías"
+            title="Ayuda"
+            onClick={() => setManualIndexOpen(true)}
+          >
+            <span style={{ fontWeight: 800, fontSize: "14px" }}>?</span>
+          </button>
+        </div>
       </div>
 
       <ManualIndexPanel
@@ -297,7 +300,7 @@ export default function SidebarResponsable() {
               <span className="nav-icon">{item.icon}</span>
               {!collapsed && <span className="nav-label">{item.label}</span>}
               {hasBadge && (
-                <span className="nav-badge">
+                <span className="nav-badge" title={`${badges.alertas} alerta${badges.alertas !== 1 ? 's' : ''}`}>
                   {badges.alertas > 99 ? "99+" : badges.alertas}
                 </span>
               )}
@@ -309,10 +312,10 @@ export default function SidebarResponsable() {
       <div className="sidebar-footer">
         {!collapsed && (
           <div className="user-info">
-            <div className="user-avatar responsable">R</div>
+            <div className="user-avatar responsable" title="R">R</div>
             <div className="user-details">
-              <span className="user-name">Usuario Responsable</span>
-              <span className="user-role">Responsable</span>
+              <span className="user-name">Responsable</span>
+              <span className="user-role">Usuario</span>
             </div>
           </div>
         )}

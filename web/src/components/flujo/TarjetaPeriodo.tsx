@@ -383,7 +383,10 @@ export function TarjetaPeriodo({
               style={{
                 fontSize: "0.875rem",
                 color: "var(--color-text)",
-                whiteSpace: "pre-wrap",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                wordBreak: "break-word",
               }}
             >
               {(() => {

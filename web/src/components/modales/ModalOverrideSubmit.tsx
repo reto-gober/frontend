@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ModalPortal } from '../common/ModalPortal';
 import adminActionsService from '../../lib/services/adminActionsService';
 import notifications from '../../lib/notifications';
 import type { OverrideSubmitRequest } from '../../lib/types/admin';
@@ -111,8 +112,9 @@ export default function ModalOverrideSubmit({ periodoId, responsableId, reporteN
   };
     
     return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
+      <ModalPortal>
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2 className="modal-title">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
@@ -299,7 +301,8 @@ export default function ModalOverrideSubmit({ periodoId, responsableId, reporteN
               </button>
             </div>
           </form>
+          </div>
         </div>
-      </div>
+      </ModalPortal>
     );
 }

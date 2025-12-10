@@ -42,7 +42,7 @@ export default function FileUploadZone({
 
       const files = Array.from(e.dataTransfer.files);
       if (selectedFiles.length + files.length > maxFiles) {
-        alert(`Solo puedes subir un m\u00e1ximo de ${maxFiles} archivos`);
+        alert(`Solo puedes subir un maximo de ${maxFiles} archivos`);
         return;
       }
 
@@ -111,7 +111,7 @@ export default function FileUploadZone({
               <strong>Arrastra archivos aquí</strong> o haz clic para seleccionar
             </p>
             <p className="upload-sub-text">
-              Archivos permitidos: PDF, ZIP, DOC, DOCX, XLS, XLSX (M\u00e1x. {maxFiles})
+              Archivos permitidos: PDF, ZIP, DOC, DOCX, XLS, XLSX (Máx. {maxFiles})
             </p>
           </div>
         </label>

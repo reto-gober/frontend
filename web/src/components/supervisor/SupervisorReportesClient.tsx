@@ -3,7 +3,6 @@ import {
   flujoReportesService,
   archivosService,
   type ReportePeriodo,
-  type Page,
   type ArchivoDTO,
 } from "../../lib/services";
 import { ModalValidarReporte } from "../modales/ModalValidarReporte";
@@ -29,11 +28,12 @@ interface EntidadOption {
 export default function SupervisorReportesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reportes, setReportes] = useState<ReportePeriodo[]>([]);
+  const [reportesFiltradosBase, setReportesFiltradosBase] = useState<
+    ReportePeriodo[]
+  >([]); // Lista filtrada por estado/entidad/responsable (sin paginar)
   const [todosLosReportes, setTodosLosReportes] = useState<ReportePeriodo[]>(
     []
   ); // Guardar todos para filtros
-  const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
   const [size] = useState(12);
   const [highlightReporteId, setHighlightReporteId] = useState<string | null>(
@@ -123,7 +123,7 @@ export default function SupervisorReportesClient() {
 
   useEffect(() => {
     cargarReportes();
-  }, [page, activeTab, filtroResponsable, filtroEntidad]);
+  }, [activeTab, filtroResponsable, filtroEntidad]);
 
   // Recalcular contadores cuando cambien los filtros o reportes
   useEffect(() => {
@@ -357,14 +357,8 @@ export default function SupervisorReportesClient() {
 
       // Actualizar contadores basados en los reportes filtrados (sin búsqueda de texto)
       actualizarContadores(reportesFiltrados);
-
-      // Aplicar paginación manual
-      const inicio = page * size;
-      const fin = inicio + size;
-      const reportesPaginados = reportesFiltrados.slice(inicio, fin);
-
-      setReportes(reportesPaginados);
-      setTotalElements(reportesFiltrados.length);
+      setReportesFiltradosBase(reportesFiltrados);
+      setPage(0); // resetear paginación cuando cambian filtros
     } catch (err: any) {
       console.error("Error al cargar reportes:", err);
       setError(err.response?.data?.message || "Error al cargar los reportes");
@@ -455,9 +449,64 @@ export default function SupervisorReportesClient() {
     );
   };
 
-  const reportesFiltrados = filtrarPorBusqueda(reportes);
+  type ReporteAgrupado = {
+    reporteId: string;
+    reporteNombre: string;
+    entidadNombre?: string;
+    responsableElaboracion?: ReportePeriodo["responsableElaboracion"] | null;
+    periodos: ReportePeriodo[];
+  };
 
-  if (error && reportes.length === 0) {
+  const agruparPorReporte = (
+    periodos: ReportePeriodo[]
+  ): ReporteAgrupado[] => {
+    const mapa = new Map<string, ReporteAgrupado>();
+
+    periodos.forEach((p) => {
+      const existente = mapa.get(p.reporteId);
+      if (existente) {
+        existente.periodos.push(p);
+        return;
+      }
+
+      mapa.set(p.reporteId, {
+        reporteId: p.reporteId,
+        reporteNombre: p.reporteNombre,
+        entidadNombre: p.entidadNombre,
+        responsableElaboracion: p.responsableElaboracion,
+        periodos: [p],
+      });
+    });
+
+    return Array.from(mapa.values())
+      .map((grupo) => ({
+        ...grupo,
+        periodos: [...grupo.periodos].sort(
+          (a, b) =>
+            new Date(a.fechaVencimientoCalculada).getTime() -
+            new Date(b.fechaVencimientoCalculada).getTime()
+        ),
+      }))
+      .sort((a, b) => a.reporteNombre.localeCompare(b.reporteNombre));
+  };
+
+  const reportesTrasBusqueda = filtrarPorBusqueda(reportesFiltradosBase);
+  const reportesAgrupados = agruparPorReporte(reportesTrasBusqueda);
+  const inicio = page * size;
+  const reportesAgrupadosPaginados = reportesAgrupados.slice(
+    inicio,
+    inicio + size
+  );
+  const totalGrupos = reportesAgrupados.length;
+
+  useEffect(() => {
+    const maxPage = Math.max(0, Math.ceil(totalGrupos / size) - 1);
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [totalGrupos, size, page]);
+
+  if (error && reportesAgrupados.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "4rem" }}>
         <p style={{ color: "var(--error-red-600)" }}>{error}</p>
@@ -568,7 +617,10 @@ export default function SupervisorReportesClient() {
                   placeholder="Buscar por reporte, responsable o entidad..."
                   className="search-input-principal"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(0);
+                  }}
                 />
               </div>
               <div className="filtros-secundarios">
@@ -618,7 +670,7 @@ export default function SupervisorReportesClient() {
           )}
 
           {/* Empty State */}
-          {!loading && reportesFiltrados.length === 0 && (
+          {!loading && reportesAgrupados.length === 0 && (
             <div className="empty-state">
               <svg
                 viewBox="0 0 24 24"
@@ -639,25 +691,19 @@ export default function SupervisorReportesClient() {
           )}
 
           {/* Reports Grid Mejorado */}
-          {!loading && reportesFiltrados.length > 0 && (
+          {!loading && reportesAgrupados.length > 0 && (
             <div className="reports-grid-mejorado">
-              {reportesFiltrados.map((reporte) => {
-                const { dias, urgencia } = calcularDiasRestantes(
-                  reporte.fechaVencimientoCalculada
-                );
-                const estadoBadge = getEstadoBadge(reporte.estado);
-                const puedeValidar = [
-                  "pendiente_validacion",
-                  "PENDIENTE_VALIDACION",
-                ].includes(reporte.estado);
+              {reportesAgrupadosPaginados.map((grupo) => {
                 const isHighlighted =
-                  highlightReporteId === reporte.reporteId ||
-                  highlightReporteId === reporte.periodoId;
+                  highlightReporteId === grupo.reporteId ||
+                  grupo.periodos.some(
+                    (p) => p.periodoId === highlightReporteId
+                  );
 
                 return (
                   <div
-                    key={reporte.periodoId}
-                    id={`reporte-${reporte.periodoId}`}
+                    key={grupo.reporteId}
+                    id={`reporte-${grupo.reporteId}`}
                     className="report-card-mejorada"
                     style={
                       isHighlighted
@@ -669,44 +715,35 @@ export default function SupervisorReportesClient() {
                         : undefined
                     }
                   >
-                    {/* Barra superior de estado */}
-                    <div
-                      className={`card-barra-estado ${estadoBadge.clase}`}
-                    ></div>
-
-                    {/* Header Compacto */}
                     <div className="card-header-mejorado">
                       <div className="card-info-superior">
                         <h3 className="card-titulo-mejorado">
-                          {reporte.reporteNombre}
+                          {grupo.reporteNombre}
                         </h3>
-                        <span
-                          className={`badge-estado-mejorado ${estadoBadge.clase}`}
-                        >
-                          {estadoBadge.texto}
-                        </span>
+                        <div className="card-meta-superior">
+                          <span className="meta-frecuencia">
+                            {grupo.periodos[0]?.periodoTipo}
+                          </span>
+                          <span className="meta-separador">•</span>
+                          <span className="meta-frecuencia">
+                            {grupo.periodos.length} entrega
+                            {grupo.periodos.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
                       </div>
                       <div className="card-meta-superior">
                         <span className="meta-frecuencia">
-                          {reporte.periodoTipo}
+                          Entidad: {grupo.entidadNombre}
                         </span>
                         <span className="meta-separador">•</span>
-                        <span className={`meta-vencimiento ${urgencia}`}>
-                          {urgencia === "vencido"
-                            ? `Vencido hace ${Math.abs(dias)}d`
-                            : urgencia === "hoy"
-                              ? "Vence hoy"
-                              : urgencia === "urgente"
-                                ? `Vence en ${dias}d`
-                                : `Vence ${formatearFechaCorta(reporte.fechaVencimientoCalculada)}`}
+                        <span className="meta-frecuencia">
+                          Responsable: {grupo.responsableElaboracion?.nombreCompleto || "Sin asignar"}
                         </span>
                       </div>
                     </div>
 
-                    {/* Body Compacto */}
-                    <div className="card-body-mejorado">
-                      {/* Información clave */}
-                      <div className="info-clave">
+                    <div className="card-body-mejorado" style={{ gap: "0.5rem" }}>
+                      <div className="info-clave" style={{ marginBottom: "0.5rem" }}>
                         <div className="info-item">
                           <svg
                             viewBox="0 0 24 24"
@@ -719,9 +756,7 @@ export default function SupervisorReportesClient() {
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                           </svg>
                           <span className="info-label">Entidad:</span>
-                          <span className="info-value">
-                            {reporte.entidadNombre}
-                          </span>
+                          <span className="info-value">{grupo.entidadNombre}</span>
                         </div>
 
                         <div className="info-item">
@@ -738,99 +773,23 @@ export default function SupervisorReportesClient() {
                           </svg>
                           <span className="info-label">Responsable:</span>
                           <span className="info-value">
-                            {reporte.responsableElaboracion?.nombreCompleto ||
-                              "Sin asignar"}
+                            {grupo.responsableElaboracion?.nombreCompleto || "Sin asignar"}
                           </span>
                         </div>
-
-                        {typeof reporte.diasDesviacion === "number" &&
-                          reporte.diasDesviacion !== 0 && (
-                            <div className="info-item">
-                              <svg
-                                viewBox="0 0 24 24"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              >
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                              </svg>
-                              <span className="info-label">Desviación:</span>
-                              <span
-                                className={`info-value ${reporte.diasDesviacion > 0 ? "negativo" : "positivo"}`}
-                              >
-                                {reporte.diasDesviacion > 0 ? "+" : ""}
-                                {reporte.diasDesviacion} días
-                              </span>
-                            </div>
-                          )}
-
-                        {reporte.cantidadArchivos > 0 && (
-                          <div className="info-item">
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="16"
-                              height="16"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                            </svg>
-                            <span className="info-value evidencias">
-                              {reporte.cantidadArchivos} archivo
-                              {reporte.cantidadArchivos > 1 ? "s" : ""}
-                            </span>
-                          </div>
-                        )}
                       </div>
-                    </div>
 
-                    {/* Footer Compacto */}
-                    <div className="card-footer-mejorado">
-                      {puedeValidar ? (
-                        <button
-                          className="btn-revisar-mejorado btn-primary-action"
-                          onClick={() =>
-                            setModalValidar({ open: true, periodo: reporte })
-                          }
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            width="16"
-                            height="16"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <polyline points="9 11 12 14 22 4" />
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                          </svg>
-                          Revisar
-                        </button>
-                      ) : (
-                        <button
+                      <div className="info-clave" style={{ flexDirection: "column", gap: "0.5rem", width: "100%" }}>
+                        <div className="meta-frecuencia" style={{ fontWeight: 600 }}>
+                          Entregas del reporte
+                        </div>
+                        <a
                           className="btn-detalle-mejorado"
-                          onClick={() =>
-                            setDetalle({ open: true, periodo: reporte })
-                          }
+                          style={{ textDecoration: "none", alignSelf: "flex-start" }}
+                          href={`/roles/supervisor/reportes/reporte/${grupo.reporteId}`}
                         >
-                          <svg
-                            viewBox="0 0 24 24"
-                            width="16"
-                            height="16"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                          Ver Detalle
-                        </button>
-                      )}
+                          Ver todas las entregas en detalle
+                        </a>
+                      </div>
                     </div>
                   </div>
                 );
@@ -839,7 +798,7 @@ export default function SupervisorReportesClient() {
           )}
 
           {/* Paginación Mejorada */}
-          {!loading && totalElements > size && (
+          {!loading && totalGrupos > size && (
             <div className="paginacion-mejorada">
               <button
                 className="btn-pag"
@@ -861,13 +820,11 @@ export default function SupervisorReportesClient() {
               <div className="pag-info">
                 <span className="pag-actual">Página {page + 1}</span>
                 <span className="pag-separador">de</span>
-                <span className="pag-total">
-                  {Math.ceil(totalElements / size)}
-                </span>
+                <span className="pag-total">{Math.ceil(totalGrupos / size)}</span>
               </div>
               <button
                 className="btn-pag"
-                disabled={(page + 1) * size >= totalElements}
+                disabled={(page + 1) * size >= totalGrupos}
                 onClick={() => setPage((p) => p + 1)}
               >
                 Siguiente

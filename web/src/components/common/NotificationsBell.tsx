@@ -68,7 +68,7 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
   );
 
   const badgeCount = useMemo(
-    () => alertas.filter((a) => a.tipo === 'critica' || a.tipo === 'advertencia').length,
+    () => alertas.filter((a) => !a.leida && (a.tipo === 'critica' || a.tipo === 'advertencia')).length,
     [alertas]
   );
 
@@ -87,6 +87,7 @@ export default function NotificationsBell({ role }: NotificationsBellProps) {
     try {
       setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
       await notificacionesService.marcarTodas();
+      setOpen(false);
     } catch (err) {
       console.error('Error al marcar todas como leídas', err);
     }

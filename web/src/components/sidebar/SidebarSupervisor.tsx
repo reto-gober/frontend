@@ -111,7 +111,7 @@ export default function SidebarSupervisor() {
     <aside className={`role-sidebar supervisor-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <div className="brand-icon supervisor">
+          <div className="brand-icon supervisor" title="Supervisor">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
               <circle cx="12" cy="12" r="3"/>
@@ -123,6 +123,7 @@ export default function SidebarSupervisor() {
           className="collapse-btn"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expandir' : 'Contraer'}
+          title={collapsed ? 'Expandir' : 'Contraer'}
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
             <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}/>
@@ -147,10 +148,10 @@ export default function SidebarSupervisor() {
       <div className="sidebar-footer">
         {!collapsed && (
           <div className="user-info">
-            <div className="user-avatar supervisor">S</div>
+            <div className="user-avatar supervisor" title="S">S</div>
             <div className="user-details">
-              <span className="user-name">Usuario Supervisor</span>
-              <span className="user-role">Supervisor</span>
+              <span className="user-name">Supervisor</span>
+              <span className="user-role">Sistema</span>
             </div>
           </div>
         )}

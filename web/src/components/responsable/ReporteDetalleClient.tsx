@@ -12,11 +12,13 @@ import {
   ChevronUp,
   MessageCircle,
   Trash,
+  Eye,
 } from "lucide-react";
 import FilesList from "../reportes/FilesList";
 import FileViewer from "../reportes/FileViewer";
 import FileUploadZone from "../common/FileUploadZone";
 import { useToast, ToastContainer } from "../Toast";
+import { ModalValidarReporte } from "../modales/ModalValidarReporte";
 import { flujoReportesService, evidenciasService } from "../../lib/services";
 import { normalizarEstado } from "../../lib/utils/estados";
 import type {
@@ -49,6 +51,15 @@ export default function ReporteDetalleClient({
   const [archivoSeleccionado, setArchivoSeleccionado] =
     useState<ArchivoDTO | null>(null);
   const [mostrarComentarios, setMostrarComentarios] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<{
+    supervisorComment?: boolean;
+    delivery?: boolean;
+    correction?: boolean;
+  }>({
+    supervisorComment: true,
+    delivery: true,
+    correction: true,
+  });
 
   // Estados para la entrega
   const [archivosNuevos, setArchivosNuevos] = useState<File[]>([]);
@@ -59,6 +70,9 @@ export default function ReporteDetalleClient({
   );
   const [reemplazarArchivos, setReemplazarArchivos] = useState(false);
   const [deletingArchivoId, setDeletingArchivoId] = useState<string | null>(null);
+  const [isSupervisor, setIsSupervisor] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [modalValidarAbierto, setModalValidarAbierto] = useState(false);
   const {
     toasts,
     removeToast,
@@ -128,6 +142,8 @@ export default function ReporteDetalleClient({
         periodo
       );
 
+      console.log("🔄 Comentarios sincronizados:", comentariosApi?.length || 0);
+
       setDetalle((prev) => {
         if (!prev) return prev;
 
@@ -137,9 +153,11 @@ export default function ReporteDetalleClient({
           comentariosApi && comentariosApi.length > 0;
 
         if (!hayComentariosNuevos && yaTieneComentarios) {
+          console.log("✓ Usando comentarios existentes");
           return prev;
         }
 
+        console.log("✓ Actualizando comentarios:", comentariosApi?.length || 0);
         return {
           ...prev,
           comentarios: hayComentariosNuevos
@@ -155,11 +173,7 @@ export default function ReporteDetalleClient({
     }
   }, []);
 
-  useEffect(() => {
-    loadDetalle();
-  }, [periodoId]);
-
-  const loadDetalle = async () => {
+  const loadDetalle = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -167,15 +181,49 @@ export default function ReporteDetalleClient({
       const data = await flujoReportesService.obtenerPeriodo(periodoId);
       console.log("📊 Detalle recibido:", data);
       console.log("📎 Archivos encontrados:", data.archivos?.length || 0);
+      console.log("💬 Comentarios recibidos:", data.comentarios?.length || 0);
       setDetalle(data);
-      syncComentarios(periodoId);
+      
+      // Sincronizar comentarios adicionales
+      await syncComentarios(periodoId);
     } catch (err: any) {
       console.error("❌ Error cargando detalle:", err);
-      setError(err.message || "Error al cargar el detalle");
+      
+      // Proporcionar un mensaje de error más específico
+      let errorMsg = "Error al cargar el detalle";
+      if (err.response?.status === 404) {
+        errorMsg = `Período no encontrado. ID: ${periodoId}`;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
-  };
+  }, [periodoId, syncComentarios]);
+
+  useEffect(() => {
+    // Detectar si el usuario actual es supervisor o admin
+    const userRole = (localStorage.getItem("userRole") || "").toLowerCase();
+    const isNotResponsable = userRole !== "responsable";
+    setIsSupervisor(userRole === "supervisor");
+    setIsAdmin(isNotResponsable && userRole !== "auditor" && userRole !== ""); // Mostrar para admin, supervisor o cualquier otro rol administrativo
+    loadDetalle();
+  }, [loadDetalle]);
+
+  const handleValidarSuccess = useCallback(() => {
+    showSuccess("Validación registrada");
+    setModalValidarAbierto(false);
+    loadDetalle();
+  }, [loadDetalle, showSuccess]);
+
+  const handleValidarError = useCallback(
+    (msg: string) => {
+      showError(msg || "Error al validar el reporte");
+    },
+    [showError]
+  );
 
   const handleDeleteArchivo = async (archivo: ArchivoDTO) => {
     if (!detalle) return;
@@ -227,9 +275,20 @@ export default function ReporteDetalleClient({
 
   const formatearFechaHoraCorta = (fechaHora?: string | null) => {
     if (!fechaHora) return "Fecha no disponible";
-    const date = fechaHora.includes("T")
-      ? new Date(fechaHora)
-      : new Date(fechaHora + "T00:00:00");
+    
+    // Normalizar el formato: reemplazar espacio por T si existe
+    const fechaNormalizada = fechaHora.includes("T") 
+      ? fechaHora 
+      : fechaHora.replace(" ", "T");
+    
+    const date = new Date(fechaNormalizada);
+    
+    // Verificar si la fecha es válida
+    if (isNaN(date.getTime())) {
+      console.error("Fecha inválida:", fechaHora);
+      return fechaHora; // Devolver original si no se puede parsear
+    }
+    
     return date.toLocaleString("es-CO", {
       day: "2-digit",
       month: "short",
@@ -356,6 +415,7 @@ export default function ReporteDetalleClient({
     showSuccess,
     showError,
     reemplazarArchivos,
+    loadDetalle,
   ]);
 
   const getEstadoClass = (estado: string): string => {
@@ -435,11 +495,53 @@ export default function ReporteDetalleClient({
                 <h1 className="header-title">{detalle.reporteNombre}</h1>
                 <p className="header-subtitle">{detalle.entidadNombre}</p>
               </div>
-              <span
-                className={`estado-badge ${getEstadoClass(detalle.estado)}`}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  justifyContent: "flex-end",
+                }}
               >
-                {detalle.estadoDescripcion}
-              </span>
+                <span
+                  className={`estado-badge ${getEstadoClass(detalle.estado)}`}
+                >
+                  {detalle.estadoDescripcion}
+                </span>
+
+                {isAdmin && detalle.fechaEnvioReal && [
+                  "pendiente",
+                  "pendiente_validacion",
+                ].includes(normalizarEstado(detalle.estado)) && (
+                  <button
+                    onClick={() => setModalValidarAbierto(true)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 14px",
+                      borderRadius: "10px",
+                      border: "1px solid #c7d2fe",
+                      backgroundColor: "#eef2ff",
+                      color: "#312e81",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 10px rgba(99, 102, 241, 0.08)",
+                      transition: "background-color 0.2s, transform 0.1s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e0e7ff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#eef2ff";
+                    }}
+                  >
+                    <Eye size={18} />
+                    Revisar entrega
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -537,67 +639,74 @@ export default function ReporteDetalleClient({
           </div>
         </div>
 
-        {/* Comentario del Supervisor */}
-        <div className="info-card">
-          <div className="archivos-header">
-            <h2 className="card-title">
-              <MessageCircle style={{ color: "#0f172a" }} />
-              Comentario del Supervisor
-            </h2>
-            {comentarioSupervisor && (
-              <span
-                className={`comment-badge ${(() => {
-                  const accion = (
-                    comentarioSupervisor.accion || ""
-                  ).toLowerCase();
-                  if (accion.includes("rechaz")) return "rechazo";
-                  if (accion.includes("apro")) return "aprobacion";
-                  if (accion.includes("valid")) return "validacion";
-                  return "comentario";
-                })()}`}
-              >
-                {comentarioSupervisor.accion || "Comentario"}
-              </span>
+        {/* Comentario del Supervisor - Solo para responsables */}
+        {!isSupervisor && (
+          <div className="info-card">
+            <div className="archivos-header" style={{ cursor: "pointer" }} onClick={() => setExpandedSections(prev => ({ ...prev, supervisorComment: !prev.supervisorComment }))}>
+              <h2 className="card-title">
+                <MessageCircle style={{ color: "#0f172a" }} />
+                Comentario del Supervisor
+              </h2>
+              <div>
+                {expandedSections.supervisorComment ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </div>
+            </div>
+            {expandedSections.supervisorComment && (
+              <>
+                {comentarioSupervisor && (
+                  <span
+                    className={`comment-badge ${(() => {
+                      const accion = (
+                        comentarioSupervisor.accion || ""
+                      ).toLowerCase();
+                      if (accion.includes("rechaz")) return "rechazo";
+                      if (accion.includes("apro")) return "aprobacion";
+                      if (accion.includes("valid")) return "validacion";
+                      return "comentario";
+                    })()}`}
+                  >
+                    {comentarioSupervisor.accion || "Comentario"}
+                  </span>
+                )}
+
+                {comentarioSupervisor ? (
+                  <div className="supervisor-comment">
+                    <div className="supervisor-comment-meta">
+                      <div>
+                        <p className="supervisor-author">
+                          {comentarioSupervisor.autor || "Supervisor"}
+                        </p>
+                        {comentarioSupervisor.cargo && (
+                          <p className="supervisor-cargo">
+                            {comentarioSupervisor.cargo}
+                          </p>
+                        )}
+                      </div>
+                      <div className="supervisor-meta-right">
+                        <span className="supervisor-date">
+                          {formatearFechaHoraCorta(comentarioSupervisor.fecha)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="supervisor-text">
+                      {limpiarTextoComentario(comentarioSupervisor.texto)}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <MessageCircle />
+                    <p className="empty-state-title">
+                      Sin comentarios del supervisor
+                    </p>
+                    <p className="empty-state-subtitle">
+                      Aún no hay aprobación o rechazo registrado.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
-
-          {comentarioSupervisor ? (
-            <div className="supervisor-comment">
-              <div className="supervisor-comment-meta">
-                <div>
-                  <p className="supervisor-author">
-                    {comentarioSupervisor.autor || "Supervisor"}
-                  </p>
-                  {comentarioSupervisor.cargo && (
-                    <p className="supervisor-cargo">
-                      {comentarioSupervisor.cargo}
-                    </p>
-                  )}
-                </div>
-                <div className="supervisor-meta-right">
-                  <span className="supervisor-date">
-                    {formatearFechaHoraCorta(comentarioSupervisor.fecha)}
-                  </span>
-                </div>
-              </div>
-              <p className="supervisor-text">
-                {limpiarTextoComentario(comentarioSupervisor.texto)}
-              </p>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <MessageCircle />
-              <p className="empty-state-title">
-                Sin comentarios del supervisor
-              </p>
-              <p className="empty-state-subtitle">
-                Aún no hay aprobación o rechazo registrado.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Archivos Adjuntos - Solo mostrar si ya existe una entrega */}
+        )}        {/* Archivos Adjuntos - Solo mostrar si ya existe una entrega */}
         {detalle.fechaEnvioReal && (
           <div className="info-card">
             <div className="archivos-header">
@@ -639,137 +748,139 @@ export default function ReporteDetalleClient({
         {/* Sección de Entrega de Reporte - Solo cuando puede enviar/corregir Y no tiene entrega previa */}
         {canSubmit && !detalle.fechaEnvioReal && (
           <div className="info-card">
-            <div className="archivos-header">
+            <div className="archivos-header" style={{ cursor: "pointer" }} onClick={() => setExpandedSections(prev => ({ ...prev, delivery: !prev.delivery }))}>
               <h2 className="card-title">
                 <Send style={{ color: "#059669" }} />
                 Enviar Entrega de Reporte
               </h2>
-            </div>
-
-            {/* Subir Archivos */}
-            <div style={{ marginBottom: "20px" }}>
-              <FileUploadZone
-                onFilesSelected={handleUploadFiles}
-                selectedFiles={archivosNuevos}
-                onRemoveFile={handleRemoveFile}
-                uploadProgress={uploadProgress}
-                disabled={submitting}
-              />
-            </div>
-
-            {/* Validación de archivos */}
-            {archivosNuevos.length === 0 && (
-              <div
-                style={{
-                  padding: "12px",
-                  backgroundColor: "#fef3c7",
-                  border: "1px solid #f59e0b",
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <AlertCircle
-                  size={20}
-                  style={{ color: "#f59e0b", flexShrink: 0 }}
-                />
-                <p style={{ margin: 0, color: "#92400e", fontSize: "14px" }}>
-                  Debes adjuntar al menos un archivo para poder enviar la
-                  entrega
-                </p>
+              <div>
+                {expandedSections.delivery ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </div>
-            )}
-
-            {/* Comentarios */}
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                  color: "#374151",
-                }}
-              >
-                Comentarios{" "}
-                {detalle &&
-                normalizarEstado(detalle.estado) === "requiere_correccion"
-                  ? "(opcional)"
-                  : "(opcional)"}
-              </label>
-              <textarea
-                value={comentarios}
-                onChange={(e) => setComentarios(e.target.value)}
-                placeholder="Agrega comentarios sobre tu entrega..."
-                maxLength={2000}
-                disabled={submitting}
-                style={{
-                  width: "100%",
-                  minHeight: "100px",
-                  padding: "12px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  fontFamily: "inherit",
-                  resize: "vertical",
-                  opacity: submitting ? 0.6 : 1,
-                  cursor: submitting ? "not-allowed" : "text",
-                }}
-              />
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "#6b7280",
-                  marginTop: "4px",
-                  textAlign: "right",
-                }}
-              >
-                {comentarios.length}/2000 caracteres
-              </p>
             </div>
+            {expandedSections.delivery && (
+              <>
+                {/* Subir Archivos */}
+                <div style={{ marginBottom: "20px" }}>
+                  <FileUploadZone
+                    onFilesSelected={handleUploadFiles}
+                    selectedFiles={archivosNuevos}
+                    onRemoveFile={handleRemoveFile}
+                    uploadProgress={uploadProgress}
+                    disabled={submitting}
+                  />
+                </div>
 
-            {/* Botón de envío */}
-            <button
-              onClick={handleSubmit}
-              disabled={submitting || archivosNuevos.length === 0}
-              style={{
-                width: "100%",
-                padding: "12px 24px",
-                backgroundColor:
-                  submitting || archivosNuevos.length === 0
-                    ? "#d1d5db"
-                    : "#059669",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: 600,
-                cursor:
-                  submitting || archivosNuevos.length === 0
-                    ? "not-allowed"
-                    : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                if (!submitting && archivosNuevos.length > 0) {
-                  e.currentTarget.style.backgroundColor = "#047857";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!submitting && archivosNuevos.length > 0) {
-                  e.currentTarget.style.backgroundColor = "#059669";
-                }
-              }}
-            >
-              <Send size={20} />
-              {submitting ? "Enviando..." : "Enviar Entrega"}
-            </button>
+                {/* Validación de archivos */}
+                {archivosNuevos.length === 0 && (
+                  <div
+                    style={{
+                      padding: "12px",
+                      backgroundColor: "#fef3c7",
+                      border: "1px solid #f59e0b",
+                      borderRadius: "8px",
+                      marginBottom: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <AlertCircle
+                      size={20}
+                      style={{ color: "#f59e0b", flexShrink: 0 }}
+                    />
+                    <p style={{ margin: 0, color: "#92400e", fontSize: "14px" }}>
+                      Debes adjuntar al menos un archivo para poder enviar la
+                      entrega
+                    </p>
+                  </div>
+                )}
+
+                {/* Comentarios */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      color: "#374151",
+                    }}
+                  >
+                    Comentarios (opcional)
+                  </label>
+                  <textarea
+                    value={comentarios}
+                    onChange={(e) => setComentarios(e.target.value)}
+                    placeholder="Agrega comentarios sobre tu entrega..."
+                    maxLength={2000}
+                    disabled={submitting}
+                    style={{
+                      width: "100%",
+                      minHeight: "100px",
+                      padding: "12px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                      opacity: submitting ? 0.6 : 1,
+                      cursor: submitting ? "not-allowed" : "text",
+                    }}
+                  />
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#6b7280",
+                      marginTop: "4px",
+                      textAlign: "right",
+                    }}
+                  >
+                    {comentarios.length}/2000 caracteres
+                  </p>
+                </div>
+
+                {/* Botón de envío */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || archivosNuevos.length === 0}
+                  style={{
+                    width: "100%",
+                    padding: "12px 24px",
+                    backgroundColor:
+                      submitting || archivosNuevos.length === 0
+                        ? "#d1d5db"
+                        : "#059669",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    cursor:
+                      submitting || archivosNuevos.length === 0
+                        ? "not-allowed"
+                        : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!submitting && archivosNuevos.length > 0) {
+                      e.currentTarget.style.backgroundColor = "#047857";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!submitting && archivosNuevos.length > 0) {
+                      e.currentTarget.style.backgroundColor = "#059669";
+                    }
+                  }}
+                >
+                  <Send size={20} />
+                  {submitting ? "Enviando..." : "Enviar Entrega"}
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -780,159 +891,165 @@ export default function ReporteDetalleClient({
             normalizarEstado(detalle.estado) === "rechazado" ||
             normalizarEstado(detalle.estado) === "corregir") && (
             <div className="info-card">
-              <div className="archivos-header">
+              <div className="archivos-header" style={{ cursor: "pointer" }} onClick={() => setExpandedSections(prev => ({ ...prev, correction: !prev.correction }))}>
                 <h2 className="card-title">
                   <Send style={{ color: "#dc2626" }} />
                   {normalizarEstado(detalle.estado) === "rechazado"
                     ? "Reenviar entrega (reemplazar archivos)"
                     : "Reenviar entrega con correcciones"}
                 </h2>
+                <div>
+                  {expandedSections.correction ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
               </div>
+              {expandedSections.correction && (
+                <>
+                  {/* Subir Archivos para Corrección */}
+                  <div style={{ marginBottom: "20px" }}>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      {normalizarEstado(detalle.estado) === "rechazado"
+                        ? "📎 Tu entrega fue rechazada. Puedes reemplazar los archivos anteriores y volver a enviarla."
+                        : "📎 Los archivos actuales se mantendrán. Puedes agregar archivos adicionales o corregir solo el reporte sin cambiar archivos."}
+                    </p>
 
-              {/* Subir Archivos para Corrección */}
-              <div style={{ marginBottom: "20px" }}>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    marginBottom: "12px",
-                  }}
-                >
-                  {normalizarEstado(detalle.estado) === "rechazado"
-                    ? "📎 Tu entrega fue rechazada. Puedes reemplazar los archivos anteriores y volver a enviarla."
-                    : "📎 Los archivos actuales se mantendrán. Puedes agregar archivos adicionales o corregir solo el reporte sin cambiar archivos."}
-                </p>
+                    {normalizarEstado(detalle.estado) === "rechazado" && (
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "12px",
+                          fontSize: "14px",
+                          color: "#374151",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={reemplazarArchivos}
+                          onChange={(e) => setReemplazarArchivos(e.target.checked)}
+                          style={{ width: 16, height: 16 }}
+                        />
+                        Reemplazar archivos anteriores al reenviar
+                      </label>
+                    )}
+                    <FileUploadZone
+                      onFilesSelected={handleUploadFiles}
+                      selectedFiles={archivosNuevos}
+                      onRemoveFile={handleRemoveFile}
+                      uploadProgress={uploadProgress}
+                      disabled={submitting}
+                    />
+                  </div>
 
-                {normalizarEstado(detalle.estado) === "rechazado" && (
-                  <label
+                  {/* Comentarios para Corrección */}
+                  <div style={{ marginBottom: "20px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                        fontSize: "14px",
+                        color: "#374151",
+                      }}
+                    >
+                      Comentarios sobre la corrección (opcional)
+                    </label>
+                    <textarea
+                      value={comentarios}
+                      onChange={(e) => setComentarios(e.target.value)}
+                      placeholder="Explica qué correcciones realizaste..."
+                      maxLength={2000}
+                      disabled={submitting}
+                      style={{
+                        width: "100%",
+                        minHeight: "100px",
+                        padding: "12px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontFamily: "inherit",
+                        resize: "vertical",
+                        opacity: submitting ? 0.6 : 1,
+                        cursor: submitting ? "not-allowed" : "text",
+                      }}
+                    />
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        marginTop: "4px",
+                        textAlign: "right",
+                      }}
+                    >
+                      {comentarios.length}/2000 caracteres
+                    </p>
+                  </div>
+
+                  {/* Botón de reenvío */}
+                  <button
+                    onClick={handleSubmit}
+                    disabled={
+                      submitting ||
+                      (archivosNuevos.length === 0 &&
+                        (!detalle.archivos || detalle.archivos.length === 0))
+                    }
                     style={{
+                      width: "100%",
+                      padding: "12px 24px",
+                      backgroundColor:
+                        submitting ||
+                        (archivosNuevos.length === 0 &&
+                          (!detalle.archivos || detalle.archivos.length === 0))
+                          ? "#d1d5db"
+                          : "#dc2626",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      cursor:
+                        submitting ||
+                        (archivosNuevos.length === 0 &&
+                          (!detalle.archivos || detalle.archivos.length === 0))
+                          ? "not-allowed"
+                          : "pointer",
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "center",
                       gap: "8px",
-                      marginBottom: "12px",
-                      fontSize: "14px",
-                      color: "#374151",
-                      fontWeight: 500,
+                      transition: "background-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (
+                        !submitting &&
+                        (archivosNuevos.length > 0 ||
+                          (detalle.archivos && detalle.archivos.length > 0))
+                      ) {
+                        e.currentTarget.style.backgroundColor = "#b91c1c";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (
+                        !submitting &&
+                        (archivosNuevos.length > 0 ||
+                          (detalle.archivos && detalle.archivos.length > 0))
+                      ) {
+                        e.currentTarget.style.backgroundColor = "#dc2626";
+                      }
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={reemplazarArchivos}
-                      onChange={(e) => setReemplazarArchivos(e.target.checked)}
-                      style={{ width: 16, height: 16 }}
-                    />
-                    Reemplazar archivos anteriores al reenviar
-                  </label>
-                )}
-                <FileUploadZone
-                  onFilesSelected={handleUploadFiles}
-                  selectedFiles={archivosNuevos}
-                  onRemoveFile={handleRemoveFile}
-                  uploadProgress={uploadProgress}
-                  disabled={submitting}
-                />
-              </div>
-
-              {/* Comentarios para Corrección */}
-              <div style={{ marginBottom: "20px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontWeight: 500,
-                    fontSize: "14px",
-                    color: "#374151",
-                  }}
-                >
-                  Comentarios sobre la corrección (opcional)
-                </label>
-                <textarea
-                  value={comentarios}
-                  onChange={(e) => setComentarios(e.target.value)}
-                  placeholder="Explica qué correcciones realizaste..."
-                  maxLength={2000}
-                  disabled={submitting}
-                  style={{
-                    width: "100%",
-                    minHeight: "100px",
-                    padding: "12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                    opacity: submitting ? 0.6 : 1,
-                    cursor: submitting ? "not-allowed" : "text",
-                  }}
-                />
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#6b7280",
-                    marginTop: "4px",
-                    textAlign: "right",
-                  }}
-                >
-                  {comentarios.length}/2000 caracteres
-                </p>
-              </div>
-
-              {/* Botón de reenvío */}
-              <button
-                onClick={handleSubmit}
-                disabled={
-                  submitting ||
-                  (archivosNuevos.length === 0 &&
-                    (!detalle.archivos || detalle.archivos.length === 0))
-                }
-                style={{
-                  width: "100%",
-                  padding: "12px 24px",
-                  backgroundColor:
-                    submitting ||
-                    (archivosNuevos.length === 0 &&
-                      (!detalle.archivos || detalle.archivos.length === 0))
-                      ? "#d1d5db"
-                      : "#dc2626",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor:
-                    submitting ||
-                    (archivosNuevos.length === 0 &&
-                      (!detalle.archivos || detalle.archivos.length === 0))
-                      ? "not-allowed"
-                      : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  if (
-                    !submitting &&
-                    (archivosNuevos.length > 0 ||
-                      (detalle.archivos && detalle.archivos.length > 0))
-                  ) {
-                    e.currentTarget.style.backgroundColor = "#b91c1c";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (
-                    !submitting &&
-                    (archivosNuevos.length > 0 ||
-                      (detalle.archivos && detalle.archivos.length > 0))
-                  ) {
-                    e.currentTarget.style.backgroundColor = "#dc2626";
-                  }
-                }}
-              >
-                <Send size={20} />
-                {submitting ? "Enviando..." : "Reenviar Entrega"}
-              </button>
+                    <Send size={20} />
+                    {submitting ? "Enviando..." : "Reenviar Entrega"}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -1000,6 +1117,7 @@ export default function ReporteDetalleClient({
                             boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                             border: "1px solid #e5e7eb",
                             transition: "all 0.2s",
+                            width: "100%",
                           }}
                         >
                           <div
@@ -1091,7 +1209,7 @@ export default function ReporteDetalleClient({
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                {comentario.fecha}
+                                {formatearFechaHoraCorta(comentario.fecha)}
                               </p>
                             </div>
                           </div>
@@ -1102,7 +1220,10 @@ export default function ReporteDetalleClient({
                               color: "#374151",
                               lineHeight: "1.6",
                               whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                              overflowWrap: "break-word",
                               paddingLeft: "40px",
+                              maxWidth: "100%",
                             }}
                           >
                             {limpiarTextoComentario(comentario.texto)}
@@ -1244,6 +1365,20 @@ export default function ReporteDetalleClient({
           archivo={archivoSeleccionado}
           periodoId={detalle.periodoId}
           onClose={() => setArchivoSeleccionado(null)}
+        />
+      )}
+
+      {isAdmin && detalle && (
+        <ModalValidarReporte
+          isOpen={modalValidarAbierto}
+          onClose={() => setModalValidarAbierto(false)}
+          periodoId={detalle.periodoId}
+          reporteNombre={detalle.reporteNombre}
+          responsable={
+            detalle.responsableElaboracion?.nombreCompleto || "Sin asignar"
+          }
+          onSuccess={handleValidarSuccess}
+          onError={handleValidarError}
         />
       )}
     </div>
