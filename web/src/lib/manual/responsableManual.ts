@@ -257,11 +257,20 @@ const relabelNavigationButtons = () => {
   const done = document.querySelector<HTMLButtonElement>(
     ".driver-popover-done-btn"
   );
+  const close = document.querySelector<HTMLButtonElement>(
+    ".driver-popover-close-btn"
+  );
 
   if (prev && prev.textContent !== "Anterior") prev.textContent = "Anterior";
   if (next && next.textContent !== "Siguiente") next.textContent = "Siguiente";
   // El botón "done" mantiene su texto original (puede ser "Siguiente" o "Hecho")
   // No lo sobrescribimos para respetar la configuración del paso
+  
+  // Remover foco del botón de cerrar (X) si está enfocado
+  // Esto evita que quede con borde naranja al navegar con flechas
+  if (close && document.activeElement === close) {
+    close.blur();
+  }
 };
 
 const scrollToHighlightedElement = () => {
