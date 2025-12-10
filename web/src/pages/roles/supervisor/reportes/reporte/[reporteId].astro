@@ -3,8 +3,13 @@ import SupervisorLayout from '../../../../../layouts/roles/SupervisorLayout.astr
 import SupervisorReporteDetalleClient from '../../../../../components/supervisor/SupervisorReporteDetalleClient';
 
 const { reporteId } = Astro.params;
+
+if (!reporteId) {
+  throw new Error('El parámetro reporteId es obligatorio');
+}
+const reporteIdStrict = reporteId as string;
 ---
 
 <SupervisorLayout title="Entregas del Reporte">
-  <SupervisorReporteDetalleClient client:load reporteId={reporteId} />
+  <SupervisorReporteDetalleClient client:load reporteId={reporteIdStrict} />
 </SupervisorLayout>
