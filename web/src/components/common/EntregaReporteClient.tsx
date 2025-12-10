@@ -9,7 +9,10 @@ import { normalizarEstado } from "../../lib/utils/estados";
 import { useToast } from "../Toast";
 import FileUploadZone from "./FileUploadZone";
 import FilesList from "./FilesList";
-import { logAction } from "../../lib/telemetry";
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const REPORT_ALLOWED_EXT = [".pdf", ".doc", ".docx", ".xls", ".xlsx"];
+const EVIDENCE_ALLOWED_EXT = [".pdf", ".png", ".jpg", ".jpeg", ".webp"];
 
 export interface CurrentUser {
   id: string;
@@ -37,22 +40,30 @@ export default function EntregaReporteClient({
 
   // Estado de URL params para backward compatibility
   const [periodoId, setPeriodoId] = useState<string>(periodoIdProp || "");
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(currentUserProp || null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(
+    currentUserProp || null
+  );
 
   // Estado principal
-  const [periodo, setPeriodo] = useState<ReportePeriodo | null>(initialData || null);
+  const [periodo, setPeriodo] = useState<ReportePeriodo | null>(
+    initialData || null
+  );
   const [archivos, setArchivos] = useState<ArchivoDTO[]>([]);
   const [loading, setLoading] = useState(!initialData);
   const [submitting, setSubmitting] = useState(false);
 
   // Estado de formularios
   const [comentarios, setComentarios] = useState("");
-  const [archivosNuevos, setArchivosNuevos] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [archivoReporte, setArchivoReporte] = useState<File | null>(null);
+  const [archivosEvidencia, setArchivosEvidencia] = useState<File[]>([]);
+  const [reporteError, setReporteError] = useState<string | null>(null);
+  const [evidenciaError, setEvidenciaError] = useState<string | null>(null);
 
   // Estado de modales
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showCommentsSection, setShowCommentsSection] = useState(mode === "modal");
+  const [showCommentsSection, setShowCommentsSection] = useState(
+    mode === "modal"
+  );
 
   // Función auxiliar para cargar archivos
   const loadArchivos = useCallback(async () => {
@@ -72,7 +83,7 @@ export default function EntregaReporteClient({
   // Cargar parámetros de URL y usuario actual si no vienen por props
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     // Si no viene periodoId por props, leerlo de URL
     if (!periodoIdProp) {
       const params = new URLSearchParams(window.location.search);
@@ -91,7 +102,7 @@ export default function EntregaReporteClient({
             id: usuario.usuarioId,
             email: usuario.email,
             role: role as "responsable" | "supervisor" | "admin",
-            nombreCompleto: `${usuario.firstName} ${usuario.firstLastname}`
+            nombreCompleto: `${usuario.firstName} ${usuario.firstLastname}`,
           });
         } catch (err) {
           console.error("[EntregaReporte] Error parseando usuario:", err);
@@ -113,9 +124,8 @@ export default function EntregaReporteClient({
         setLoading(true);
 
         // Cargar periodo si no viene en props
-        const periodoData = await flujoReportesService.obtenerPeriodo(
-          periodoId
-        );
+        const periodoData =
+          await flujoReportesService.obtenerPeriodo(periodoId);
         setPeriodo(periodoData);
 
         // Cargar archivos
@@ -158,8 +168,7 @@ export default function EntregaReporteClient({
       canSubmit:
         isResponsable &&
         (estado === "pendiente" || estado === "requiere_correccion"),
-      canValidate:
-        (isSupervisor || isAdmin) && estado === "en_revision",
+      canValidate: (isSupervisor || isAdmin) && estado === "en_revision",
       canReject:
         (isSupervisor || isAdmin) &&
         (estado === "en_revision" || estado === "enviado"),
@@ -172,16 +181,89 @@ export default function EntregaReporteClient({
   }, [periodo, currentUser]);
 
   // Manejadores de acciones
-  const handleUploadFiles = useCallback(
-    (files: File[]) => {
-      setArchivosNuevos((prev) => [...prev, ...files]);
-      success(`${files.length} archivo(s) agregado(s)`);
+  const validateFile = useCallback(
+    (file: File, allowedExts: string[], label: string): string | null => {
+      const extension = file.name.includes(".")
+        ? file.name.substring(file.name.lastIndexOf(".")).toLowerCase()
+        : "";
+
+      if (!allowedExts.includes(extension)) {
+        return `${label} debe tener formato ${allowedExts.join(", ")}`;
+      }
+
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return `${label} supera el tamaño máximo de 10MB`;
+      }
+
+      return null;
     },
-    [success]
+    []
   );
 
-  const handleRemoveFile = useCallback((index: number) => {
-    setArchivosNuevos((prev) => prev.filter((_, i) => i !== index));
+  const handleReporteSelected = useCallback(
+    (files: File[]) => {
+      const file = files[0];
+      if (!file) return;
+
+      const errorMsg = validateFile(
+        file,
+        REPORT_ALLOWED_EXT,
+        "El archivo del reporte"
+      );
+
+      if (errorMsg) {
+        setArchivoReporte(null);
+        setReporteError(errorMsg);
+        showError(errorMsg);
+        return;
+      }
+
+      setArchivoReporte(file);
+      setReporteError(null);
+    },
+    [validateFile, showError]
+  );
+
+  const handleEvidenciaSelected = useCallback(
+    (files: File[]) => {
+      if (!files.length) return;
+
+      const nextFiles: File[] = [];
+      for (const file of files) {
+        const errorMsg = validateFile(
+          file,
+          EVIDENCE_ALLOWED_EXT,
+          "El archivo de evidencia"
+        );
+        if (errorMsg) {
+          setEvidenciaError(errorMsg);
+          showError(errorMsg);
+          return;
+        }
+        nextFiles.push(file);
+      }
+
+      const combined = [...archivosEvidencia, ...nextFiles];
+      if (combined.length > 2) {
+        setEvidenciaError("Máximo 2 archivos de evidencia");
+        showError("Máximo 2 archivos de evidencia");
+        return;
+      }
+
+      setArchivosEvidencia(combined);
+      setEvidenciaError(null);
+    },
+    [archivosEvidencia, validateFile, showError]
+  );
+
+  const handleRemoveReporte = useCallback(() => {
+    setArchivoReporte(null);
+    setReporteError(null);
+  }, []);
+
+  const handleRemoveEvidencia = useCallback((index: number) => {
+    setArchivosEvidencia((prev) => prev.filter((_, i) => i !== index));
+    setEvidenciaError(null);
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -190,18 +272,35 @@ export default function EntregaReporteClient({
       return;
     }
 
-    // Validar que haya al menos un archivo (nuevo o existente)
-    if (archivosNuevos.length === 0 && archivos.length === 0) {
-      showError("Debes adjuntar al menos un archivo antes de enviar");
+    if (reporteError || evidenciaError) {
+      showError("Corrige los archivos seleccionados antes de enviar");
+      return;
+    }
+
+    const missingReporte = !archivoReporte;
+    const missingEvidencia = archivosEvidencia.length === 0;
+
+    if (missingReporte || missingEvidencia) {
+      const message =
+        missingReporte && missingEvidencia
+          ? "Debes adjuntar el archivo del reporte y una evidencia"
+          : missingReporte
+            ? "Debes adjuntar el archivo del reporte"
+            : "Debes adjuntar un archivo de evidencia";
+
+      showError(message);
+      if (missingReporte) setReporteError("Este archivo es obligatorio");
+      if (missingEvidencia) setEvidenciaError("Este archivo es obligatorio");
       return;
     }
 
     try {
       setSubmitting(true);
 
-      // Subir archivos nuevos si los hay
       const evidenciasIds: string[] = [];
-      for (const file of archivosNuevos) {
+      const filesToUpload: File[] = [archivoReporte, ...archivosEvidencia];
+
+      for (const file of filesToUpload) {
         const response = await evidenciasService.subirPorPeriodo(
           periodoId,
           file
@@ -214,7 +313,7 @@ export default function EntregaReporteClient({
       const payload = {
         periodoId,
         comentarios: comentarios.trim() || undefined,
-        evidenciasIds: evidenciasIds.length > 0 ? evidenciasIds : undefined,
+        evidenciasIds,
       };
 
       const resultado =
@@ -223,7 +322,10 @@ export default function EntregaReporteClient({
           : await flujoReportesService.enviar(payload);
 
       setPeriodo(resultado);
-      setArchivosNuevos([]);
+      setArchivoReporte(null);
+      setArchivosEvidencia([]);
+      setReporteError(null);
+      setEvidenciaError(null);
       setComentarios("");
       success("Entrega enviada correctamente");
 
@@ -248,8 +350,10 @@ export default function EntregaReporteClient({
   }, [
     permissions.canSubmit,
     currentUser,
-    archivosNuevos,
-    archivos.length,
+    reporteError,
+    evidenciaError,
+    archivoReporte,
+    archivosEvidencia,
     periodoId,
     periodo?.estado,
     comentarios,
@@ -277,6 +381,24 @@ export default function EntregaReporteClient({
 
   const estado = normalizarEstado(periodo.estado);
   const estadoLabel = periodo.estadoDescripcion || estado;
+  const submitDisabled =
+    submitting ||
+    !archivoReporte ||
+    archivosEvidencia.length === 0 ||
+    archivosEvidencia.length > 2 ||
+    Boolean(reporteError) ||
+    Boolean(evidenciaError);
+
+  const submitHint =
+    !archivoReporte && archivosEvidencia.length === 0
+      ? "Adjunta el archivo del reporte y al menos una evidencia"
+      : !archivoReporte
+        ? "Adjunta el archivo del reporte"
+        : archivosEvidencia.length === 0
+          ? "Adjunta al menos una evidencia"
+          : archivosEvidencia.length > 2
+            ? "Máximo 2 archivos de evidencia"
+            : "";
 
   return (
     <div className={`entrega-page mode-${mode}`}>
@@ -284,14 +406,19 @@ export default function EntregaReporteClient({
       <div className="hero-card">
         <div className="hero-header">
           <h1 className="hero-title">{periodo.reporteNombre}</h1>
-          <span className={`estado-badge estado-${estado}`}>
-            {estadoLabel}
-          </span>
+          <span className={`estado-badge estado-${estado}`}>{estadoLabel}</span>
         </div>
 
         <div className="hero-meta">
           <div className="meta-item">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="3" y="4" width="18" height="17" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -305,7 +432,14 @@ export default function EntregaReporteClient({
             </span>
           </div>
           <div className="meta-item">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="4" y="9" width="16" height="11" rx="1" />
               <path d="M8 9V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4" />
             </svg>
@@ -315,10 +449,20 @@ export default function EntregaReporteClient({
 
         {periodo.comentarios && periodo.comentarios.length > 0 && (
           <div className="hero-observaciones">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <span>Último comentario: {periodo.comentarios[periodo.comentarios.length - 1].texto}</span>
+            <span>
+              Último comentario:{" "}
+              {periodo.comentarios[periodo.comentarios.length - 1].texto}
+            </span>
           </div>
         )}
       </div>
@@ -331,7 +475,10 @@ export default function EntregaReporteClient({
             <p>Evidencias previamente cargadas</p>
           </div>
           <FilesList
-            archivos={archivos.map(a => ({ ...a, urlPublica: a.urlPublica ?? null }))}
+            archivos={archivos.map((a) => ({
+              ...a,
+              urlPublica: a.urlPublica ?? null,
+            }))}
             periodoId={periodoId}
             canDelete={permissions.canUploadFiles && !submitting}
             onRefresh={loadArchivos}
@@ -343,33 +490,89 @@ export default function EntregaReporteClient({
       {permissions.canUploadFiles && (
         <div className="card">
           <div className="card-header">
-            <h3>Adjuntar archivos</h3>
+            <h3>Adjuntar archivos requeridos</h3>
             <p>
-              Sube evidencias, reportes o documentos relacionados (máx. 10
-              archivos)
+              Sube el archivo del reporte y una evidencia de soporte (máx. 10MB
+              cada uno)
             </p>
           </div>
-          
-          {archivos.length === 0 && archivosNuevos.length === 0 && (
+
+          {(!archivoReporte || archivosEvidencia.length === 0) && (
             <div className="upload-notice">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>Debes adjuntar al menos un archivo para poder enviar la entrega</span>
+              <span>
+                Debes adjuntar el archivo del reporte y al menos una evidencia
+                (máx. 2) para poder enviar la entrega
+              </span>
             </div>
           )}
-          
-          <FileUploadZone
-            onFilesSelected={handleUploadFiles}
-            selectedFiles={archivosNuevos}
-            onRemoveFile={handleRemoveFile}
-            uploadProgress={uploadProgress}
-            disabled={submitting}
-            maxFiles={10}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.7z,.png,.jpg,.jpeg"
-          />
+
+          <div className="upload-grid">
+            <div className="upload-block">
+              <div className="upload-block-header">
+                <div>
+                  <h4>
+                    Archivo del reporte <span className="required">*</span>
+                  </h4>
+                  <p className="upload-helper">
+                    Formatos: PDF, DOC, DOCX, XLS, XLSX. Máx. 10MB.
+                  </p>
+                </div>
+                {reporteError && (
+                  <span className="field-error">{reporteError}</span>
+                )}
+              </div>
+              <FileUploadZone
+                onFilesSelected={handleReporteSelected}
+                selectedFiles={archivoReporte ? [archivoReporte] : []}
+                onRemoveFile={() => handleRemoveReporte()}
+                disabled={submitting}
+                maxFiles={1}
+                accept={REPORT_ALLOWED_EXT.join(",")}
+                label="Archivo del reporte"
+                helperText="Sube el documento oficial del reporte (máx. 10MB)"
+                multiple={false}
+              />
+            </div>
+
+            <div className="upload-block">
+              <div className="upload-block-header">
+                <div>
+                  <h4>
+                    Evidencia (imagen o PDF) <span className="required">*</span>
+                  </h4>
+                  <p className="upload-helper">
+                    Formatos: PDF, PNG, JPG, JPEG, WEBP. Máx. 10MB.
+                  </p>
+                </div>
+                {evidenciaError && (
+                  <span className="field-error">{evidenciaError}</span>
+                )}
+              </div>
+              <FileUploadZone
+                onFilesSelected={handleEvidenciaSelected}
+                selectedFiles={archivosEvidencia}
+                onRemoveFile={(index) => handleRemoveEvidencia(index)}
+                disabled={submitting}
+                maxFiles={2}
+                accept={EVIDENCE_ALLOWED_EXT.join(",")}
+                label="Evidencia"
+                helperText="Sube una o dos evidencias (PDF o imagen, máx. 10MB c/u). Formatos: PDF, PNG, JPG, JPEG, WEBP."
+                multiple
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -411,14 +614,14 @@ export default function EntregaReporteClient({
             type="button"
             className="btn btn-primary"
             onClick={handleSubmit}
-            disabled={submitting || (archivosNuevos.length === 0 && archivos.length === 0)}
-            title={
-              archivosNuevos.length === 0 && archivos.length === 0
-                ? "Debes adjuntar al menos un archivo"
-                : ""
-            }
+            disabled={submitDisabled}
+            title={submitHint}
           >
-            {submitting ? "Enviando..." : estado === "requiere_correccion" ? "Reenviar Entrega" : "Enviar Entrega"}
+            {submitting
+              ? "Enviando..."
+              : estado === "requiere_correccion"
+                ? "Reenviar Entrega"
+                : "Enviar Entrega"}
           </button>
         )}
       </div>
@@ -505,6 +708,42 @@ export default function EntregaReporteClient({
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
+        }
+
+        .upload-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 1rem;
+        }
+
+        .upload-block {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .upload-block-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+
+        .upload-helper {
+          margin: 0.25rem 0 0;
+          color: var(--neutral-600);
+          font-size: 0.85rem;
+        }
+
+        .required {
+          color: var(--color-danger, #dc2626);
+          font-weight: 700;
+        }
+
+        .field-error {
+          color: var(--color-danger, #dc2626);
+          font-size: 0.85rem;
+          font-weight: 600;
         }
 
         .card-header h3 {

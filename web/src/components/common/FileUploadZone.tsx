@@ -1,4 +1,4 @@
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useMemo, useState, type DragEvent } from "react";
 
 interface FileUploadZoneProps {
   onFilesSelected: (files: File[]) => void;
@@ -8,6 +8,10 @@ interface FileUploadZoneProps {
   disabled?: boolean;
   maxFiles?: number;
   accept?: string;
+  label?: string;
+  helperText?: string;
+  inputId?: string;
+  multiple?: boolean;
 }
 
 export default function FileUploadZone({
@@ -18,15 +22,26 @@ export default function FileUploadZone({
   disabled = false,
   maxFiles = 10,
   accept = ".pdf,.zip,.rar,.7z,.doc,.docx,.xlsx,.xls",
+  label,
+  helperText,
+  inputId,
+  multiple = true,
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const inputIdToUse = useMemo(
+    () => inputId || `file-input-${Math.random().toString(36).slice(2, 8)}`,
+    [inputId]
+  );
 
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!disabled) {
-      setIsDragging(true);
-    }
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      if (!disabled) {
+        setIsDragging(true);
+      }
+    },
+    [disabled]
+  );
 
   const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -57,7 +72,7 @@ export default function FileUploadZone({
 
       const files = Array.from(e.target.files);
       if (selectedFiles.length + files.length > maxFiles) {
-        alert(`Solo puedes subir un m\u00e1ximo de ${maxFiles} archivos`);
+        alert(`Solo puedes subir un maximo de ${maxFiles} archivos`);
         return;
       }
 
@@ -87,15 +102,15 @@ export default function FileUploadZone({
       >
         <input
           type="file"
-          id="file-input"
-          multiple
+          id={inputIdToUse}
+          multiple={multiple}
           accept={accept}
           onChange={handleFileSelect}
           disabled={disabled}
           style={{ display: "none" }}
           aria-label="Seleccionar archivos para subir"
         />
-        <label htmlFor="file-input" className="upload-label">
+        <label htmlFor={inputIdToUse} className="upload-label">
           <svg
             viewBox="0 0 24 24"
             width="48"
@@ -111,7 +126,8 @@ export default function FileUploadZone({
               <strong>Arrastra archivos aquí</strong> o haz clic para seleccionar
             </p>
             <p className="upload-sub-text">
-              Archivos permitidos: PDF, ZIP, DOC, DOCX, XLS, XLSX (Máx. {maxFiles})
+              {helperText ??
+                `Archivos permitidos segun el filtro de extensiones${multiple ? ` (Max. ${maxFiles})` : ""}`}
             </p>
           </div>
         </label>
@@ -138,7 +154,9 @@ export default function FileUploadZone({
                   </svg>
                   <div className="file-details">
                     <span className="file-name">{file.name}</span>
-                    <span className="file-size">{formatFileSize(file.size)}</span>
+                    <span className="file-size">
+                      {formatFileSize(file.size)}
+                    </span>
                   </div>
                 </div>
 
