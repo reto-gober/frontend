@@ -38,6 +38,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
   
   const [diasPersonalizados, setDiasPersonalizados] = useState<number | ''>('');
 
+  // Estados para validación de fechas
+  const [dateErrors, setDateErrors] = useState({
+    inicioVigencia: '',
+    finVigencia: '',
+    fechaVencimiento: '',
+  });
+
   const [formData, setFormData] = useState<ReporteRequest>({
     nombre: '',
     descripcion: '',
@@ -54,6 +61,52 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
     telefonoResponsable: '',
     estado: 'activo',
   });
+
+  // Funciones auxiliares para comparación de fechas
+  const parseDateFromInput = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    // El input type="date" retorna formato yyyy-MM-dd
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  const compareDates = (date1: Date, date2: Date): number => {
+    const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+    const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+    return d1.getTime() - d2.getTime();
+  };
+
+  // Validación de fechas en tiempo real
+  const validateDates = (inicio: string, fin: string | null, vencimiento: string) => {
+    const errors = {
+      inicioVigencia: '',
+      finVigencia: '',
+      fechaVencimiento: '',
+    };
+
+    const inicioDate = parseDateFromInput(inicio);
+    const finDate = fin ? parseDateFromInput(fin) : null;
+    const vencimientoDate = parseDateFromInput(vencimiento);
+
+    // Validar que fin >= inicio
+    if (inicioDate && finDate) {
+      if (compareDates(finDate, inicioDate) < 0) {
+        errors.finVigencia = 'La fecha fin debe ser igual o posterior a la fecha de inicio';
+      }
+    }
+
+    // Validar que vencimiento esté entre inicio y fin
+    if (vencimientoDate && inicioDate) {
+      if (compareDates(vencimientoDate, inicioDate) < 0) {
+        errors.fechaVencimiento = 'La fecha de vencimiento no puede ser anterior al inicio de vigencia';
+      } else if (finDate && compareDates(vencimientoDate, finDate) > 0) {
+        errors.fechaVencimiento = 'La fecha de vencimiento no puede ser posterior al fin de vigencia';
+      }
+    }
+
+    setDateErrors(errors);
+    return !errors.inicioVigencia && !errors.finVigencia && !errors.fechaVencimiento;
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -175,6 +228,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
     setSaving(true);
 
     try {
+      // Validar que no haya errores de fechas
+      if (dateErrors.inicioVigencia || dateErrors.finVigencia || dateErrors.fechaVencimiento) {
+        error('Por favor corrija los errores en las fechas antes de continuar');
+        setSaving(false);
+        return;
+      }
+
       // Validar frecuencia personalizada
       if (formData.frecuencia === 'personalizada' && !diasPersonalizados) {
         error('Debe especificar los días para la frecuencia personalizada');
@@ -281,10 +341,24 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       return;
     }
     
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [name]: value,
-    }));
+    };
+    
+    setFormData(newFormData);
+
+    // Validar fechas en tiempo real cuando cambian los campos relacionados
+    if (name === 'fechaInicioVigencia' || name === 'fechaFinVigencia' || name === 'fechaVencimiento') {
+      // Usar setTimeout para permitir que el estado se actualice primero
+      setTimeout(() => {
+        validateDates(
+          name === 'fechaInicioVigencia' ? value : (newFormData.fechaInicioVigencia || ''),
+          name === 'fechaFinVigencia' ? value : (newFormData.fechaFinVigencia || ''),
+          name === 'fechaVencimiento' ? value : (newFormData.fechaVencimiento || '')
+        );
+      }, 0);
+    }
   };
 
   // ===== FUNCIONES PARA NUEVO FORMATO =====
@@ -417,7 +491,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     Nombre del reporte <span style={{ color: 'var(--color-danger)' }}>*</span>
                   </label>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.5rem' }}>
-                    Descriptivo y único
+                    Descriptivo y único (máx. 50 caracteres)
                   </div>
                   <input
                     type="text"
@@ -426,8 +500,14 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     className="form-input"
                     value={formData.nombre}
                     onChange={handleChange}
+                    maxLength={50}
                     required
                   />
+                  {formData.nombre && (
+                    <div style={{ fontSize: '0.6875rem', color: formData.nombre.length >= 50 ? 'var(--color-danger)' : 'var(--neutral-500)', marginTop: '0.25rem', textAlign: 'right' }}>
+                      {formData.nombre.length}/50
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ minHeight: '92px' }}>
@@ -761,7 +841,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     value={formData.fechaVencimiento}
                     onChange={handleChange}
                     required
+                    style={dateErrors.fechaVencimiento ? { borderColor: 'var(--color-danger)' } : {}}
                   />
+                  {dateErrors.fechaVencimiento && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-danger)', marginTop: '0.25rem' }}>
+                      {dateErrors.fechaVencimiento}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -776,6 +862,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     value={formData.plazoAdicionalDias || ''}
                     onChange={handleChange}
                     min="0"
+                    max="30"
                     placeholder="0"
                   />
                 </div>
@@ -793,7 +880,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     className="form-input"
                     value={formData.fechaInicioVigencia}
                     onChange={handleChange}
+                    style={dateErrors.inicioVigencia ? { borderColor: 'var(--color-danger)' } : {}}
                   />
+                  {dateErrors.inicioVigencia && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-danger)', marginTop: '0.25rem' }}>
+                      {dateErrors.inicioVigencia}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -807,7 +900,13 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                     className="form-input"
                     value={formData.fechaFinVigencia || ''}
                     onChange={handleChange}
+                    style={dateErrors.finVigencia ? { borderColor: 'var(--color-danger)' } : {}}
                   />
+                  {dateErrors.finVigencia && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-danger)', marginTop: '0.25rem' }}>
+                      {dateErrors.finVigencia}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -922,7 +1021,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
                     Nombre
                   </div>
-                  <div style={{ color: 'var(--color-primary-900)', fontWeight: 500, lineHeight: 1.4 }}>
+                  <div style={{ color: 'var(--color-primary-900)', fontWeight: 500, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word' }} title={formData.nombre || '—'}>
                     {formData.nombre || '—'}
                   </div>
                 </div>
@@ -931,7 +1030,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                   <div style={{ color: 'var(--color-primary-700)', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.375rem' }}>
                     Entidad
                   </div>
-                  <div style={{ color: 'var(--color-primary-900)', fontWeight: 500, lineHeight: 1.4 }}>
+                  <div style={{ color: 'var(--color-primary-900)', fontWeight: 500, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word' }} title={entidades.find(e => e.entidadId === formData.entidadId)?.nombre || '—'}>
                     {entidades.find(e => e.entidadId === formData.entidadId)?.nombre || '—'}
                   </div>
                 </div>
@@ -945,9 +1044,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                         {selectedResponsables.slice(0, 3).map(id => {
                           const usuario = usuarios.find(u => u.usuarioId === id);
+                          const nombreCompleto = usuario ? `${usuario.firstName} ${usuario.firstLastname}` : '';
                           return usuario ? (
-                            <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4 }}>
-                              • {usuario.firstName} {usuario.firstLastname}
+                            <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={nombreCompleto}>
+                              • {nombreCompleto}
                             </div>
                           ) : null;
                         })}
@@ -979,9 +1079,10 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                               firstName: usuarioActual.firstName,
                               firstLastname: usuarioActual.firstLastname
                             } : null);
+                          const nombreCompleto = usuario ? `${usuario.firstName} ${usuario.firstLastname}` : '';
                           return usuario ? (
-                            <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4 }}>
-                              • {usuario.firstName} {usuario.firstLastname}
+                            <div key={id} style={{ fontSize: '0.8125rem', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={nombreCompleto}>
+                              • {nombreCompleto}
                               {id === usuarioActual?.usuarioId && esSupervisor && (
                                 <span style={{ marginLeft: '0.375rem', fontSize: '0.75rem', color: 'var(--color-primary-600)' }}>
                                   (Tú)
