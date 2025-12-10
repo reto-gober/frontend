@@ -152,6 +152,16 @@ export default function SidebarResponsable() {
           navigateTo: "/roles/responsable/mis-tareas",
         }),
     },
+    {
+      id: "tour-alertas",
+      name: "Guía de alertas",
+      description: "Aprende a filtrar, leer y abrir alertas.",
+      onStart: () =>
+        manual.startTour({
+          tourId: "tour-alertas",
+          navigateTo: "/roles/responsable/alertas",
+        }),
+    },
   ];
 
   useEffect(() => {

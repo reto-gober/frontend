@@ -182,7 +182,46 @@ const createDriverInstance = (
   injectResponsableStyles();
   setThemeFlag();
 
+  const attachCloseGuards = (
+    driverInstance: Driver | null,
+    allowOverlayClose: boolean
+  ) => {
+    if (!driverInstance || typeof document === "undefined") return () => {};
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" || event.key === "Esc") {
+        event.stopPropagation();
+        driverInstance.destroy();
+      }
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (target.closest(".driver-popover-close-btn")) {
+        event.stopPropagation();
+        driverInstance.destroy();
+        return;
+      }
+
+      if (allowOverlayClose && target.classList.contains("driver-overlay")) {
+        event.stopPropagation();
+        driverInstance.destroy();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeydown, true);
+    document.addEventListener("click", handleClick, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeydown, true);
+      document.removeEventListener("click", handleClick, true);
+    };
+  };
+
   const userOptions = options as Record<string, unknown> | undefined;
+  let cleanupCloseGuards: (() => void) | undefined;
 
   const withNavRelabel = (
     cb?: (...cbArgs: unknown[]) => void
@@ -199,6 +238,8 @@ const createDriverInstance = (
 
   const mergedOptions = {
     ...BASE_OPTIONS,
+    allowClose: options?.allowClose ?? true, // Respetar config, por defecto permitir cerrar
+    allowKeyboardControl: options?.allowKeyboardControl ?? true,
     ...(options || {}),
     onHighlightStarted: withNavRelabel(
       userOptions?.onHighlightStarted as
@@ -221,6 +262,7 @@ const createDriverInstance = (
     onReset: (...args: unknown[]) => {
       clearThemeFlag();
       stopNavObserver();
+      cleanupCloseGuards?.();
       setActive?.(null);
       const reset = userOptions?.onReset as
         | ((...cbArgs: unknown[]) => void)
@@ -230,12 +272,13 @@ const createDriverInstance = (
     onDestroyed: (...args: unknown[]) => {
       clearThemeFlag();
       stopNavObserver();
+      cleanupCloseGuards?.();
       setActive?.(null);
       const destroyed = userOptions?.onDestroyed as
         | ((...cbArgs: unknown[]) => void)
         | undefined;
       destroyed?.(...args);
-      
+
       // Ejecutar onTourComplete DESPUÉS de que el tour se destruya completamente
       if (onTourComplete) {
         onTourComplete();
@@ -243,7 +286,12 @@ const createDriverInstance = (
     },
   } as DriverOptions;
 
-  return driver(mergedOptions);
+  const instance = driver(mergedOptions);
+  cleanupCloseGuards = attachCloseGuards(
+    instance,
+    mergedOptions.allowClose !== false
+  );
+  return instance;
 };
 
 const relabelNavigationButtons = () => {
@@ -265,7 +313,7 @@ const relabelNavigationButtons = () => {
   if (next && next.textContent !== "Siguiente") next.textContent = "Siguiente";
   // El botón "done" mantiene su texto original (puede ser "Siguiente" o "Hecho")
   // No lo sobrescribimos para respetar la configuración del paso
-  
+
   // Remover foco del botón de cerrar (X) si está enfocado
   // Esto evita que quede con borde naranja al navegar con flechas
   if (close && document.activeElement === close) {
@@ -322,6 +370,40 @@ const scrollToHighlightedElement = () => {
       }, 300);
     }
   }
+};
+
+const waitForElement = (
+  selector: string,
+  timeoutMs = 2500,
+  intervalMs = 100
+) => {
+  return new Promise<void>((resolve) => {
+    if (typeof document === "undefined") {
+      resolve();
+      return;
+    }
+
+    const start = Date.now();
+
+    const check = () => {
+      if (document.querySelector(selector)) {
+        resolve();
+        return;
+      }
+
+      if (Date.now() - start >= timeoutMs) {
+        console.warn(
+          `[manual] Elemento no encontrado (${selector}) dentro del tiempo; se continúa el tour.`
+        );
+        resolve();
+        return;
+      }
+
+      setTimeout(check, intervalMs);
+    };
+
+    check();
+  });
 };
 
 let navObserver: MutationObserver | null = null;
@@ -430,6 +512,23 @@ export const createResponsableManual = () => {
         }
       };
 
+      const stepsForRun = steps
+        .filter((step) => {
+          const skipSelector = (step as { skipIfMissingSelector?: string })
+            .skipIfMissingSelector;
+          if (!skipSelector || typeof document === "undefined") return true;
+          return Boolean(document.querySelector(skipSelector));
+        })
+        .map((step) => ({
+          ...step,
+          popover: step.popover ? { ...step.popover } : undefined,
+        }));
+
+      if (stepsForRun.length) {
+        const last = stepsForRun[stepsForRun.length - 1];
+        last.popover = { ...last.popover, doneBtnText: "Hecho" };
+      }
+
       const driverInstance = createDriverInstance(
         tour.options,
         (id) => {
@@ -437,7 +536,8 @@ export const createResponsableManual = () => {
         },
         onTourComplete
       );
-      driverInstance?.setSteps(steps);
+
+      driverInstance?.setSteps(stepsForRun);
       activeTourId = tourId;
       driverInstance?.drive();
       startNavObserver();
@@ -681,6 +781,108 @@ const registerDashboardTour = () => {
   });
 };
 
+const registerAlertasTour = () => {
+  responsableManualSingleton.registerTour({
+    tourId: "tour-alertas",
+    targetRoute: "/roles/responsable/alertas",
+    sections: [
+      {
+        id: "alertas-overview",
+        label: "Alertas y notificaciones",
+        steps: [
+          {
+            element: ".alertas-summary .summary-card.critical",
+            popover: {
+              title: "Alertas críticas",
+              description:
+                "Vencimientos o errores urgentes. Observa el contador total de críticas.",
+              side: "bottom",
+            },
+            onHighlightStarted: () =>
+              waitForElement(".alertas-summary .summary-card.critical"),
+          },
+          {
+            element: ".alertas-summary .summary-card.warning",
+            popover: {
+              title: "Alertas de advertencia",
+              description:
+                "Pendientes próximos a vencer o correcciones requeridas.",
+              side: "bottom",
+            },
+            onHighlightStarted: () =>
+              waitForElement(".alertas-summary .summary-card.warning"),
+          },
+          {
+            element: ".alertas-summary .summary-card.info",
+            popover: {
+              title: "Alertas informativas",
+              description: "Avisos generales o recordatorios sin urgencia.",
+              side: "bottom",
+            },
+            onHighlightStarted: () =>
+              waitForElement(".alertas-summary .summary-card.info"),
+          },
+          {
+            element: ".alertas-summary .summary-card.success",
+            popover: {
+              title: "Alertas de éxito",
+              description:
+                "Confirmaciones de aprobaciones recientes en tus reportes.",
+              side: "bottom",
+            },
+            onHighlightStarted: () =>
+              waitForElement(".alertas-summary .summary-card.success"),
+          },
+          {
+            element: ".filters-bar",
+            popover: {
+              title: "Filtros superiores",
+              description:
+                "Usa las pestañas para ver todas, no leídas o leídas y el selector para filtrar por tipo de alerta.",
+              side: "bottom",
+            },
+            onHighlightStarted: () => waitForElement(".filters-bar"),
+          },
+          {
+            element: ".alertas-container .alertas-group:first-of-type",
+            popover: {
+              title: "Lista agrupada por fecha",
+              description:
+                "Las alertas se agrupan en Hoy, Ayer y fechas anteriores para que ubiques rápidamente lo reciente.",
+              side: "top",
+            },
+            onHighlightStarted: () =>
+              waitForElement(".alertas-container .alertas-group"),
+          },
+          {
+            element: ".btn-mark-all",
+            popover: {
+              title: "Marcar todas como leídas",
+              description:
+                "Marca en un clic todas las alertas pendientes y limpia el contador.",
+              side: "left",
+            },
+            onHighlightStarted: () => waitForElement(".btn-mark-all"),
+          },
+          {
+            element: ".alertas-list .alerta-card .alerta-actions",
+            popover: {
+              title: "Ver reporte",
+              description:
+                "Abre el reporte asociado a la alerta para revisarlo o actuar.",
+              side: "top",
+            },
+            skipIfMissingSelector:
+              ".alertas-list .alerta-card .alerta-action-btn",
+            onHighlightStarted: () =>
+              waitForElement(".alertas-list .alerta-card .alerta-actions"),
+          },
+        ],
+      },
+    ],
+  });
+};
+
 const registerMisReportesTour = () => {
   responsableManualSingleton.registerTour({
     tourId: "tour-mis-reportes",
@@ -766,20 +968,7 @@ const registerMisReportesTour = () => {
                 "Navega entre páginas si tienes más de 6 grupos de reportes. La paginación siempre estará visible.",
               side: "top",
             },
-            onHighlightStarted: () => {
-              // Esperar a que el elemento esté disponible en el DOM
-              return new Promise<void>((resolve) => {
-                const checkElement = () => {
-                  const element = document.querySelector(".pagination");
-                  if (element) {
-                    resolve();
-                  } else {
-                    setTimeout(checkElement, 100);
-                  }
-                };
-                checkElement();
-              });
-            },
+            onHighlightStarted: () => waitForElement(".pagination"),
           },
         ],
       },
@@ -817,21 +1006,8 @@ const registerMisTareasTour = () => {
                 "Cada tarjeta representa un período de reporte específico con toda su información y acciones disponibles.",
               side: "top",
             },
-            onHighlightStarted: () => {
-              return new Promise<void>((resolve) => {
-                const checkElement = () => {
-                  const element = document.querySelector(
-                    ".tareas-list .card:first-child"
-                  );
-                  if (element) {
-                    resolve();
-                  } else {
-                    setTimeout(checkElement, 100);
-                  }
-                };
-                checkElement();
-              });
-            },
+            onHighlightStarted: () =>
+              waitForElement(".tareas-list .card:first-child"),
           },
           {
             element: ".tareas-list .card:first-child .estado-badge",
@@ -841,21 +1017,8 @@ const registerMisTareasTour = () => {
                 "Indica el estado actual: Pendiente, Enviado, En Revisión, Aprobado, Rechazado o Vencido.",
               side: "left",
             },
-            onHighlightStarted: () => {
-              return new Promise<void>((resolve) => {
-                const checkElement = () => {
-                  const element = document.querySelector(
-                    ".tareas-list .card:first-child .estado-badge"
-                  );
-                  if (element) {
-                    resolve();
-                  } else {
-                    setTimeout(checkElement, 100);
-                  }
-                };
-                checkElement();
-              });
-            },
+            onHighlightStarted: () =>
+              waitForElement(".tareas-list .card:first-child .estado-badge"),
           },
           {
             element: ".tareas-list .card:first-child .dias-vencimiento",
@@ -865,21 +1028,10 @@ const registerMisTareasTour = () => {
                 "Muestra cuántos días faltan para el vencimiento. Se resalta en rojo si está vencido o próximo a vencer.",
               side: "right",
             },
-            onHighlightStarted: () => {
-              return new Promise<void>((resolve) => {
-                const checkElement = () => {
-                  const element = document.querySelector(
-                    ".tareas-list .card:first-child .dias-vencimiento"
-                  );
-                  if (element) {
-                    resolve();
-                  } else {
-                    setTimeout(checkElement, 100);
-                  }
-                };
-                checkElement();
-              });
-            },
+            onHighlightStarted: () =>
+              waitForElement(
+                ".tareas-list .card:first-child .dias-vencimiento"
+              ),
           },
           {
             element: ".tareas-list .card:first-child",
@@ -907,19 +1059,7 @@ const registerMisTareasTour = () => {
                 "Navega entre páginas si tienes más de 6 tareas. La paginación siempre estará visible.",
               side: "top",
             },
-            onHighlightStarted: () => {
-              return new Promise<void>((resolve) => {
-                const checkElement = () => {
-                  const element = document.querySelector(".pagination");
-                  if (element) {
-                    resolve();
-                  } else {
-                    setTimeout(checkElement, 100);
-                  }
-                };
-                checkElement();
-              });
-            },
+            onHighlightStarted: () => waitForElement(".pagination"),
           },
         ],
       },
@@ -932,5 +1072,6 @@ registerTopbarTour();
 registerDashboardTour();
 registerMisReportesTour();
 registerMisTareasTour();
+registerAlertasTour();
 
 export const useResponsableManual = () => responsableManualSingleton;
