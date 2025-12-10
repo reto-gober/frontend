@@ -54,6 +54,28 @@ export default function AdminEntidadesClient() {
     cargarHistorialImport();
   }, []);
 
+  // Manejar tecla Escape para cerrar modales
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !saving && !importLoading) {
+        if (showModal) {
+          setShowModal(false);
+        }
+        if (showImport) {
+          setShowImport(false);
+          resetImportState();
+        }
+      }
+    };
+
+    if (showModal || showImport) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [showModal, showImport, saving, importLoading]);
+
   const cargarEntidades = async () => {
     try {
       setLoading(true);
@@ -430,7 +452,7 @@ export default function AdminEntidadesClient() {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
@@ -589,7 +611,7 @@ export default function AdminEntidadesClient() {
 
       {/* Modal de importación */}
       {showImport && (
-        <div className="modal-overlay" onClick={() => { setShowImport(false); resetImportState(); }}>
+        <div className="modal-overlay">
           <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">Importar entidades</h2>

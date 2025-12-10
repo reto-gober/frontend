@@ -469,7 +469,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="form-grid-with-sidebar">
           {/* Formulario principal */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
@@ -485,7 +485,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 </h3>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-grid-3cols">
                 <div style={{ minHeight: '92px' }}>
                   <label htmlFor="nombre" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
                     Nombre del reporte <span style={{ color: 'var(--color-danger)' }}>*</span>
@@ -626,7 +626,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
 
               {useNewFormat && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: esSupervisor ? '1fr' : '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div className={esSupervisor ? 'form-grid-1col' : 'form-grid-2cols'} style={{ gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <MultiUserSelector
                       usuarios={usuarios}
                       selectedIds={selectedResponsables}
@@ -679,7 +679,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.75rem' }}>
                   Frecuencia de Reporte <span style={{ color: 'var(--color-danger)' }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                <div className="form-grid-4cols">
                   {[
                     { 
                       value: 'diaria', 
@@ -828,7 +828,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-grid-2cols">
                 <div>
                   <label htmlFor="fechaVencimiento" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
                     Fecha Vencimiento <span style={{ color: 'var(--color-danger)' }}>*</span>
@@ -868,7 +868,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-grid-2cols" style={{ marginBottom: 0 }}>
                 <div>
                   <label htmlFor="fechaInicioVigencia" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
                     Inicio Vigencia
@@ -929,7 +929,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
               {/* Campo oculto para formato */}
               <input type="hidden" name="formato" value="otro" />
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-grid-1col">
                 <div>
                   <label htmlFor="baseLegal" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
                     Base Legal
@@ -946,7 +946,7 @@ export default function ReporteForm({ reporteId, useNewFormat = true, onClose }:
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-grid-2cols">
                 <div>
                   <label htmlFor="linkInstrucciones" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
                     Link de Instrucciones

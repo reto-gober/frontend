@@ -26,6 +26,22 @@ export function ModalValidarReporte({
   const [comentarios, setComentarios] = useState('');
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [validando, setValidando] = useState(false);
+
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !validando) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, validando, onClose]);
   
   // Estados para archivos
   const [archivos, setArchivos] = useState<ArchivoDTO[]>([]);
@@ -114,7 +130,7 @@ export function ModalValidarReporte({
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div
           className="card"
           style={{
@@ -322,7 +338,7 @@ export function ModalValidarReporte({
             }}>
               Decisión <span style={{ color: 'var(--color-danger)' }}>*</span>
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div className="form-grid-3cols">
               <button
                 type="button"
                 onClick={() => setAccion('aprobar')}

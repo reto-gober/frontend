@@ -54,7 +54,7 @@ export default function PeriodConfig({
           Cada cuánto generar periodos <span style={{ color: 'var(--color-danger)' }}>*</span>
         </label>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div className="grid-5cols">
           {[
             { label: 'Mensual', value: 1 },
             { label: 'Bimensual', value: 2 },

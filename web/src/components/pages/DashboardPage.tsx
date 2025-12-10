@@ -33,12 +33,7 @@ export default function DashboardPage() {
         <RoleInfo />
 
         {/* Quick Actions Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1.5rem',
-          marginBottom: '2rem'
-        }}>
+        <div className="grid-auto-fit" style={{ marginBottom: '2rem' }}>
           {/* Responsable Actions */}
           {(activeRole === 'responsable' || activeRole === 'supervisor' || activeRole === 'admin') && (
             <>
@@ -137,11 +132,7 @@ export default function DashboardPage() {
           }}>
             Estadísticas
           </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1rem'
-          }}>
+          <div className="grid-auto-fit-sm">
             <StatCard label="Total Reportes" value="24" trend="+12%" />
             <StatCard label="Pendientes" value="8" trend="-5%" />
             <StatCard label="Aprobados" value="14" trend="+8%" />

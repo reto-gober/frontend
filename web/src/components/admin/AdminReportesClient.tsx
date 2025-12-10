@@ -213,6 +213,34 @@ export default function AdminReportesClient() {
     calcularEstadisticas();
   }, [searchTerm, filterEntidad, filterFrecuencia, filterEstado, reportes]);
 
+  // Manejar tecla Escape para cerrar modales
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showModal) {
+          setShowModal(false);
+          setEditingReporteId(undefined);
+        }
+        if (panelCarga.open) {
+          setPanelCarga((prev) => ({ ...prev, open: false }));
+        }
+        if (modalEnviar.isOpen) {
+          setModalEnviar((prev) => ({ ...prev, isOpen: false }));
+        }
+        if (modalSeleccionPeriodo.open) {
+          setModalSeleccionPeriodo((prev) => ({ ...prev, open: false }));
+        }
+      }
+    };
+
+    if (showModal || panelCarga.open || modalEnviar.isOpen || modalSeleccionPeriodo.open) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [showModal, panelCarga.open, modalEnviar.isOpen, modalSeleccionPeriodo.open]);
+
   const cargarDatos = async () => {
     try {
       setLoading(true);
@@ -854,7 +882,7 @@ export default function AdminReportesClient() {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay-fullscreen" onClick={handleModalClose}>
+        <div className="modal-overlay-fullscreen">
           <div
             className="modal-content-large"
             onClick={(e) => e.stopPropagation()}

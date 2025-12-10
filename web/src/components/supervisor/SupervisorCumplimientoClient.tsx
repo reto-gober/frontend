@@ -477,9 +477,7 @@ export default function SupervisorCumplimientoClient() {
             </div>
           ) : (
             <div className="entities-grid" style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '1.5rem'
+gap: '1.5rem',
             }}>
               {entidadesStats.map((entidad) => (
                 <div key={entidad.entidadId} className="entity-card" style={{
@@ -532,7 +530,7 @@ export default function SupervisorCumplimientoClient() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                  <div className="form-grid-2cols" style={{ gap: '0.75rem' }}>
                     <div style={{ textAlign: 'center', padding: '0.5rem', background: 'var(--neutral-50)', borderRadius: '8px' }}>
                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--neutral-800)' }}>{entidad.total}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)' }}>Total</div>

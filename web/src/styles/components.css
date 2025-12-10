@@ -33,15 +33,154 @@
   margin-bottom: 1.25rem;
 }
 
+/* Grid layouts responsive para formularios */
+.form-grid-with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.form-grid-3cols {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-grid-2cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-grid-4cols {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.form-grid-1col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Grid adicionales para componentes específicos */
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.grid-auto-fit-sm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.grid-auto-fit-xs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.grid-auto-fill {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.grid-auto-fill-sm {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.grid-5cols {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.grid-responsive-selector {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.grid-table-actions {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 1279px) {
+  .form-grid-with-sidebar {
+    grid-template-columns: 1fr 300px;
+  }
+}
+
 @media (max-width: 1024px) {
   .form-grid-responsive {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .form-grid-with-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid-3cols {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-grid-4cols,
+  .grid-5cols {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .grid-responsive-selector {
+    grid-template-columns: 1fr auto;
+  }
+
+  .grid-table-actions {
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem;
+  }
 }
 
 @media (max-width: 640px) {
-  .form-grid-responsive {
+  .form-grid-responsive,
+  .form-grid-3cols,
+  .form-grid-2cols,
+  .form-grid-4cols,
+  .grid-5cols,
+  .grid-responsive-selector,
+  .grid-table-actions {
     grid-template-columns: 1fr;
+  }
+
+  .grid-auto-fit,
+  .grid-auto-fill {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-auto-fit-sm,
+  .grid-auto-fill-sm,
+  .grid-auto-fit-xs {
+    grid-template-columns: 1fr;
+  }
+
+  .form-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
   }
 }
 

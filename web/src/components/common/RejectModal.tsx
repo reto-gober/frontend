@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface RejectModalProps {
   onConfirm: (motivo: string) => void;
@@ -13,6 +13,20 @@ export default function RejectModal({
 }: RejectModalProps) {
   const [motivo, setMotivo] = useState("");
 
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !submitting) {
+        onCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [submitting, onCancel]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (motivo.trim().length < 10) {
@@ -23,7 +37,7 @@ export default function RejectModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
           <div className="modal-header">

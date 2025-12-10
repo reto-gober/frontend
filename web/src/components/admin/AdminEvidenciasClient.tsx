@@ -76,6 +76,29 @@ export default function AdminEvidenciasClient() {
     setCurrentPage(0); // Reset page cuando cambian los filtros
   }, [searchTerm, filterTipo, evidencias]);
 
+  // Manejar tecla Escape para cerrar modales
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleting) {
+        if (showDeleteModal) {
+          setShowDeleteModal(false);
+          setEvidenciaAEliminar(null);
+          setConfirmText('');
+        }
+        if (archivoViewer) {
+          setArchivoViewer(null);
+        }
+      }
+    };
+
+    if (showDeleteModal || archivoViewer) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [showDeleteModal, archivoViewer, deleting]);
+
   const cargarEvidencias = async () => {
     try {
       setLoading(true);
@@ -580,7 +603,7 @@ export default function AdminEvidenciasClient() {
 
       {/* Modal de confirmación de eliminación */}
       {showDeleteModal && evidenciaAEliminar && (
-        <div className="modal-overlay" onClick={() => !deleting && setShowDeleteModal(false)}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
               <h2 className="modal-title" style={{ color: 'var(--error-red-600)' }}>

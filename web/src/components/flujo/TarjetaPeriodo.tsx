@@ -163,14 +163,7 @@ export function TarjetaPeriodo({
       </div>
 
       {/* Info Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1rem",
-        }}
-      >
+      <div className="grid-auto-fit-sm" style={{ marginBottom: "1rem" }}>
         <div>
           <div
             style={{
@@ -297,10 +290,8 @@ export function TarjetaPeriodo({
       {/* Responsables */}
       {mostrarResponsables && (
         <div
+          className="form-grid-2cols"
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "1rem",
             marginBottom: "1rem",
             paddingTop: "1rem",
             borderTop: "1px solid var(--color-border)",

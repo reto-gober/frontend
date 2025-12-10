@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ModalPortal } from '../common/ModalPortal';
 import adminActionsService from '../../lib/services/adminActionsService';
 import notifications from '../../lib/notifications';
@@ -110,10 +110,24 @@ export default function ModalOverrideSubmit({ periodoId, responsableId, reporteN
       setUploadProgress(0);
     }
   };
+
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSubmitting, onClose]);
     
     return (
       <ModalPortal>
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay">
           <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2 className="modal-title">

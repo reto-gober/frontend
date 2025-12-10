@@ -33,9 +33,7 @@ export default function ResponsablesList({ responsables, usuarios, onRemove, onT
             <div
               key={resp.usuarioId}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr auto auto auto',
-                gap: '0.75rem',
+gap: '0.5rem',
                 alignItems: 'center',
                 padding: '0.875rem',
                 backgroundColor: 'var(--color-gray-50)',

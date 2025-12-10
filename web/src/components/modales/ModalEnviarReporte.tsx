@@ -72,6 +72,22 @@ export function ModalEnviarReporte({
     }
   }, [isOpen]);
 
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !enviando) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, enviando, onClose]);
+
   if (!isOpen) return null;
 
   const validarArchivoReporte = (file: File): string | null => {
@@ -192,7 +208,7 @@ export function ModalEnviarReporte({
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Modal de éxito */}
         {mostrarExito && (

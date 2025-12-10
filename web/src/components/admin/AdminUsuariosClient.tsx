@@ -45,6 +45,27 @@ export default function AdminUsuariosClient() {
     aplicarFiltros();
   }, [searchTerm, filterRol, filterEstado, usuarios]);
 
+  // Manejar tecla Escape para cerrar modales
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showEditModal) {
+          handleCloseModal();
+        }
+        if (showInviteModal) {
+          handleCloseInviteModal();
+        }
+      }
+    };
+
+    if (showEditModal || showInviteModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [showEditModal, showInviteModal]);
+
   const cargarUsuarios = async () => {
     try {
       setLoading(true);
@@ -659,7 +680,7 @@ export default function AdminUsuariosClient() {
 
       {/* Modal de Edición */}
       {showEditModal && editingUsuario && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">Editar Usuario</h2>
@@ -809,7 +830,7 @@ export default function AdminUsuariosClient() {
 
       {/* Modal de Invitación */}
       {showInviteModal && (
-        <div className="modal-overlay" onClick={handleCloseInviteModal}>
+        <div className="modal-overlay">
           <div className="modal-content invite-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Invitar Usuario</h2>

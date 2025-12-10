@@ -20,6 +20,20 @@ export function ModalHistorialAcciones({ periodoId, reporteNombre, onClose }: Pr
     loadAcciones();
   }, [periodoId]);
 
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const loadAcciones = async () => {
     try {
       setIsLoading(true);
@@ -66,7 +80,7 @@ export function ModalHistorialAcciones({ periodoId, reporteNombre, onClose }: Pr
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2 className="modal-title">

@@ -48,7 +48,7 @@ export default function ResponsableSelector({ usuarios, responsables, onAdd }: P
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.75rem', alignItems: 'end' }}>
+      <div className="grid-responsive-selector">
         <div>
           <label htmlFor="nuevoUsuario" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
             Usuario

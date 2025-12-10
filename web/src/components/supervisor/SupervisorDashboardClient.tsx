@@ -339,7 +339,7 @@ export default function SupervisorDashboardClient() {
                 </text>
               </svg>
             </div>
-            <div className="legend-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+            <div className="legend-grid grid-auto-fit-xs">
               {['a_tiempo','tarde','vencido','pendiente','proximos'].map((estado) => {
                 const valor = baseDistribucion[estado] || 0;
                 const porcentaje = totalDistribucion > 0 ? ((valor / totalDistribucion) * 100).toFixed(1) : '0';
