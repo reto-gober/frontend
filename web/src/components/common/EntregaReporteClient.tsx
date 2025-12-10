@@ -40,10 +40,14 @@ export default function EntregaReporteClient({
 
   // Estado de URL params para backward compatibility
   const [periodoId, setPeriodoId] = useState<string>(periodoIdProp || "");
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(currentUserProp || null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(
+    currentUserProp || null
+  );
 
   // Estado principal
-  const [periodo, setPeriodo] = useState<ReportePeriodo | null>(initialData || null);
+  const [periodo, setPeriodo] = useState<ReportePeriodo | null>(
+    initialData || null
+  );
   const [archivos, setArchivos] = useState<ArchivoDTO[]>([]);
   const [loading, setLoading] = useState(!initialData);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +61,9 @@ export default function EntregaReporteClient({
 
   // Estado de modales
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showCommentsSection, setShowCommentsSection] = useState(mode === "modal");
+  const [showCommentsSection, setShowCommentsSection] = useState(
+    mode === "modal"
+  );
 
   // Función auxiliar para cargar archivos
   const loadArchivos = useCallback(async () => {
@@ -77,7 +83,7 @@ export default function EntregaReporteClient({
   // Cargar parámetros de URL y usuario actual si no vienen por props
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     // Si no viene periodoId por props, leerlo de URL
     if (!periodoIdProp) {
       const params = new URLSearchParams(window.location.search);
@@ -96,7 +102,7 @@ export default function EntregaReporteClient({
             id: usuario.usuarioId,
             email: usuario.email,
             role: role as "responsable" | "supervisor" | "admin",
-            nombreCompleto: `${usuario.firstName} ${usuario.firstLastname}`
+            nombreCompleto: `${usuario.firstName} ${usuario.firstLastname}`,
           });
         } catch (err) {
           console.error("[EntregaReporte] Error parseando usuario:", err);
@@ -118,9 +124,8 @@ export default function EntregaReporteClient({
         setLoading(true);
 
         // Cargar periodo si no viene en props
-        const periodoData = await flujoReportesService.obtenerPeriodo(
-          periodoId
-        );
+        const periodoData =
+          await flujoReportesService.obtenerPeriodo(periodoId);
         setPeriodo(periodoData);
 
         // Cargar archivos
@@ -163,8 +168,7 @@ export default function EntregaReporteClient({
       canSubmit:
         isResponsable &&
         (estado === "pendiente" || estado === "requiere_correccion"),
-      canValidate:
-        (isSupervisor || isAdmin) && estado === "en_revision",
+      canValidate: (isSupervisor || isAdmin) && estado === "en_revision",
       canReject:
         (isSupervisor || isAdmin) &&
         (estado === "en_revision" || estado === "enviado"),
@@ -277,11 +281,12 @@ export default function EntregaReporteClient({
     const missingEvidencia = archivosEvidencia.length === 0;
 
     if (missingReporte || missingEvidencia) {
-      const message = missingReporte && missingEvidencia
-        ? "Debes adjuntar el archivo del reporte y una evidencia"
-        : missingReporte
-          ? "Debes adjuntar el archivo del reporte"
-          : "Debes adjuntar un archivo de evidencia";
+      const message =
+        missingReporte && missingEvidencia
+          ? "Debes adjuntar el archivo del reporte y una evidencia"
+          : missingReporte
+            ? "Debes adjuntar el archivo del reporte"
+            : "Debes adjuntar un archivo de evidencia";
 
       showError(message);
       if (missingReporte) setReporteError("Este archivo es obligatorio");
@@ -401,14 +406,19 @@ export default function EntregaReporteClient({
       <div className="hero-card">
         <div className="hero-header">
           <h1 className="hero-title">{periodo.reporteNombre}</h1>
-          <span className={`estado-badge estado-${estado}`}>
-            {estadoLabel}
-          </span>
+          <span className={`estado-badge estado-${estado}`}>{estadoLabel}</span>
         </div>
 
         <div className="hero-meta">
           <div className="meta-item">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="3" y="4" width="18" height="17" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -422,7 +432,14 @@ export default function EntregaReporteClient({
             </span>
           </div>
           <div className="meta-item">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="4" y="9" width="16" height="11" rx="1" />
               <path d="M8 9V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4" />
             </svg>
@@ -432,10 +449,20 @@ export default function EntregaReporteClient({
 
         {periodo.comentarios && periodo.comentarios.length > 0 && (
           <div className="hero-observaciones">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <span>Último comentario: {periodo.comentarios[periodo.comentarios.length - 1].texto}</span>
+            <span>
+              Último comentario:{" "}
+              {periodo.comentarios[periodo.comentarios.length - 1].texto}
+            </span>
           </div>
         )}
       </div>
@@ -448,7 +475,10 @@ export default function EntregaReporteClient({
             <p>Evidencias previamente cargadas</p>
           </div>
           <FilesList
-            archivos={archivos.map(a => ({ ...a, urlPublica: a.urlPublica ?? null }))}
+            archivos={archivos.map((a) => ({
+              ...a,
+              urlPublica: a.urlPublica ?? null,
+            }))}
             periodoId={periodoId}
             canDelete={permissions.canUploadFiles && !submitting}
             onRefresh={loadArchivos}
@@ -462,18 +492,29 @@ export default function EntregaReporteClient({
           <div className="card-header">
             <h3>Adjuntar archivos requeridos</h3>
             <p>
-              Sube el archivo del reporte y una evidencia de soporte (máx. 10MB cada uno)
+              Sube el archivo del reporte y una evidencia de soporte (máx. 10MB
+              cada uno)
             </p>
           </div>
 
           {(!archivoReporte || archivosEvidencia.length === 0) && (
             <div className="upload-notice">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>Debes adjuntar el archivo del reporte y al menos una evidencia (máx. 2) para poder enviar la entrega</span>
+              <span>
+                Debes adjuntar el archivo del reporte y al menos una evidencia
+                (máx. 2) para poder enviar la entrega
+              </span>
             </div>
           )}
 
@@ -481,10 +522,16 @@ export default function EntregaReporteClient({
             <div className="upload-block">
               <div className="upload-block-header">
                 <div>
-                  <h4>Archivo del reporte <span className="required">*</span></h4>
-                  <p className="upload-helper">Formatos: PDF, DOC, DOCX, XLS, XLSX. Máx. 10MB.</p>
+                  <h4>
+                    Archivo del reporte <span className="required">*</span>
+                  </h4>
+                  <p className="upload-helper">
+                    Formatos: PDF, DOC, DOCX, XLS, XLSX. Máx. 10MB.
+                  </p>
                 </div>
-                {reporteError && <span className="field-error">{reporteError}</span>}
+                {reporteError && (
+                  <span className="field-error">{reporteError}</span>
+                )}
               </div>
               <FileUploadZone
                 onFilesSelected={handleReporteSelected}
@@ -502,10 +549,16 @@ export default function EntregaReporteClient({
             <div className="upload-block">
               <div className="upload-block-header">
                 <div>
-                  <h4>Evidencia (imagen o PDF) <span className="required">*</span></h4>
-                  <p className="upload-helper">Formatos: PDF, PNG, JPG, JPEG, WEBP. Máx. 10MB.</p>
+                  <h4>
+                    Evidencia (imagen o PDF) <span className="required">*</span>
+                  </h4>
+                  <p className="upload-helper">
+                    Formatos: PDF, PNG, JPG, JPEG, WEBP. Máx. 10MB.
+                  </p>
                 </div>
-                {evidenciaError && <span className="field-error">{evidenciaError}</span>}
+                {evidenciaError && (
+                  <span className="field-error">{evidenciaError}</span>
+                )}
               </div>
               <FileUploadZone
                 onFilesSelected={handleEvidenciaSelected}
@@ -564,7 +617,11 @@ export default function EntregaReporteClient({
             disabled={submitDisabled}
             title={submitHint}
           >
-            {submitting ? "Enviando..." : estado === "requiere_correccion" ? "Reenviar Entrega" : "Enviar Entrega"}
+            {submitting
+              ? "Enviando..."
+              : estado === "requiere_correccion"
+                ? "Reenviar Entrega"
+                : "Enviar Entrega"}
           </button>
         )}
       </div>

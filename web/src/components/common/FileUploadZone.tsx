@@ -33,12 +33,15 @@ export default function FileUploadZone({
     [inputId]
   );
 
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!disabled) {
-      setIsDragging(true);
-    }
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      if (!disabled) {
+        setIsDragging(true);
+      }
+    },
+    [disabled]
+  );
 
   const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -120,10 +123,12 @@ export default function FileUploadZone({
           </svg>
           <div className="upload-text">
             <p className="upload-main-text">
-              <strong>{label ?? "Arrastra archivos aqui"}</strong> o haz clic para seleccionar
+              <strong>{label ?? "Arrastra archivos aqui"}</strong> o haz clic
+              para seleccionar
             </p>
             <p className="upload-sub-text">
-              {helperText ?? `Archivos permitidos segun el filtro de extensiones${multiple ? ` (Max. ${maxFiles})` : ""}`}
+              {helperText ??
+                `Archivos permitidos segun el filtro de extensiones${multiple ? ` (Max. ${maxFiles})` : ""}`}
             </p>
           </div>
         </label>
@@ -150,7 +155,9 @@ export default function FileUploadZone({
                   </svg>
                   <div className="file-details">
                     <span className="file-name">{file.name}</span>
-                    <span className="file-size">{formatFileSize(file.size)}</span>
+                    <span className="file-size">
+                      {formatFileSize(file.size)}
+                    </span>
                   </div>
                 </div>
 
