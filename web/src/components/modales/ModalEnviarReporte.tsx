@@ -32,21 +32,28 @@ export function ModalEnviarReporte({
 }: ModalEnviarReporteProps) {
   const [comentarios, setComentarios] = useState("");
   const [archivoReporte, setArchivoReporte] = useState<File | null>(null);
-  const [evidencias, setEvidencias] = useState<File[]>([]);
-  const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
+  const [archivoEvidencia, setArchivoEvidencia] = useState<File | null>(null);
+  const [errorReporte, setErrorReporte] = useState<string | null>(null);
+  const [errorEvidencia, setErrorEvidencia] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mostrarExito, setMostrarExito] = useState(false);
   const headerRef = useRef<HTMLHeadingElement | null>(null);
 
   const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-  const ALLOW_TYPES = [
+
+  // Tipos permitidos para archivo del reporte (documentos PDF)
+  const REPORTE_TYPES = [
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ];
+
+  // Tipos permitidos para evidencias (imágenes y PDF)
+  const EVIDENCIA_TYPES = [
+    "application/pdf",
     "image/jpeg",
+    "image/jpg",
     "image/png",
   ];
 
@@ -55,8 +62,9 @@ export function ModalEnviarReporte({
     if (isOpen) {
       setComentarios("");
       setArchivoReporte(null);
-      setEvidencias([]);
-      setErrorArchivo(null);
+      setArchivoEvidencia(null);
+      setErrorReporte(null);
+      setErrorEvidencia(null);
       setMostrarExito(false);
       // Mover foco al encabezado del modal para accesibilidad
       setTimeout(() => headerRef.current?.focus(), 0);
@@ -65,9 +73,19 @@ export function ModalEnviarReporte({
 
   if (!isOpen) return null;
 
-  const validarArchivo = (file: File) => {
-    if (!ALLOW_TYPES.includes(file.type)) {
-      return "Formato no permitido. Usa PDF, Word, Excel o imágenes";
+  const validarArchivoReporte = (file: File): string | null => {
+    if (!REPORTE_TYPES.includes(file.type)) {
+      return "Formato no permitido. Usa PDF, Word o DOCX";
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      return "El archivo supera el límite de 10MB";
+    }
+    return null;
+  };
+
+  const validarArchivoEvidencia = (file: File): string | null => {
+    if (!EVIDENCIA_TYPES.includes(file.type)) {
+      return "Formato no permitido. Usa imágenes (JPG, PNG) o PDF";
     }
     if (file.size > MAX_SIZE_BYTES) {
       return "El archivo supera el límite de 10MB";
@@ -78,61 +96,65 @@ export function ModalEnviarReporte({
   const handleReporteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const error = validarArchivo(file);
-      setErrorArchivo(error);
-      if (!error) setArchivoReporte(file);
+      const error = validarArchivoReporte(file);
+      setErrorReporte(error);
+      if (!error) {
+        setArchivoReporte(file);
+      } else {
+        setArchivoReporte(null);
+      }
     }
   };
 
-  const handleEvidenciasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const nuevos = Array.from(e.target.files);
-    const filtrados: File[] = [];
-    let errorMensaje: string | null = null;
-    nuevos.forEach((file) => {
-      const error = validarArchivo(file);
-      if (error && !errorMensaje) errorMensaje = error;
-      if (!error) filtrados.push(file);
-    });
-    if (errorMensaje) setErrorArchivo(errorMensaje);
-    setEvidencias((prev) => [...prev, ...filtrados]);
+  const handleEvidenciaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const error = validarArchivoEvidencia(file);
+      setErrorEvidencia(error);
+      if (!error) {
+        setArchivoEvidencia(file);
+      } else {
+        setArchivoEvidencia(null);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEnviando(true);
 
+    // Validar que ambos archivos estén presentes
     if (!archivoReporte) {
-      setErrorArchivo("Debes adjuntar el archivo del reporte");
+      setErrorReporte("Debes adjuntar el archivo del reporte");
+      setEnviando(false);
+      return;
+    }
+
+    if (!archivoEvidencia) {
+      setErrorEvidencia("Debes adjuntar un archivo de evidencia");
       setEnviando(false);
       return;
     }
 
     try {
-      // Subir archivos primero usando periodoId directamente
-      let evidenciasIds: string[] = [];
+      // Subir ambos archivos obligatorios
+      setUploading(true);
 
-      if (archivoReporte || evidencias.length > 0) {
-        setUploading(true);
-        const uploadPromises: Promise<string>[] = [];
+      // Subir archivo del reporte
+      const reporteResult = await evidenciasService.subirPorPeriodo(
+        periodoId,
+        archivoReporte
+      );
 
-        if (archivoReporte) {
-          uploadPromises.push(
-            evidenciasService.subirPorPeriodo(periodoId, archivoReporte).then((res) => res.id)
-          );
-        }
+      // Subir archivo de evidencia
+      const evidenciaResult = await evidenciasService.subirPorPeriodo(
+        periodoId,
+        archivoEvidencia
+      );
 
-        evidencias.forEach((ev) => {
-          uploadPromises.push(
-            evidenciasService.subirPorPeriodo(periodoId, ev).then((res) => res.id)
-          );
-        });
+      const evidenciasIds = [reporteResult.id, evidenciaResult.id];
+      setUploading(false);
 
-        evidenciasIds = await Promise.all(uploadPromises);
-        setUploading(false);
-      }
-
-      // Enviar reporte
       const request: EnviarReporteRequest = {
         periodoId,
         comentarios: comentarios.trim() || undefined,
@@ -147,7 +169,6 @@ export function ModalEnviarReporte({
 
       // Mostrar mensaje de éxito
       setMostrarExito(true);
-      
       // Esperar 2 segundos antes de cerrar
       setTimeout(() => {
         setMostrarExito(false);
@@ -155,8 +176,9 @@ export function ModalEnviarReporte({
         onClose();
         setComentarios("");
         setArchivoReporte(null);
-        setEvidencias([]);
-        setErrorArchivo(null);
+        setArchivoEvidencia(null);
+        setErrorReporte(null);
+        setErrorEvidencia(null);
       }, 2000);
     } catch (err: any) {
       const msg = err.response?.data?.message || "Error al enviar el reporte";
@@ -167,46 +189,60 @@ export function ModalEnviarReporte({
     }
   };
 
-  const removeEvidencia = (index: number) => {
-    setEvidencias((prev) => prev.filter((_, i) => i !== index));
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Modal de éxito */}
         {mostrarExito && (
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            background: 'white',
-            borderRadius: '16px',
-            padding: '2rem',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            zIndex: 3000,
-            textAlign: 'center',
-            minWidth: '320px'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              margin: '0 auto 1rem',
-              borderRadius: '50%',
-              background: '#dcfce7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3">
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "white",
+              borderRadius: "16px",
+              padding: "2rem",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              zIndex: 3000,
+              textAlign: "center",
+              minWidth: "320px",
+            }}
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                margin: "0 auto 1rem",
+                borderRadius: "50%",
+                background: "#dcfce7",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#16a34a"
+                strokeWidth="3"
+              >
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             </div>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "1.25rem",
+                fontWeight: 700,
+                color: "#0f172a",
+              }}
+            >
               Éxito
             </h3>
-            <p style={{ margin: '0.5rem 0 0', color: '#475569' }}>
+            <p style={{ margin: "0.5rem 0 0", color: "#475569" }}>
               Reporte enviado exitosamente
             </p>
           </div>
@@ -215,11 +251,7 @@ export function ModalEnviarReporte({
         <div className="modal-header">
           <div>
             <p className="modal-overline">Intervención manual</p>
-            <h2
-              className="modal-title"
-              tabIndex={-1}
-              ref={headerRef}
-            >
+            <h2 className="modal-title" tabIndex={-1} ref={headerRef}>
               {esCorreccion ? "Corregir y Reenviar Reporte" : "Enviar Reporte"}
             </h2>
             <p className="modal-subtitle">{reporteNombre}</p>
@@ -227,13 +259,28 @@ export function ModalEnviarReporte({
               <div className="modal-chip-row">
                 {frecuencia && <span className="chip info">{frecuencia}</span>}
                 {(periodoInicio || periodoFin) && (
-                  <span className="chip muted">{periodoInicio ? new Date(periodoInicio).toLocaleDateString('es-CO') : ''} → {periodoFin ? new Date(periodoFin).toLocaleDateString('es-CO') : ''}</span>
+                  <span className="chip muted">
+                    {periodoInicio
+                      ? new Date(periodoInicio).toLocaleDateString("es-CO")
+                      : ""}{" "}
+                    →{" "}
+                    {periodoFin
+                      ? new Date(periodoFin).toLocaleDateString("es-CO")
+                      : ""}
+                  </span>
                 )}
               </div>
             )}
           </div>
           <button className="icon-button" onClick={onClose} aria-label="Cerrar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -266,123 +313,212 @@ export function ModalEnviarReporte({
             />
           </section>
 
-          {/* Archivos */}
+          {/* Archivos obligatorios */}
           <section className="modal-section">
             <div className="section-header">
               <div>
-                <p className="section-overline">Archivos</p>
-                <h3 className="section-title">Carga de documentos</h3>
+                <p className="section-overline">Archivos obligatorios</p>
+                <h3 className="section-title">
+                  Documentos requeridos para el envío
+                </h3>
               </div>
-              <span className="helper-text">Formatos: PDF, Word, Excel, JPG/PNG • Máx 10MB</span>
+              <span className="helper-text">
+                Ambos archivos son obligatorios • Máx 10MB cada uno
+              </span>
             </div>
 
             <div className="upload-grid">
-              {/* Reporte obligatorio */}
-              <div className={`upload-card ${errorArchivo ? 'has-error' : ''}`}>
+              {/* 1. Archivo del Reporte (Obligatorio) */}
+              <div className={`upload-card ${errorReporte ? "has-error" : ""}`}>
                 <div className="upload-header">
                   <div>
-                    <p className="upload-label">Archivo del Reporte <span className="required">*</span></p>
-                    <p className="upload-sub">Subir Reporte / Archivo del Informe</p>
+                    <p className="upload-label">
+                      1. Archivo del Reporte <span className="required">*</span>
+                    </p>
+                    <p className="upload-sub">PDF, Word o DOCX</p>
                   </div>
-                  {archivoReporte && <span className="chip success">Listo</span>}
+                  {archivoReporte && (
+                    <span className="chip success">✓ Cargado</span>
+                  )}
                 </div>
                 <label className="upload-drop" htmlFor="reporte-file">
                   <div className="upload-icon-circle">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7,10 12,5 17,10"/>
-                      <line x1="12" y1="5" x2="12" y2="17"/>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
                     </svg>
                   </div>
                   <div>
-                    <p className="upload-title">Seleccionar archivo</p>
-                    <p className="upload-hint">Arrastra o haz clic para cargar</p>
+                    <p className="upload-title">Seleccionar documento</p>
+                    <p className="upload-hint">
+                      Documento principal del reporte
+                    </p>
                   </div>
                 </label>
                 <input
                   id="reporte-file"
                   type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                  style={{ display: 'none' }}
+                  accept=".pdf,.doc,.docx"
+                  style={{ display: "none" }}
                   onChange={handleReporteChange}
+                  required
                 />
                 {archivoReporte && (
                   <div className="file-row">
                     <div className="file-main">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
                       </svg>
                       <div className="file-text">
                         <span className="file-name">{archivoReporte.name}</span>
-                        <span className="file-meta">{(archivoReporte.size / 1024).toFixed(0)} KB</span>
+                        <span className="file-meta">
+                          {(archivoReporte.size / 1024).toFixed(0)} KB
+                        </span>
                       </div>
                     </div>
-                    <button type="button" className="icon-button danger" onClick={() => setArchivoReporte(null)} aria-label="Eliminar">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button
+                      type="button"
+                      className="icon-button danger"
+                      onClick={() => {
+                        setArchivoReporte(null);
+                        setErrorReporte(null);
+                      }}
+                      aria-label="Eliminar"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
                     </button>
                   </div>
                 )}
-                {errorArchivo && <p className="error-text">{errorArchivo}</p>}
+                {errorReporte && <p className="error-text">{errorReporte}</p>}
               </div>
 
-              {/* Evidencias opcionales */}
-              <div className="upload-card">
+              {/* 2. Archivo de Evidencia (Obligatorio) */}
+              <div
+                className={`upload-card ${errorEvidencia ? "has-error" : ""}`}
+              >
                 <div className="upload-header">
                   <div>
-                    <p className="upload-label">Evidencias / Archivos adicionales</p>
-                    <p className="upload-sub">Subir Evidencias (opcional)</p>
+                    <p className="upload-label">
+                      2. Archivo de Evidencia{" "}
+                      <span className="required">*</span>
+                    </p>
+                    <p className="upload-sub">Imagen (JPG, PNG) o PDF</p>
                   </div>
-                  {evidencias.length > 0 && <span className="chip info">{evidencias.length} archivo(s)</span>}
+                  {archivoEvidencia && (
+                    <span className="chip success">✓ Cargado</span>
+                  )}
                 </div>
-                <label className="upload-drop" htmlFor="evidencias-file">
+                <label className="upload-drop" htmlFor="evidencia-file">
                   <div className="upload-icon-circle">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7,10 12,5 17,10"/>
-                      <line x1="12" y1="5" x2="12" y2="17"/>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
                     </svg>
                   </div>
                   <div>
-                    <p className="upload-title">Añadir evidencias</p>
-                    <p className="upload-hint">Puedes seleccionar múltiples archivos</p>
+                    <p className="upload-title">Seleccionar evidencia</p>
+                    <p className="upload-hint">
+                      Soporte fotográfico o documental
+                    </p>
                   </div>
                 </label>
                 <input
-                  id="evidencias-file"
+                  id="evidencia-file"
                   type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                  style={{ display: 'none' }}
-                  onChange={handleEvidenciasChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  style={{ display: "none" }}
+                  onChange={handleEvidenciaChange}
+                  required
                 />
-
-                {evidencias.length > 0 && (
-                  <div className="file-list">
-                    {evidencias.map((archivo, index) => (
-                      <div className="file-row" key={index}>
-                        <div className="file-main">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                          </svg>
-                          <div className="file-text">
-                            <span className="file-name">{archivo.name}</span>
-                            <span className="file-meta">{(archivo.size / 1024).toFixed(0)} KB</span>
-                          </div>
-                        </div>
-                        <button type="button" className="icon-button danger" onClick={() => removeEvidencia(index)} aria-label="Eliminar">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
+                {archivoEvidencia && (
+                  <div className="file-row">
+                    <div className="file-main">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <div className="file-text">
+                        <span className="file-name">
+                          {archivoEvidencia.name}
+                        </span>
+                        <span className="file-meta">
+                          {(archivoEvidencia.size / 1024).toFixed(0)} KB
+                        </span>
                       </div>
-                    ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="icon-button danger"
+                      onClick={() => {
+                        setArchivoEvidencia(null);
+                        setErrorEvidencia(null);
+                      }}
+                      aria-label="Eliminar"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
                   </div>
+                )}
+                {errorEvidencia && (
+                  <p className="error-text">{errorEvidencia}</p>
                 )}
               </div>
             </div>
@@ -390,15 +526,34 @@ export function ModalEnviarReporte({
 
           {/* Acciones */}
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={enviando || uploading}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={onClose}
+              disabled={enviando || uploading}
+            >
               Cancelar
             </button>
             <button
               type="submit"
               className="btn-primary"
-              disabled={enviando || uploading || !!errorArchivo || !archivoReporte || (esCorreccion && !comentarios.trim())}
+              disabled={
+                enviando ||
+                uploading ||
+                !!errorReporte ||
+                !!errorEvidencia ||
+                !archivoReporte ||
+                !archivoEvidencia ||
+                (esCorreccion && !comentarios.trim())
+              }
             >
-              {uploading ? 'Subiendo...' : enviando ? 'Enviando...' : esCorreccion ? 'Reenviar Reporte' : 'Enviar Reporte'}
+              {uploading
+                ? "Subiendo archivos..."
+                : enviando
+                  ? "Enviando reporte..."
+                  : esCorreccion
+                    ? "Reenviar Reporte"
+                    : "Enviar Reporte"}
             </button>
           </div>
         </form>

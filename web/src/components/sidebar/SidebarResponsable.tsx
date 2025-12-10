@@ -162,6 +162,17 @@ export default function SidebarResponsable() {
           navigateTo: "/roles/responsable/alertas",
         }),
     },
+    {
+      id: "tour-calendario",
+      name: "Guía del calendario",
+      description:
+        "Aprende a navegar por el calendario, cambiar vistas y revisar vencimientos.",
+      onStart: () =>
+        manual.startTour({
+          tourId: "tour-calendario",
+          navigateTo: "/roles/responsable/calendario",
+        }),
+    },
   ];
 
   useEffect(() => {

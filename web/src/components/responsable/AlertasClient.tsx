@@ -170,11 +170,9 @@ export default function AlertasClient() {
     }
 
     try {
-      // Actualizar localmente
-      setAlertas((prev) => prev.map((a) => ({ ...a, leida: true })));
-
-      // Aquí se enviaría al backend si hubiera un endpoint para ello
-      // await api.post('/api/alertas/marcar-todas-leidas');
+      // Crear nuevo array con todas las alertas marcadas como leídas
+      const alertasActualizadas = alertas.map((a) => ({ ...a, leida: true }));
+      setAlertas(alertasActualizadas);
 
       // Feedback al usuario
       const mensaje =
@@ -182,39 +180,18 @@ export default function AlertasClient() {
           ? "Se marcó 1 alerta como leída"
           : `Se marcaron ${alertasNoLeidas.length} alertas como leídas`;
 
-      // Mostrar mensaje temporal
-      showToast(mensaje, "success");
+      // Mostrar notificación de éxito
+      notifications.success(mensaje);
+
+      // Aquí se enviaría al backend si hubiera un endpoint para ello
+      // await api.post('/api/alertas/marcar-todas-leidas');
     } catch (err) {
       console.error("Error al marcar todas como leídas:", err);
-      showToast("Error al marcar alertas como leídas", "error");
+      notifications.error("Error al marcar alertas como leídas");
+
+      // Revertir cambios en caso de error
+      loadAlertas();
     }
-  };
-
-  const showToast = (mensaje: string, tipo: "success" | "error") => {
-    // Crear elemento de toast
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${tipo}`;
-    toast.textContent = mensaje;
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 1rem 1.5rem;
-      background: ${tipo === "success" ? "var(--success-green-500)" : "var(--error-red-500)"};
-      color: white;
-      border-radius: 8px;
-      box-shadow: var(--shadow-card);
-      z-index: 9999;
-      animation: slideIn 0.3s ease-out;
-    `;
-
-    document.body.appendChild(toast);
-
-    // Eliminar después de 3 segundos
-    setTimeout(() => {
-      toast.style.animation = "slideOut 0.3s ease-in";
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
   };
 
   const alertasFiltradas = alertas.filter((a) => {

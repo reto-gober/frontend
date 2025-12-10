@@ -101,6 +101,12 @@ const injectResponsableStyles = () => {
 
     [data-driver-theme="responsable"] .driver-popover .driver-popover-close-btn {
       color: var(--neutral-400, #94a3b8);
+      outline: none !important;
+    }
+
+    [data-driver-theme="responsable"] .driver-popover .driver-popover-close-btn:focus {
+      outline: none !important;
+      box-shadow: none !important;
     }
 
     [data-driver-theme="responsable"] .driver-popover .driver-popover-footer {
@@ -116,6 +122,11 @@ const injectResponsableStyles = () => {
       padding: 0.55rem 1rem;
       font-size: 0.92rem;
       font-family: inherit;
+      outline: none !important;
+    }
+
+    [data-driver-theme="responsable"] .driver-popover .driver-popover-btn:focus {
+      outline: none !important;
     }
 
     [data-driver-theme="responsable"] .driver-popover .driver-popover-prev-btn {
@@ -177,10 +188,12 @@ const createDriverInstance = (
   options?: DriverOptions,
   setActive?: (id: string | null) => void,
   onTourComplete?: () => void
-): Driver | null => {
+): { instance: Driver; attachDoneCloser: () => void } | null => {
   if (typeof window === "undefined") return null;
   injectResponsableStyles();
   setThemeFlag();
+
+  let driverInstanceRef: Driver | null = null;
 
   const attachCloseGuards = (
     driverInstance: Driver | null,
@@ -220,6 +233,29 @@ const createDriverInstance = (
     };
   };
 
+  const doneClickHandler = (event: Event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    // Destruir el driver completamente
+    if (driverInstanceRef) {
+      driverInstanceRef.destroy();
+    }
+  };
+
+  const attachDoneCloser = () => {
+    if (typeof document === "undefined") return;
+    const doneBtn = document.querySelector<HTMLButtonElement>(
+      ".driver-popover-done-btn"
+    );
+    if (!doneBtn) return;
+
+    // Evitar duplicar listeners en re-render del popover
+    doneBtn.removeEventListener("click", doneClickHandler, true);
+    doneBtn.addEventListener("click", doneClickHandler, true);
+  };
+
   const userOptions = options as Record<string, unknown> | undefined;
   let cleanupCloseGuards: (() => void) | undefined;
 
@@ -229,9 +265,15 @@ const createDriverInstance = (
     return (...cbArgs: unknown[]) => {
       startNavObserver();
       relabelNavigationButtons();
+      // Adjuntar el listener del botón "Hecho" cada vez que se renderiza un paso
+      attachDoneCloser();
       // Scroll al elemento destacado con delays para asegurar que el DOM esté listo
       setTimeout(() => scrollToHighlightedElement(), 100);
-      setTimeout(() => scrollToHighlightedElement(), 300);
+      setTimeout(() => {
+        scrollToHighlightedElement();
+        // Volver a adjuntar después del delay para asegurar que el botón esté disponible
+        attachDoneCloser();
+      }, 300);
       cb?.(...cbArgs);
     };
   };
@@ -246,11 +288,13 @@ const createDriverInstance = (
         | ((...cbArgs: unknown[]) => void)
         | undefined
     ),
-    onPopoverRendered: withNavRelabel(
-      userOptions?.onPopoverRendered as
+    onPopoverRendered: withNavRelabel((...cbArgs: unknown[]) => {
+      attachDoneCloser();
+      const rendered = userOptions?.onPopoverRendered as
         | ((...cbArgs: unknown[]) => void)
-        | undefined
-    ),
+        | undefined;
+      rendered?.(...cbArgs);
+    }),
     onDestroyStarted: (...args: unknown[]) => {
       // Llamar al callback personalizado antes de destruir
       const destroyStarted = userOptions?.onDestroyStarted as
@@ -287,11 +331,12 @@ const createDriverInstance = (
   } as DriverOptions;
 
   const instance = driver(mergedOptions);
+  driverInstanceRef = instance;
   cleanupCloseGuards = attachCloseGuards(
     instance,
     mergedOptions.allowClose !== false
   );
-  return instance;
+  return { instance, attachDoneCloser };
 };
 
 const relabelNavigationButtons = () => {
@@ -314,11 +359,12 @@ const relabelNavigationButtons = () => {
   // El botón "done" mantiene su texto original (puede ser "Siguiente" o "Hecho")
   // No lo sobrescribimos para respetar la configuración del paso
 
-  // Remover foco del botón de cerrar (X) si está enfocado
-  // Esto evita que quede con borde naranja al navegar con flechas
-  if (close && document.activeElement === close) {
-    close.blur();
-  }
+  // Remover foco de todos los botones del popover para evitar el resaltado naranja
+  [prev, next, done, close].forEach((btn) => {
+    if (btn && document.activeElement === btn) {
+      btn.blur();
+    }
+  });
 };
 
 const scrollToHighlightedElement = () => {
@@ -442,6 +488,7 @@ const startNavObserver = () => {
 export const createResponsableManual = () => {
   const registry = new Map<string, RegisteredTour>();
   let activeTourId: string | null = null;
+  let attachDoneCloserRef: (() => void) | null = null;
 
   const registerTour = (config: ManualTourConfig) => {
     registry.set(config.tourId, {
@@ -526,7 +573,7 @@ export const createResponsableManual = () => {
         last.popover = { ...last.popover, doneBtnText: "Hecho" };
       }
 
-      const driverInstance = createDriverInstance(
+      const driverResult = createDriverInstance(
         tour.options,
         (id) => {
           activeTourId = id;
@@ -534,12 +581,26 @@ export const createResponsableManual = () => {
         onTourComplete
       );
 
+      if (!driverResult) return;
+
+      const { instance: driverInstance, attachDoneCloser } = driverResult;
+      attachDoneCloserRef = attachDoneCloser;
+
       driverInstance?.setSteps(stepsForRun);
       activeTourId = tourId;
       driverInstance?.drive();
       startNavObserver();
-      requestAnimationFrame(() => relabelNavigationButtons());
-      setTimeout(relabelNavigationButtons, 80);
+      requestAnimationFrame(() => {
+        relabelNavigationButtons();
+        attachDoneCloser();
+      });
+      setTimeout(() => {
+        relabelNavigationButtons();
+        attachDoneCloser();
+      }, 80);
+      setTimeout(() => {
+        attachDoneCloser();
+      }, 200);
     };
 
     if (navigateTo) {
@@ -877,7 +938,6 @@ const registerAlertasTour = () => {
 const registerMisReportesTour = () => {
   responsableManualSingleton.registerTour({
     tourId: "tour-mis-reportes",
-    nextTourId: "tour-mis-tareas", // Enlazar con el siguiente tour
     sections: [
       {
         id: "mis-reportes-overview",
@@ -942,16 +1002,6 @@ const registerMisReportesTour = () => {
             },
           },
           {
-            element:
-              ".reportes-list .reporte-agrupado:first-child .btn-primary",
-            popover: {
-              title: "Ver detalle",
-              description:
-                "Abre la vista detallada del período de referencia para enviar o revisar.",
-              side: "top",
-            },
-          },
-          {
             element: ".pagination",
             popover: {
               title: "Controles de paginación",
@@ -960,6 +1010,141 @@ const registerMisReportesTour = () => {
               side: "top",
             },
             onHighlightStarted: () => waitForElement(".pagination"),
+          },
+        ],
+      },
+    ],
+  });
+};
+
+/**
+ * Tour: Calendario
+ * Guía completa para navegar y utilizar el calendario de vencimientos
+ */
+const registerCalendarioTour = () => {
+  responsableManualSingleton.registerTour({
+    tourId: "tour-calendario",
+    targetRoute: "/roles/responsable/calendario",
+    sections: [
+      {
+        id: "calendario-overview",
+        label: "Calendario de vencimientos",
+        steps: [
+          {
+            element: ".calendar-view-selector",
+            popover: {
+              title: "Selector de vista del calendario",
+              description:
+                "Aquí puedes cambiar entre tres modos de visualización: Vista Mensual para ver todo el mes completo, Vista Semanal para enfocarte en una semana específica, o Vista Lista para ver todos los vencimientos en formato de lista cronológica. Cada vista te ayuda a organizar tu trabajo según tus necesidades.",
+              side: "bottom",
+            },
+            skipIfMissingSelector: ".calendar-container",
+            onHighlightStarted: () => waitForElement(".calendar-view-selector"),
+          },
+          {
+            element: ".calendar-navigation .btn-today",
+            popover: {
+              title: "Botón Hoy - Regresa al presente",
+              description:
+                "Si has navegado a fechas futuras o pasadas y quieres volver rápidamente al día actual, haz clic aquí. Es útil cuando estás revisando históricos o planificando y necesitas regresar a la fecha de hoy.",
+              side: "bottom",
+            },
+            skipIfMissingSelector: ".calendar-container",
+            onHighlightStarted: () =>
+              waitForElement(".calendar-navigation .btn-today"),
+          },
+          {
+            element: ".calendar-navigation .btn-prev",
+            popover: {
+              title: "Navegar hacia atrás",
+              description:
+                "Retrocede en el tiempo: si estás en vista mensual irás al mes anterior, en vista semanal a la semana anterior, y en vista lista al período anterior. Úsalo para revisar reportes pasados o consultar el historial de entregas.",
+              side: "bottom",
+            },
+            skipIfMissingSelector: ".calendar-container",
+            onHighlightStarted: () =>
+              waitForElement(".calendar-navigation .btn-prev"),
+          },
+          {
+            element: ".calendar-navigation .btn-next",
+            popover: {
+              title: "Navegar hacia adelante",
+              description:
+                "Avanza en el tiempo: si estás en vista mensual irás al mes siguiente, en vista semanal a la próxima semana, y en vista lista al siguiente período. Ideal para planificar y ver qué reportes vencen próximamente.",
+              side: "bottom",
+            },
+            skipIfMissingSelector: ".calendar-container",
+            onHighlightStarted: () =>
+              waitForElement(".calendar-navigation .btn-next"),
+          },
+          {
+            element: ".calendar-grid .calendar-day.has-events",
+            popover: {
+              title: "Días con reportes programados",
+              description:
+                "Los días que tienen reportes aparecen destacados con indicadores de colores según el estado: gris para pendientes, rojo para vencidos, amarillo para próximos a vencer (3 días o menos) y verde para enviados. El número de puntos o badges indica cuántos reportes hay ese día. Haz clic en cualquier día para ver el detalle completo de sus reportes.",
+              side: "top",
+            },
+            skipIfMissingSelector: ".calendar-grid .calendar-day.has-events",
+            onHighlightStarted: () =>
+              waitForElement(".calendar-grid .calendar-day.has-events"),
+          },
+          {
+            element: ".calendar-day-mini-list",
+            popover: {
+              title: "Vista previa rápida al pasar el cursor",
+              description:
+                "Al colocar el cursor sobre cualquier día con eventos (sin hacer clic), aparece automáticamente una mini lista emergente que te muestra un resumen rápido de los reportes programados para ese día: nombre del reporte, estado actual y tiempo restante. Es perfecto para revisar información sin necesidad de hacer clic.",
+              side: "left",
+            },
+            skipIfMissingSelector: ".calendar-day-mini-list",
+            onHighlightStarted: () => waitForElement(".calendar-day-mini-list"),
+          },
+          {
+            element: ".calendar-day-details",
+            popover: {
+              title: "Detalle completo de reportes del día",
+              description:
+                "Cuando haces clic en un día del calendario, esta área se expande mostrando la lista completa y detallada de todos los reportes con vencimiento en esa fecha. Aquí verás el nombre completo del reporte, el estado actual, la entidad responsable, los días restantes hasta el vencimiento, y botones de acción para gestionar cada reporte. Es tu vista principal para trabajar con los reportes de un día específico.",
+              side: "top",
+            },
+            skipIfMissingSelector: ".calendar-day-details",
+            onHighlightStarted: () => waitForElement(".calendar-day-details"),
+          },
+          {
+            element: ".calendar-sidebar .upcoming-events",
+            popover: {
+              title: "Panel de próximos vencimientos",
+              description:
+                "Este panel lateral permanente te muestra una lista ordenada cronológicamente de los reportes que están próximos a vencer, empezando por los más urgentes. Es como tu agenda prioritaria: siempre visible, siempre actualizada. Aquí puedes identificar rápidamente qué reportes requieren tu atención inmediata sin importar en qué mes o semana estés navegando el calendario.",
+              side: "left",
+            },
+            skipIfMissingSelector: ".calendar-sidebar .upcoming-events",
+            onHighlightStarted: () =>
+              waitForElement(".calendar-sidebar .upcoming-events"),
+          },
+          {
+            element: ".calendar-legend",
+            popover: {
+              title: "Leyenda de colores y estados",
+              description:
+                "Esta guía visual te explica el significado de cada color usado en el calendario: Gris o Neutral = Reportes pendientes por enviar, Rojo o Crítico = Reportes vencidos que requieren atención urgente, Amarillo o Advertencia = Reportes próximos a vencer en 3 días o menos, Verde o Éxito = Reportes ya enviados y completados. Usa esta referencia para interpretar rápidamente el estado de tus reportes en el calendario.",
+              side: "top",
+            },
+            skipIfMissingSelector: ".calendar-legend",
+            onHighlightStarted: () => waitForElement(".calendar-legend"),
+          },
+          {
+            element: ".calendar-event-item:first-child",
+            popover: {
+              title: "Acciones sobre eventos del calendario",
+              description:
+                "Cada reporte mostrado en el calendario es interactivo. Haz clic sobre cualquier evento para abrir la vista detallada completa del reporte, donde podrás ver toda la información, adjuntar archivos, escribir comentarios, enviar tu entrega o realizar correcciones si fue rechazado. El calendario no solo es para visualizar, también es tu punto de acceso rápido para actuar sobre cada reporte.",
+              side: "top",
+            },
+            skipIfMissingSelector: ".calendar-event-item",
+            onHighlightStarted: () =>
+              waitForElement(".calendar-event-item:first-child"),
           },
         ],
       },
@@ -1064,5 +1249,6 @@ registerDashboardTour();
 registerMisReportesTour();
 registerMisTareasTour();
 registerAlertasTour();
+registerCalendarioTour();
 
 export const useResponsableManual = () => responsableManualSingleton;
