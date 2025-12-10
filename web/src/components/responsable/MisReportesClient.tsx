@@ -869,31 +869,6 @@ export default function MisReportesClient({
                         </svg>
                         Ver entregas
                       </button>
-                      <button
-                        className="btn btn-primary btn-with-icon"
-                        onClick={() =>
-                          grupo.periodoReferencia &&
-                          handleVerDetalle(grupo.periodoReferencia.periodoId)
-                        }
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                        }}
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                        Ver detalle
-                      </button>
                     </div>
                   )}
                 </div>
