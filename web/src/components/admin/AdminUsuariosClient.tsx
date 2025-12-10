@@ -525,12 +525,12 @@ export default function AdminUsuariosClient() {
                       <div className={`user-avatar ${getAvatarColor(index)}`}>
                         {getInitials(usuario)}
                       </div>
-                      <span className="user-name">
+                      <span className="user-name" style={{ color: '#1f314c !important' }}>
                         {`${usuario.firstName} ${usuario.secondName || ''} ${usuario.firstLastname} ${usuario.secondLastname || ''}`.trim()}
                       </span>
                     </div>
                   </td>
-                  <td>{usuario.email}</td>
+                  <td style={{ color: '#1f314c !important' }}>{usuario.email}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                       {usuario.roles?.map((rol, idx) => (
@@ -550,13 +550,13 @@ export default function AdminUsuariosClient() {
                   </td>
                   <td>
                     {usuario.estado === 'invited' ? (
-                      <span className="access-time never">Pendiente de registro</span>
+                      <span className="access-time never" style={{ color: '#1f314c !important' }}>Pendiente de registro</span>
                     ) : loadingAccesos ? (
-                      <span className="loading-text">Cargando...</span>
+                      <span className="loading-text" style={{ color: '#1f314c !important' }}>Cargando...</span>
                     ) : (() => {
                       const acceso = formatLastAccess(usuario.usuarioId);
                       return (
-                        <div className="last-access-cell">
+                        <div className="last-access-cell" style={{ color: '#1f314c !important' }}>
                           <span className={`access-time ${acceso.clase}`}>{acceso.texto}</span>
                           {acceso.detalles && (
                             <div className="access-tooltip">
